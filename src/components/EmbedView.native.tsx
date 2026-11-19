@@ -10,7 +10,7 @@ import { C } from '@/lib/theme';
 
 const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
 
-export function EmbedView({ path, onClose, onAuthLost }: { path: string; onClose: () => void; onAuthLost: () => void }) {
+export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string; onClose: () => void; onAuthLost: () => void; onOpen?: (ch: string, msg?: string) => void }) {
   const [ready, setReady] = useState(false);
   const source = useMemo(() => {
     const to = path + (path.includes('?') ? '&' : '?') + 'app=1';
@@ -22,6 +22,7 @@ export function EmbedView({ path, onClose, onAuthLost }: { path: string; onClose
     try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
     if (m?.t === 'close') onClose();
     else if (m?.t === 'auth') onAuthLost();
+    else if (m?.t === 'open' && typeof m.ch === 'string') onOpen?.(m.ch, m.m);
   };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>

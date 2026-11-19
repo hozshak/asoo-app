@@ -8,9 +8,10 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
 import { Avatar, Badge, Empty, Glass, Glow, Press, Section, ServerIcon, T } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { Icon, type IconName } from '@/components/Icon';
 import { mediaSource } from '@/lib/api';
-import { dmTitle, markRead, useStore, type Channel, type Server } from '@/lib/store';
+import { can, dmTitle, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
+import { openWeb, webAction } from '@/lib/web';
 import { C, GRAD, GRAD_POS } from '@/lib/theme';
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
   const dmUnread = useStore((s) => s.dms.reduce((n, d) => n + (s.unread[d.id] || 0), 0));
   const [sel, setSel] = useState<string | null>(null); // null = Direktnachrichten
   const server = servers.find((x) => x.id === sel) || null;
+  const router = useRouter();
   return (
     <View style={{ flex: 1 }}>
       <Glow />
@@ -35,6 +37,10 @@ export default function Home() {
             const ment = sv.channels.reduce((n, c) => n + (mentions[c.id] || 0), 0);
             return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={ment} onPress={() => setSel(sv.id)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
           })}
+          {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
+          <RailItem active={false} onPress={() => webAction(router, 'add-server')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => openWeb(router, '/discover')} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => openWeb(router, '/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
           {server ? <ServerPanel key={server.id} server={server} /> : <DmPanel />}
@@ -54,6 +60,14 @@ function RailItem({ active, unread, badge, onPress, label, children }: { active:
   );
 }
 
+function HeadBtn({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.headBtn, pressed && { backgroundColor: C.accentSoft }]}>
+      <Icon name={icon} size={18} color={C.text2} />
+    </Pressable>
+  );
+}
+
 function DmPanel() {
   const dms = useStore((s) => s.dms);
   const me = useStore((s) => s.me);
@@ -61,7 +75,11 @@ function DmPanel() {
   const router = useRouter();
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-      <View style={s.head}><T style={s.headText}>Direktnachrichten</T></View>
+      <View style={[s.head, s.headRow]}>
+        <T style={[s.headText, { flex: 1 }]}>Direktnachrichten</T>
+        <HeadBtn icon="search" label="Unterhaltung finden" onPress={() => webAction(router, 'switch')} />
+        <HeadBtn icon="plus" label="Gruppe erstellen" onPress={() => webAction(router, 'new-group')} />
+      </View>
       <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
         <View style={[s.iconBubble]}><Icon name="userPlus" size={20} color={C.accent} /></View>
         <T style={[s.rowName, { color: C.text2 }]}>Freunde finden</T>
@@ -92,6 +110,8 @@ function ServerPanel({ server }: { server: Server }) {
   const router = useRouter();
   const unread = useStore((s) => s.unread);
   const mentions = useStore((s) => s.mentions);
+  const voice = useStore((s) => s.voice);
+  useStore((s) => s.users); // Namen der Leute in Räumen nachzeichnen, sobald sie geladen sind
   const [shut, setShut] = useState<Record<string, boolean>>({});
   const groups = useMemo(() => {
     const cats = server.categories || [];
@@ -108,10 +128,22 @@ function ServerPanel({ server }: { server: Server }) {
     markRead(c.id); router.push({ pathname: '/chat/[id]', params: { id: c.id } });
   };
   const banner = mediaSource(server.banner);
+  const mod = can(server.id, 'mod'), admin = can(server.id, 'admin');
+  // Server-Werkzeuge wie im Menü der Web-App: Einladen, Suchen, Kanal/Kategorie erstellen, Einstellungen bzw. Moderation
+  const tools = (
+    <View style={s.tools}>
+      <HeadBtn icon="userPlus" label="Leute einladen" onPress={() => webAction(router, 'invite', { sid: server.id })} />
+      <HeadBtn icon="search" label="Suchen" onPress={() => webAction(router, 'search', { sid: server.id })} />
+      {admin ? <HeadBtn icon="plusCircle" label="Kanal erstellen" onPress={() => webAction(router, 'create-channel', { sid: server.id })} /> : null}
+      {admin ? <HeadBtn icon="folder" label="Kategorie erstellen" onPress={() => webAction(router, 'create-category', { sid: server.id })} /> : null}
+      {mod ? <HeadBtn icon={admin ? 'gear' : 'shield'} label={admin ? 'Server-Einstellungen' : 'Moderation'} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
+    </View>
+  );
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
       {banner ? <View style={s.banner}><Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" /><LinearGradient colors={['transparent', 'rgba(14,15,24,0.95)']} style={StyleSheet.absoluteFill} /><T style={[s.headText, { position: 'absolute', left: 16, bottom: 10 }]} numberOfLines={1}>{server.name}</T></View>
         : <View style={s.head}><T style={s.headText} numberOfLines={1}>{server.name}</T>{server.member_count ? <T style={s.headSub}>{server.member_count} Mitglieder</T> : null}</View>}
+      {tools}
       {groups.map((g) => (!g.chs.length && g.id !== '_') ? null : (
         <View key={g.id}>
           {g.name ? <Pressable accessibilityRole="button" onPress={() => setShut((x) => ({ ...x, [g.id]: !x[g.id] }))} style={s.cat}>
@@ -121,15 +153,31 @@ function ServerPanel({ server }: { server: Server }) {
           {(shut[g.id] ? [] : g.chs).map((c) => {
             const priv = c.view_role && c.view_role !== 'member';
             const n = unread[c.id], m = mentions[c.id];
-            return (
+            const row = (
               <Pressable key={c.id} accessibilityRole="button" onPress={() => open(c)} style={({ pressed }) => [s.ch, pressed && s.chPressed]}>
                 <View>
                   <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : 'volume'} size={18} color={n ? C.text : C.faint} />
                   {priv ? <View style={s.lock}><Icon name="lock" size={9} color={C.text2} stroke={2.6} /></View> : null}
                 </View>
                 <T style={[s.chName, n ? { color: C.text, fontWeight: '700' } : null]} numberOfLines={1}>{c.name}</T>
+                {c.type !== 'text' && c.user_limit ? <T style={s.limit}>{new Set((voice[c.id] || []).map((x) => x.uid)).size}/{c.user_limit}</T> : null}
                 {m ? <Badge n={m} /> : n ? <View style={s.dot} /> : null}
               </Pressable>
+            );
+            // wer gerade im Raum ist (wie in der Web-App unter dem Kanal)
+            const inRoom = c.type !== 'text' ? voice[c.id] || [] : [];
+            return !inRoom.length ? row : (
+              <View key={c.id}>
+                {row}
+                {inRoom.map((vm) => (
+                  <View key={vm.cid || vm.uid} style={s.vUser}>
+                    <Avatar user={userOf(vm.uid)} size={22} frame={false} />
+                    <T style={s.vName} numberOfLines={1}>{userOf(vm.uid).display}</T>
+                    {vm.video ? <Icon name="video" size={14} color={C.muted} /> : null}
+                    {vm.sdeaf || vm.deaf ? <Icon name="headOff" size={14} color={vm.sdeaf ? C.danger : C.muted} /> : vm.smute || vm.muted ? <Icon name="micOff" size={14} color={vm.smute ? C.danger : C.muted} /> : null}
+                  </View>
+                ))}
+              </View>
             );
           })}
         </View>
@@ -147,6 +195,10 @@ const s = StyleSheet.create({
   panel: { flex: 1, borderTopLeftRadius: 22, borderRightWidth: 0, borderBottomWidth: 0 },
   head: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.line, marginBottom: 6 },
   headText: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingHorizontal: 10, paddingBottom: 4 },
+  green: { backgroundColor: 'rgba(61,220,151,0.10)', borderColor: 'rgba(61,220,151,0.25)' },
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 8, borderRadius: 14 },
@@ -161,4 +213,7 @@ const s = StyleSheet.create({
   chName: { color: C.muted, fontSize: 16, flex: 1, fontWeight: '500' },
   lock: { position: 'absolute', right: -5, bottom: -4, backgroundColor: C.bg2, borderRadius: 6, padding: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.text },
+  limit: { color: C.muted, fontSize: 12, fontWeight: '700', backgroundColor: C.bg3, borderRadius: 8, paddingHorizontal: 6, overflow: 'hidden' },
+  vUser: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 42, paddingRight: 14, minHeight: 30 },
+  vName: { color: C.text2, fontSize: 14, flex: 1 },
 });

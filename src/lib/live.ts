@@ -1,7 +1,7 @@
 // Live-Verbindung zum Server (WebSocket): neue Nachrichten, Tippen, Freundschaften, Kanäle … ohne Neuladen.
 // Baut sich nach Abbrüchen selbst neu auf und lädt danach den Stand neu (bootstrap), damit nichts fehlt.
 import { AppState, Platform } from 'react-native';
-import { WS_BASE, getToken } from './api';
+import { WS_BASE, api, getToken } from './api';
 import { bootstrap, getState, putUsers, setState, mentionsMe, channelInfo, type Msg } from './store';
 
 type Fn = (m: any) => void;
@@ -110,6 +110,12 @@ function apply(m: any) {
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
+    case 'voice': {
+      const missing = (m.members || []).map((x: any) => x.uid).filter((uid: string) => !s.users[uid]);
+      setState((st) => { const voice = { ...st.voice }; if (m.members?.length) voice[m.room] = m.members; else delete voice[m.room]; return { voice }; });
+      for (const uid of missing) api<any>('GET', '/api/users/' + uid).then((d) => putUsers([d.user])).catch(() => {});
+      return;
+    }
     case 'friend': case 'blocked': case 'server': case 'server_update': case 'server_remove': case 'channel': case 'channel_remove':
     case 'category': case 'category_remove': case 'layout': case 'role': case 'role_remove': case 'member_role':
       // Seltene Änderungen an Servern und Freundschaften: einfach den Stand neu holen (klein und sicher richtig)

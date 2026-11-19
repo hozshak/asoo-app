@@ -3,7 +3,7 @@
 import { View } from 'react-native';
 import { Btn, Empty } from '@/components/ui';
 
-export function EmbedView({ path, onClose }: { path: string; onClose: () => void; onAuthLost: () => void }) {
+export function EmbedView({ path, onClose }: { path: string; onClose: () => void; onAuthLost: () => void; onOpen?: (ch: string, msg?: string) => void }) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
       <Empty icon="cube" title="Nur in der iPhone-App" text={`Hier öffnet die App die Web-Ansicht ${path}.`} />

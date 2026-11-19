@@ -26,9 +26,12 @@ export type State = {
   messages: Record<string, { list: Msg[]; hasMore: boolean; loaded: boolean }>;
   typing: Record<string, Record<string, number>>; // Kanal → Person → bis wann
   online: boolean;
+  /** Wer gerade in welchem Sprach-/3D-Raum oder Anruf ist (Raum → Personen), wie S.voice der Web-App. */
+  voice: Record<string, VoiceMember[]>;
 };
+export type VoiceMember = { uid: string; cid?: string; muted?: boolean; deaf?: boolean; video?: boolean; screen?: boolean; smute?: boolean; sdeaf?: boolean };
 
-let state: State = { ready: false, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], notifUnread: 0, messages: {}, typing: {}, online: true };
+let state: State = { ready: false, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], notifUnread: 0, messages: {}, typing: {}, online: true, voice: {} };
 const subs = new Set<() => void>();
 export const getState = () => state;
 export function setState(fn: (s: State) => Partial<State> | void) {
@@ -64,12 +67,12 @@ export async function bootstrap() {
   users[d.user.id] = d.user;
   setState(() => ({
     ready: true, me: d.user, servers: d.servers.map(sortServer), dms: d.dms, users, unread: d.unread || {}, mentions: d.mentions || {},
-    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], notifUnread: d.notif_unread || 0,
+    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], notifUnread: d.notif_unread || 0, voice: d.voice || {},
   }));
   return d.user;
 }
 export function clearState() {
-  setState(() => ({ ready: true, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, messages: {}, typing: {}, notifUnread: 0, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [] }));
+  setState(() => ({ ready: true, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, messages: {}, typing: {}, notifUnread: 0, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], voice: {} }));
 }
 
 // ---------- Nachrichten ----------

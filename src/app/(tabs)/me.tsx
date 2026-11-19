@@ -10,6 +10,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { signOut } from '@/lib/session';
+import { openWeb } from '@/lib/web';
 import { Avatar, Btn, Glass, Glow, Section, T } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FRAMES } from '@/lib/frames';
@@ -66,8 +67,12 @@ export default function Me() {
         </Glass>
         {msg ? <T style={s.msg}>{msg}</T> : null}
         <View style={{ paddingHorizontal: 16, gap: 10, marginTop: 6 }}>
-          <Btn title="3D-Avatar bearbeiten" icon="cube" onPress={() => router.push({ pathname: '/room', params: { path: '/settings/avatar' } })} />
+          <Btn title="3D-Avatar bearbeiten" icon="cube" onPress={() => openWeb(router, '/settings/avatar?solo=1')} />
           <Btn title="Profil & Konto bearbeiten" icon="edit" kind="secondary" onPress={() => router.push('/settings')} />
+          {/* alles Weitere wie in der Web-App: Banner, Farben, Effekte, Privatsphäre, Sprache & Video, Mitteilungen, Design & Sprache, Geräte */}
+          <Btn title="Alle Einstellungen" icon="gear" kind="secondary" onPress={() => openWeb(router, '/settings/profile')} />
+          <Btn title="Mein Profil ansehen" icon="user" kind="secondary" onPress={() => openWeb(router, '/u/' + me.id)} />
+          {me.is_admin ? <Btn title="Admin-Bereich" icon="shield" kind="secondary" onPress={() => openWeb(router, '/admin')} /> : null}
           <Btn title="Abmelden" icon="logout" kind="ghost" onPress={logout} />
         </View>
       </ScrollView>

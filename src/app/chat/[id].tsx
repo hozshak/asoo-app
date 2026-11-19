@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { addPending, can, channelInfo, dmTitle, getState, loadMessages, markFailed, markRead, mentionsMe, replaceMsg, roleColor, userOf, useStore, type Msg } from '@/lib/store';
 import { send, setViewing } from '@/lib/live';
+import { openWeb, webAction } from '@/lib/web';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { Avatar, Glass, Glow, Press, Sheet, T, type SheetItem } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -53,13 +54,22 @@ export default function Chat() {
         </View>
       ),
       // Anrufe (Sprache/Video) laufen über die Web-Ansicht der Unterhaltung (room.tsx)
-      headerRight: dm ? () => (
-        <Pressable accessibilityRole="button" accessibilityLabel="Anrufen" hitSlop={10} onPress={() => router.push({ pathname: '/room', params: { path: `/channels/@me/${dm.id}` } })} style={{ paddingHorizontal: 6 }}>
-          <Icon name="phone" size={21} color={C.text2} />
-        </Pressable>
-      ) : undefined,
+      // Angeheftete und Suche als Dialog der Web-App, Treffer öffnen wieder hier (lib/web.ts)
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingRight: 4 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Angeheftete Nachrichten" hitSlop={8} onPress={() => webAction(router, 'pins', { ch: id, sid: sid || undefined })}>
+            <Icon name="pin" size={20} color={C.text2} />
+          </Pressable>
+          {sid ? <Pressable accessibilityRole="button" accessibilityLabel="Suchen" hitSlop={8} onPress={() => webAction(router, 'search', { sid })}>
+            <Icon name="search" size={20} color={C.text2} />
+          </Pressable> : null}
+          {dm ? <Pressable accessibilityRole="button" accessibilityLabel="Anrufen" hitSlop={8} onPress={() => openWeb(router, `/channels/@me/${dm.id}`)}>
+            <Icon name="phone" size={21} color={C.text2} />
+          </Pressable> : null}
+        </View>
+      ),
     });
-  }, [title, other?.status, dm?.id]);
+  }, [title, other?.status, dm?.id, sid]);
   useEffect(() => {
     setViewing(id);
     loadMessages(id).catch((e) => setErr(errText(e)));

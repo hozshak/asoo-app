@@ -1,0 +1,121 @@
+// Live-Verbindung zum Server (WebSocket): neue Nachrichten, Tippen, Freundschaften, Kanäle … ohne Neuladen.
+// Baut sich nach Abbrüchen selbst neu auf und lädt danach den Stand neu (bootstrap), damit nichts fehlt.
+import { AppState, Platform } from 'react-native';
+import { WS_BASE, getToken } from './api';
+import { bootstrap, getState, putUsers, setState, mentionsMe, channelInfo, type Msg } from './store';
+
+type Fn = (m: any) => void;
+const listeners = new Set<Fn>();
+export const onLive = (fn: Fn) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
+
+let ws: WebSocket | null = null;
+let want = false, backoff = 1000, retry: any = null, ping: any = null, lastMsg = 0, hadHello = false;
+export let myCid: string | null = null;
+let viewing: string | null = null; // Kanal, den man gerade offen hat (dort zählt nichts als ungelesen)
+export const setViewing = (ch: string | null) => { viewing = ch; };
+
+export function connect() {
+  want = true;
+  if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+  const token = getToken();
+  if (!token) return;
+  // Im Browser beim Entwickeln kann WebSocket keine Kopfzeilen schicken – dort ergänzt der Entwicklungs-Proxy die Anmeldung
+  const sock: WebSocket = Platform.OS === 'web'
+    ? new WebSocket(`${WS_BASE}/api/ws`)
+    : new (WebSocket as any)(`${WS_BASE}/api/ws`, null, { headers: { authorization: `Bearer ${token}`, 'x-client': 'asoo-app' } });
+  ws = sock;
+  sock.onopen = () => {
+    if (sock !== ws) return;
+    backoff = 1000; lastMsg = Date.now();
+    setState(() => ({ online: true }));
+    clearInterval(ping);
+    ping = setInterval(() => {
+      if (sock !== ws) return;
+      if (Date.now() - lastMsg > 50000) { try { sock.close(); } catch {} return; } // keine Antwort mehr: neu verbinden
+      try { sock.send('ping'); } catch {}
+    }, 20000);
+  };
+  sock.onmessage = (e) => {
+    if (sock !== ws) return;
+    lastMsg = Date.now();
+    if (e.data === 'pong') return;
+    let m: any;
+    try { m = JSON.parse(String(e.data)); } catch { return; }
+    if (m.t === 'hello') {
+      myCid = m.cid;
+      if (hadHello) bootstrap().catch(() => {}); // nach Unterbrechung: Verpasstes nachholen
+      hadHello = true;
+      return;
+    }
+    apply(m);
+    for (const fn of listeners) fn(m);
+  };
+  sock.onclose = (e) => {
+    if (sock !== ws) return;
+    ws = null; myCid = null; clearInterval(ping);
+    setState(() => ({ online: false }));
+    if (e.code === 4001) return; // abgemeldet / Sitzung vorbei
+    if (want) { clearTimeout(retry); retry = setTimeout(connect, backoff + Math.random() * 400); backoff = Math.min(backoff * 2, 15000); }
+  };
+  sock.onerror = () => {};
+}
+export function disconnect() {
+  want = false; clearTimeout(retry); clearInterval(ping);
+  const s = ws; ws = null; myCid = null;
+  try { s?.close(); } catch {}
+}
+export function send(obj: unknown) { try { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); } catch {} }
+
+// App kommt zurück in den Vordergrund: Verbindung prüfen
+AppState.addEventListener('change', (st) => { if (st === 'active' && want) { if (!ws || ws.readyState > 1) { backoff = 500; connect(); } } });
+
+// ---------- Ereignisse in den Zustand übernehmen ----------
+function apply(m: any) {
+  const s = getState();
+  switch (m.t) {
+    case 'msg': {
+      const msg: Msg = m.m;
+      putUsers([m.author, ...(m.users ? Object.values(m.users) as any[] : [])]);
+      setState((st) => {
+        const cur = st.messages[msg.ch];
+        const messages = cur ? { ...st.messages, [msg.ch]: { ...cur, list: cur.list.some((x) => x.id === msg.id || (msg.nonce && x.nonce === msg.nonce)) ? cur.list.map((x) => (x.id === msg.id || (msg.nonce && x.nonce === msg.nonce) ? { ...msg, attachments: msg.attachments?.length ? msg.attachments : x.attachments } : x)) : [...cur.list, msg] } } : st.messages;
+        if (msg.author_id === st.me?.id || viewing === msg.ch || st.blocks.includes(msg.author_id)) return { messages };
+        const info = channelInfo(msg.ch);
+        const unread = { ...st.unread, [msg.ch]: (st.unread[msg.ch] || 0) + 1 };
+        const ment = mentionsMe(msg.content || '', info?.server.id) || !info; // Direktnachrichten zählen immer
+        const mentions = ment ? { ...st.mentions, [msg.ch]: (st.mentions[msg.ch] || 0) + 1 } : st.mentions;
+        const dms = info ? st.dms : st.dms.map((d) => (d.id === msg.ch ? { ...d, last_at: msg.created } : d)).sort((a, b) => b.last_at - a.last_at);
+        return { messages, unread, mentions, dms };
+      });
+      return;
+    }
+    case 'msg_edit': setState((st) => { const cur = st.messages[m.m.ch]; if (!cur) return; return { messages: { ...st.messages, [m.m.ch]: { ...cur, list: cur.list.map((x) => (x.id === m.m.id ? { ...x, ...m.m, reactions: x.reactions } : x)) } } }; }); return;
+    case 'msg_del': setState((st) => { const cur = st.messages[m.ch]; if (!cur) return; return { messages: { ...st.messages, [m.ch]: { ...cur, list: cur.list.filter((x) => x.id !== m.id) } } }; }); return;
+    case 'react': setState((st) => {
+      const cur = st.messages[m.ch]; if (!cur) return;
+      const mine = m.uid === st.me?.id;
+      const list = cur.list.map((x) => {
+        if (x.id !== m.id) return x;
+        const rs = [...(x.reactions || [])];
+        const i = rs.findIndex((r) => r.emoji === m.emoji);
+        if (m.on) { if (i >= 0) rs[i] = { ...rs[i], count: rs[i].count + 1, me: rs[i].me || mine }; else rs.push({ emoji: m.emoji, count: 1, me: mine }); }
+        else if (i >= 0) { const c = rs[i].count - 1; if (c <= 0) rs.splice(i, 1); else rs[i] = { ...rs[i], count: c, me: mine ? false : rs[i].me }; }
+        return { ...x, reactions: rs };
+      });
+      return { messages: { ...st.messages, [m.ch]: { ...cur, list } } };
+    }); return;
+    case 'typing': setState((st) => ({ typing: { ...st.typing, [m.ch]: { ...(st.typing[m.ch] || {}), [m.uid]: Date.now() + 8000 } } })); return;
+    case 'read': setState((st) => { const unread = { ...st.unread }, mentions = { ...st.mentions }; delete unread[m.ch]; delete mentions[m.ch]; return { unread, mentions }; }); return;
+    case 'user': case 'me': putUsers([m.user]); if (m.user?.id === s.me?.id) setState((st) => ({ me: { ...st.me!, ...m.user } })); return;
+    case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
+    case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
+    case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
+    case 'friend': case 'blocked': case 'server': case 'server_update': case 'server_remove': case 'channel': case 'channel_remove':
+    case 'category': case 'category_remove': case 'layout': case 'role': case 'role_remove': case 'member_role':
+      // Seltene Änderungen an Servern und Freundschaften: einfach den Stand neu holen (klein und sicher richtig)
+      refreshSoon();
+      return;
+  }
+}
+let refreshT: any = null;
+function refreshSoon() { clearTimeout(refreshT); refreshT = setTimeout(() => bootstrap().catch(() => {}), 250); }

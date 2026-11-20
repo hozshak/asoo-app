@@ -1,4 +1,5 @@
-// Ich: großes Profil mit Banner und animiertem Rahmen (wie die Profilkarte der Web-App), Status, Einstellungen, Abmelden.
+// Ich: kompaktes Profil (Banner, Rahmen, Name, Status-Text), Status als kleine Knöpfe, darunter alles als Liste –
+// 3D-Avatar, Profil bearbeiten, alle Einstellungen, eigenes Profil, Admin, Abmelden.
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +12,7 @@ import { api, errText, mediaSource, upload } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { signOut } from '@/lib/session';
 import { openWeb } from '@/lib/web';
-import { Avatar, Btn, Glass, Glow, Section, T } from '@/components/ui';
+import { Avatar, Card, Glow, MenuRow, T } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FRAMES } from '@/lib/frames';
 import { C, statusColor } from '@/lib/theme';
@@ -31,69 +32,74 @@ export default function Me() {
     if (r.canceled || !r.assets?.[0]) return;
     try { const up = await upload('avatar', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); await patch({ avatar: up.key }); } catch (e) { setMsg(errText(e)); }
   };
-  const logout = () => signOut();
   const banner = mediaSource(me.banner);
   const raw = me.status_raw || me.status;
+  const frame = me.deco && FRAMES[me.deco] ? FRAMES[me.deco].name : '';
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <ScrollView contentContainerStyle={{ paddingBottom: 130 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={s.banner}>
           {banner ? <Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" />
             : <LinearGradient colors={[me.banner_color || me.accent || C.accent, '#ff5c9a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
-          <LinearGradient colors={['transparent', 'rgba(7,7,13,0.9)']} style={StyleSheet.absoluteFill} />
-          <SafeAreaView edges={['top']}><Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={20} color="#fff" /></Pressable></SafeAreaView>
+          <LinearGradient colors={['transparent', 'rgba(7,7,13,0.85)']} style={StyleSheet.absoluteFill} />
+          <SafeAreaView edges={['top']}><Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={19} color="#fff" /></Pressable></SafeAreaView>
         </View>
-        <Animated.View entering={FadeInDown.duration(400)} style={s.head}>
+        <Animated.View entering={FadeInDown.duration(350)} style={s.head}>
           <Pressable accessibilityLabel="Profilbild ändern" onPress={pickAvatar} style={s.avWrap}>
-            <Avatar user={me} size={104} status live />
-            <View style={s.cam}><Icon name="image" size={15} color="#fff" /></View>
+            <Avatar user={me} size={92} status live />
+            <View style={s.cam}><Icon name="image" size={13} color="#fff" /></View>
           </Pressable>
-          <T style={s.name}>{me.display}</T>
-          <T style={s.handle}>@{me.username}{me.pronouns ? ' · ' + me.pronouns : ''}</T>
-          {me.custom_status ? <View style={s.bubble}><T style={{ color: C.text2 }}>{me.custom_status}</T></View> : null}
-          {me.deco && FRAMES[me.deco] ? <T style={s.frameName}>✨ Rahmen „{FRAMES[me.deco].name}“</T> : null}
+          <T style={s.name} numberOfLines={1}>{me.display}</T>
+          <T style={s.handle} numberOfLines={1}>@{me.username}{me.pronouns ? ' · ' + me.pronouns : ''}</T>
+          {me.custom_status ? <T style={s.custom} numberOfLines={2}>{me.custom_status}</T> : null}
+          {me.bio ? <T style={s.bio} numberOfLines={3}>{me.bio}</T> : null}
         </Animated.View>
-        {me.bio ? <Glass style={s.card} intensity={20}><Section>Über mich</Section><T style={s.bio}>{me.bio}</T></Glass> : null}
-        <Glass style={s.card} intensity={20}>
-          <Section style={{ marginBottom: 4 }}>Status</Section>
+
+        <View style={s.statusRow}>
           {STATUS.map(([k, l]) => (
-            <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: raw === k }} onPress={() => patch({ status: k })} style={({ pressed }) => [s.opt, raw === k && s.optOn, pressed && { opacity: 0.8 }]}>
+            <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: raw === k }} onPress={() => patch({ status: k })} style={[s.st, raw === k && s.stOn]}>
               <View style={[s.dot, { backgroundColor: k === 'invisible' ? C.faint : statusColor(k) }]} />
-              <T style={s.optText}>{l}</T>
-              {raw === k ? <Icon name="check" size={18} color={C.accent} stroke={2.6} /> : null}
+              <T style={[s.stText, raw === k && { color: C.text }]} numberOfLines={1}>{l}</T>
             </Pressable>
           ))}
-        </Glass>
+        </View>
         {msg ? <T style={s.msg}>{msg}</T> : null}
-        <View style={{ paddingHorizontal: 16, gap: 10, marginTop: 6 }}>
-          <Btn title="3D-Avatar bearbeiten" icon="cube" onPress={() => openWeb(router, '/settings/avatar?solo=1')} />
-          <Btn title="Profil & Konto bearbeiten" icon="edit" kind="secondary" onPress={() => router.push('/settings')} />
-          {/* alles Weitere wie in der Web-App: Banner, Farben, Effekte, Privatsphäre, Sprache & Video, Mitteilungen, Design & Sprache, Geräte */}
-          <Btn title="Alle Einstellungen" icon="gear" kind="secondary" onPress={() => openWeb(router, '/settings/profile')} />
-          <Btn title="Mein Profil ansehen" icon="user" kind="secondary" onPress={() => openWeb(router, '/u/' + me.id)} />
-          {me.is_admin ? <Btn title="Admin-Bereich" icon="shield" kind="secondary" onPress={() => openWeb(router, '/admin')} /> : null}
-          <Btn title="Abmelden" icon="logout" kind="ghost" onPress={logout} />
+
+        <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 14 }}>
+          <Card>
+            <MenuRow icon="cube" label="3D-Avatar" sub="Figur, Kleidung und Tänze" color="#b260ff" onPress={() => openWeb(router, '/settings/avatar?solo=1')} />
+            <MenuRow icon="edit" label="Profil bearbeiten" sub={frame ? `Rahmen „${frame}“, Name, Über mich` : 'Rahmen, Name, Über mich'} color={C.accent} onPress={() => router.push('/settings')} />
+            <MenuRow icon="user" label="Mein Profil ansehen" color={C.info} onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} last />
+          </Card>
+          <Card>
+            <MenuRow icon="gear" label="Alle Einstellungen" sub="Banner, Farben, Privatsphäre, Sprache, Mitteilungen" color={C.text2} onPress={() => openWeb(router, '/settings/profile')} />
+            <MenuRow icon="sparkle" label="Feed" color={C.warn} onPress={() => openWeb(router, '/feed')} />
+            <MenuRow icon="compass" label="Server entdecken" color={C.ok} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} last={!me.is_admin} />
+            {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" color={C.danger} onPress={() => openWeb(router, '/admin')} last /> : null}
+          </Card>
+          <Card>
+            <MenuRow icon="logout" label="Abmelden" danger onPress={() => signOut()} right={null} last />
+          </Card>
         </View>
       </ScrollView>
     </View>
   );
 }
 const s = StyleSheet.create({
-  banner: { height: 170, overflow: 'hidden' },
-  gear: { alignSelf: 'flex-end', margin: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  head: { alignItems: 'center', marginTop: -60, paddingHorizontal: 16 },
-  avWrap: { borderRadius: 70, borderWidth: 6, borderColor: C.bg0 },
-  cam: { position: 'absolute', right: 4, top: 4, width: 30, height: 30, borderRadius: 15, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },
-  name: { fontSize: 28, fontWeight: '800', marginTop: 10, letterSpacing: -0.4 },
-  handle: { color: C.muted, fontSize: 15, marginTop: -2 },
-  bubble: { marginTop: 10, backgroundColor: C.bg3, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.line },
-  frameName: { color: C.warn, fontSize: 13, marginTop: 8 },
-  card: { marginHorizontal: 16, marginTop: 16, borderRadius: 18, padding: 14 },
-  bio: { color: C.text2, lineHeight: 22, marginTop: 6 },
-  opt: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, minHeight: 48, borderRadius: 12 },
-  optOn: { backgroundColor: C.accentSoft },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  optText: { fontSize: 16, flex: 1, fontWeight: '600' },
-  msg: { color: C.warn, padding: 16 },
+  banner: { height: 130, overflow: 'hidden' },
+  gear: { alignSelf: 'flex-end', margin: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  head: { alignItems: 'center', marginTop: -52, paddingHorizontal: 20 },
+  avWrap: { borderRadius: 60, borderWidth: 5, borderColor: C.bg0 },
+  cam: { position: 'absolute', right: 2, top: 2, width: 26, height: 26, borderRadius: 13, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },
+  name: { fontSize: 24, fontWeight: '800', marginTop: 8, letterSpacing: -0.3, maxWidth: '100%' },
+  handle: { color: C.muted, fontSize: 14, marginTop: -2 },
+  custom: { color: C.text2, fontSize: 14, marginTop: 6, textAlign: 'center' },
+  bio: { color: C.muted, fontSize: 13.5, marginTop: 4, textAlign: 'center', lineHeight: 19 },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 16, marginTop: 14 },
+  st: { width: '48.5%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 12, backgroundColor: C.bg2, borderWidth: 1, borderColor: C.line, paddingHorizontal: 6 },
+  stOn: { backgroundColor: C.accentSoft, borderColor: C.accentLine },
+  stText: { color: C.muted, fontSize: 13, fontWeight: '700', flexShrink: 1 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  msg: { color: C.warn, paddingHorizontal: 16, paddingTop: 8 },
 });

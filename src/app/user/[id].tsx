@@ -1,23 +1,37 @@
-// Profil einer Person als großes Blatt wie die Profilkarte der Web-App: Banner, Rahmen, Über mich,
-// Nachricht, Freund werden, Blockieren, Melden (Pflicht für Apps mit Inhalten von Nutzern).
+// Profil einer Person (Tippen auf jemanden im Chat): Banner, Rahmen, Name, Status, darunter klare Knöpfe
+// (Nachricht, Anrufen, Freund …), Über mich, gemeinsame Server. Blockieren und Melden über „…“ (Pflicht im App Store).
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api, errText, mediaSource } from '@/lib/api';
 import { bootstrap, putUsers, useStore } from '@/lib/store';
-import { Avatar, Btn, Glass, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { openWeb } from '@/lib/web';
+import { openServer } from '@/components/InviteCard';
+import { Avatar, Btn, Card, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
+import { Icon, type IconName } from '@/components/Icon';
 import { openDm, setFriend } from '../(tabs)/friends';
-import { C } from '@/lib/theme';
+import { C, statusColor } from '@/lib/theme';
 
 const REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['minor_safety', 'Gefahr für Minderjährige'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];
+const STATUS_TEXT: Record<string, string> = { online: 'Online', idle: 'Abwesend', dnd: 'Bitte nicht stören', offline: 'Offline' };
+
+function Action({ icon, label, onPress, color = C.accent }: { icon: IconName; label: string; onPress: () => void; color?: string }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [s.action, pressed && { opacity: 0.7 }]}>
+      <View style={[s.actionIcon, { backgroundColor: color + '22', borderColor: color + '44' }]}><Icon name={icon} size={20} color={color} stroke={2.2} /></View>
+      <T style={s.actionText} numberOfLines={1}>{label}</T>
+    </Pressable>
+  );
+}
 
 export default function Profile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const ins = useSafeAreaInsets();
   const meId = useStore((s) => s.me?.id);
   const [d, setD] = useState<any>(null);
   const [msg, setMsg] = useState('');
@@ -29,41 +43,56 @@ export default function Profile() {
   const u = d.user, me = u.id === meId;
   const act = async (fn: () => Promise<unknown>, ok?: string) => { try { await fn(); await load(); if (ok) setMsg(ok); } catch (e) { setMsg(errText(e)); } };
   const banner = mediaSource(u.banner);
+  const call = async () => { try { const x = await api<any>('POST', '/api/dms', { user_id: u.id }); openWeb(router, `/channels/@me/${x.dm.id}`); } catch (e) { setMsg(errText(e)); } };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: ins.bottom + 30 }} bounces>
         <View style={s.banner}>
           {banner ? <Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" />
             : <LinearGradient colors={[u.banner_color || u.accent || C.accent, '#ff5c9a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
           <LinearGradient colors={['transparent', 'rgba(7,7,13,0.9)']} style={StyleSheet.absoluteFill} />
           <View style={s.grab} />
-          <Pressable accessibilityLabel="Schließen" onPress={() => router.back()} style={s.close}><Icon name="x" size={18} color="#fff" /></Pressable>
-          {!me && !u.deleted ? <Pressable accessibilityLabel="Mehr" onPress={() => setMore(true)} style={[s.close, { left: undefined, right: 12 }]}><Icon name="more" size={18} color="#fff" /></Pressable> : null}
+          <Pressable accessibilityLabel="Schließen" hitSlop={8} onPress={() => router.back()} style={[s.round, { left: 12 }]}><Icon name="x" size={17} color="#fff" stroke={2.4} /></Pressable>
+          {!me && !u.deleted ? <Pressable accessibilityLabel="Mehr" hitSlop={8} onPress={() => setMore(true)} style={[s.round, { right: 12 }]}><Icon name="more" size={18} color="#fff" /></Pressable> : null}
         </View>
-        <Animated.View entering={FadeInDown.duration(350)} style={s.head}>
-          <View style={s.avWrap}><Avatar user={u} size={100} status live /></View>
-          <T style={s.name}>{u.display}</T>
-          <T style={s.handle}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
-          {u.custom_status ? <View style={s.bubble}><T style={{ color: C.text2 }}>{u.custom_status}</T></View> : null}
+        <Animated.View entering={FadeInDown.duration(300)} style={s.head}>
+          <View style={s.avWrap}><Avatar user={u} size={96} status live /></View>
+          <T style={s.name} numberOfLines={1}>{u.display}</T>
+          <T style={s.handle} numberOfLines={1}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
+          <View style={s.statusLine}><View style={[s.dot, { backgroundColor: statusColor(u.status) }]} /><T style={s.statusText}>{STATUS_TEXT[u.status || 'offline'] || 'Offline'}</T></View>
+          {u.custom_status ? <View style={s.bubble}><T style={{ color: C.text2, textAlign: 'center' }} numberOfLines={3}>{u.custom_status}</T></View> : null}
         </Animated.View>
+
         {!me && !u.deleted && !d.blocked ? <View style={s.actions}>
-          {d.friend === 'friends' ? <Btn title="Nachricht" icon="comment" onPress={() => openDm(router, u.id).catch((e) => setMsg(errText(e)))} style={{ flex: 1 }} /> : null}
-          {d.friend === 'none' ? <Btn title="Freund hinzufügen" icon="userPlus" onPress={() => act(() => setFriend(u.id, true), 'Anfrage geschickt ✓')} style={{ flex: 1 }} /> : null}
-          {d.friend === 'in' ? <Btn title="Anfrage annehmen" icon="check" onPress={() => act(() => setFriend(u.id, true))} style={{ flex: 1 }} /> : null}
-          {d.friend === 'out' ? <Btn title="Anfrage gesendet" icon="clock" kind="secondary" onPress={() => act(() => setFriend(u.id, false))} style={{ flex: 1 }} /> : null}
-        </View> : null}
-        {d.blocked ? <View style={s.actions}><Btn title="Blockierung aufheben" icon="ban" kind="secondary" onPress={() => act(() => api('POST', `/api/users/${u.id}/block`, { on: false }).then(bootstrap))} style={{ flex: 1 }} /></View> : null}
-        {msg ? <T style={s.msg}>{msg}</T> : null}
-        {u.bio ? <Glass style={s.card} intensity={20}><Section>Über mich</Section><T style={s.bio}>{u.bio}</T></Glass> : null}
-        <Glass style={s.card} intensity={20}>
-          <Section>Dabei seit</Section>
-          <T style={s.bio}>{new Date(u.created).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</T>
-          {d.mutual_servers?.length && !me ? <>
-            <Section style={{ marginTop: 14 }}>{d.mutual_servers.length} gemeinsame Server</Section>
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>{d.mutual_servers.slice(0, 8).map((sv: any) => <ServerIcon key={sv.id} server={sv} size={36} />)}</View>
+          {d.friend === 'friends' ? <>
+            <Action icon="comment" label="Nachricht" onPress={() => openDm(router, u.id).catch((e) => setMsg(errText(e)))} />
+            <Action icon="phone" label="Anrufen" color={C.ok} onPress={call} />
           </> : null}
-        </Glass>
+          {d.friend === 'none' ? <Action icon="userPlus" label="Hinzufügen" onPress={() => act(() => setFriend(u.id, true), 'Anfrage geschickt ✓')} /> : null}
+          {d.friend === 'in' ? <Action icon="check" label="Annehmen" color={C.ok} onPress={() => act(() => setFriend(u.id, true))} /> : null}
+          {d.friend === 'out' ? <Action icon="clock" label="Angefragt" color={C.muted} onPress={() => act(() => setFriend(u.id, false), 'Anfrage zurückgezogen')} /> : null}
+          <Action icon="more" label="Mehr" color={C.text2} onPress={() => setMore(true)} />
+        </View> : null}
+        {d.blocked ? <View style={{ paddingHorizontal: 16, marginTop: 16 }}><Btn title="Blockierung aufheben" icon="ban" kind="secondary" onPress={() => act(() => api('POST', `/api/users/${u.id}/block`, { on: false }).then(bootstrap))} /></View> : null}
+        {msg ? <T style={s.msg}>{msg}</T> : null}
+
+        <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 16 }}>
+          {u.bio ? <Card style={s.card}><Section>Über mich</Section><T style={s.bio}>{u.bio}</T></Card> : null}
+          <Card style={s.card}>
+            <Section>Dabei seit</Section>
+            <T style={s.bio}>{new Date(u.created).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</T>
+            {d.mutual_servers?.length && !me ? <>
+              <Section style={{ marginTop: 14 }}>{d.mutual_servers.length === 1 ? '1 gemeinsamer Server' : `${d.mutual_servers.length} gemeinsame Server`}</Section>
+              <View style={s.servers}>{d.mutual_servers.slice(0, 12).map((sv: any) => (
+                <Pressable key={sv.id} accessibilityLabel={sv.name} onPress={() => openServer(router, sv.id)} style={s.server}>
+                  <ServerIcon server={sv} size={34} />
+                  <T style={s.serverName} numberOfLines={1}>{sv.name}</T>
+                </Pressable>
+              ))}</View>
+            </> : null}
+          </Card>
+        </View>
       </ScrollView>
       <Sheet open={more} onClose={() => setMore(false)} items={[
         d.friend === 'friends' ? { label: 'Freundschaft beenden', icon: 'minusCircle', onPress: () => act(() => setFriend(u.id, false)) } : null,
@@ -75,16 +104,25 @@ export default function Profile() {
   );
 }
 const s = StyleSheet.create({
-  banner: { height: 150, overflow: 'hidden' },
+  banner: { height: 130, overflow: 'hidden' },
   grab: { position: 'absolute', top: 8, alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-  close: { position: 'absolute', left: 12, top: 18, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
-  head: { alignItems: 'center', marginTop: -56, paddingHorizontal: 16 },
-  avWrap: { borderRadius: 70, borderWidth: 6, borderColor: C.bg0 },
-  name: { fontSize: 27, fontWeight: '800', marginTop: 10, letterSpacing: -0.4 },
-  handle: { color: C.muted, fontSize: 15, marginTop: -2 },
-  bubble: { marginTop: 10, backgroundColor: C.bg3, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.line },
-  actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 18 },
-  card: { marginHorizontal: 16, marginTop: 14, borderRadius: 18, padding: 14 },
-  bio: { color: C.text2, lineHeight: 22, marginTop: 4 },
+  round: { position: 'absolute', top: 18, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
+  head: { alignItems: 'center', marginTop: -54, paddingHorizontal: 20 },
+  avWrap: { borderRadius: 60, borderWidth: 5, borderColor: C.bg0 },
+  name: { fontSize: 25, fontWeight: '800', marginTop: 8, letterSpacing: -0.3, maxWidth: '100%' },
+  handle: { color: C.muted, fontSize: 14.5, marginTop: -2 },
+  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  statusText: { color: C.text2, fontSize: 13, fontWeight: '700' },
+  bubble: { marginTop: 10, backgroundColor: C.bg3, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.line, maxWidth: '100%' },
+  actions: { flexDirection: 'row', justifyContent: 'center', gap: 22, marginTop: 18, paddingHorizontal: 16 },
+  action: { alignItems: 'center', gap: 6, minWidth: 64 },
+  actionIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  actionText: { color: C.text2, fontSize: 12.5, fontWeight: '700' },
+  card: { padding: 14 },
+  bio: { color: C.text2, lineHeight: 21, marginTop: 4 },
+  servers: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+  server: { width: 64, alignItems: 'center', gap: 4 },
+  serverName: { color: C.muted, fontSize: 11, maxWidth: 64 },
   msg: { color: C.warn, textAlign: 'center', padding: 10 },
 });

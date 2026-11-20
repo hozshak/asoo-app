@@ -6,7 +6,7 @@ import { serverOf, type Role } from './store';
 
 const TOKEN = /(<@&[a-z0-9]{16}>)|(https?:\/\/[^\s<]+[^\s<.,:;"')\]!?])|((?:^|(?<=[^\w/@]))@(?:everyone|here)\b)|((?:^|(?<=[^\w/]))@[a-z0-9_.]{3,20})|(\*\*[^*]+\*\*)/gi;
 
-export function RichText({ text, sid, meName, style, onUser }: { text: string; sid?: string | null; meName?: string; style?: any; onUser?: (name: string) => void }) {
+export function RichText({ text, sid, meName, style, onUser, onLink }: { text: string; sid?: string | null; meName?: string; style?: any; onUser?: (name: string) => void; onLink?: (url: string) => void }) {
   const roles: Role[] = serverOf(sid)?.roles || [];
   const out: React.ReactNode[] = [];
   let last = 0, i = 0;
@@ -19,7 +19,7 @@ export function RichText({ text, sid, meName, style, onUser }: { text: string; s
       const r = roles.find((x) => x.id === t.slice(3, -1));
       const col = r?.color || C.accent;
       out.push(<Text key={i++} style={{ color: col, backgroundColor: col + '2e', fontFamily: F.bold }}>@{r ? r.name : 'gelöschte Rolle'}</Text>);
-    } else if (m[2]) out.push(<Text key={i++} style={{ color: '#6cb6ff', textDecorationLine: 'underline' }} onPress={() => Linking.openURL(t)}>{t}</Text>);
+    } else if (m[2]) out.push(<Text key={i++} style={{ color: '#6cb6ff', textDecorationLine: 'underline' }} onPress={() => (onLink ? onLink(t) : Linking.openURL(t))}>{t}</Text>);
     else if (m[3]) out.push(<Text key={i++} style={{ color: C.warn, backgroundColor: 'rgba(255,176,46,0.16)', fontFamily: F.bold }}>{t}</Text>);
     else if (m[4]) {
       const me = meName && t.slice(1).toLowerCase() === meName.toLowerCase();

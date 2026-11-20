@@ -7,6 +7,7 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import { BASE, getToken } from '@/lib/api';
 import { C } from '@/lib/theme';
+import { T } from './ui';
 
 const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
 
@@ -20,7 +21,8 @@ export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string;
   const onMessage = (e: WebViewMessageEvent) => {
     let m: any = null;
     try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
-    if (m?.t === 'close') onClose();
+    if (m?.t === 'ready') setReady(true);
+    else if (m?.t === 'close') onClose();
     else if (m?.t === 'auth') onAuthLost();
     else if (m?.t === 'open' && typeof m.ch === 'string') onOpen?.(m.ch, m.m);
   };
@@ -30,7 +32,8 @@ export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string;
         source={source}
         style={{ flex: 1, backgroundColor: C.bg0 }}
         onMessage={onMessage}
-        onLoadEnd={() => setReady(true)}
+        // das Ladebild bleibt, bis die Web-App fertig gezeichnet hat ({ t: 'ready' }) – höchstens 8 s nach dem Laden
+        onLoadEnd={() => setTimeout(() => setReady(true), 8000)}
         // Mikrofon und Kamera für Sprachräume: iOS fragt einmal selbst (Texte in app.json), die Seite nicht noch einmal
         mediaCapturePermissionGrantType="grant"
         allowsInlineMediaPlayback
@@ -49,7 +52,7 @@ export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string;
           return false;
         }}
       />
-      {!ready ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /></View> : null}
+      {!ready ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>Wird geladen …</T></View> : null}
     </View>
   );
 }

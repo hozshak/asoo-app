@@ -51,13 +51,24 @@ export function Glass({ style, children, intensity = 30, tint = 'rgba(19,20,32,0
 }
 
 /** Drücken: leicht kleiner werden (wie :active in der Web-App). */
+// Lage-Angaben (flex, Abstand außen, Breite …) gehören an den äußeren Pressable – sonst schrumpft z. B. ein Knopf mit
+// flex: 1 in einer Reihe auf eine dünne Linie (flex wirkt dann senkrecht im Pressable).
+const OUTER = new Set(['flex', 'flexGrow', 'flexShrink', 'flexBasis', 'alignSelf', 'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical', 'marginStart', 'marginEnd', 'width', 'minWidth', 'maxWidth', 'position', 'left', 'right', 'top', 'bottom', 'zIndex']);
+function splitStyle(style: StyleProp<ViewStyle>) {
+  const flat = (StyleSheet.flatten(style) || {}) as Record<string, any>;
+  const outer: Record<string, any> = {}, inner: Record<string, any> = {};
+  for (const [k, v] of Object.entries(flat)) (OUTER.has(k) ? outer : inner)[k] = v;
+  return { outer, inner };
+}
+
 export function Press({ onPress, onLongPress, style, children, disabled, label, role = 'button', scale = 0.96 }: { onPress?: () => void; onLongPress?: () => void; style?: StyleProp<ViewStyle>; children?: React.ReactNode; disabled?: boolean; label?: string; role?: any; scale?: number }) {
   const s = useSharedValue(1);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const { outer, inner } = splitStyle(style);
   return (
-    <Pressable accessibilityRole={role} accessibilityLabel={label} disabled={disabled} onPress={onPress} onLongPress={onLongPress} delayLongPress={300}
+    <Pressable accessibilityRole={role} accessibilityLabel={label} disabled={disabled} onPress={onPress} onLongPress={onLongPress} delayLongPress={300} style={outer}
       onPressIn={() => { s.value = withSpring(scale, { damping: 18, stiffness: 400 }); }} onPressOut={() => { s.value = withSpring(1, { damping: 14, stiffness: 300 }); }}>
-      <Animated.View style={[style, a, disabled && { opacity: 0.5 }]}>{children}</Animated.View>
+      <Animated.View style={[inner, a, disabled && { opacity: 0.5 }]}>{children}</Animated.View>
     </Pressable>
   );
 }
@@ -165,6 +176,50 @@ export const Empty = ({ icon, title, text }: { icon: IconName; title: string; te
 /** Überschrift einer Liste („KATEGORIE“, „ANFRAGEN – 2“) wie .side-section der Web-App. */
 export const Section = ({ children, style }: { children: React.ReactNode; style?: any }) => <T style={[s.section, style]}>{children}</T>;
 
+/** Kompakte Listenzeile mit farbigem Symbol (Menüs auf „Ich“, Einstellungen, Server-Werkzeuge). */
+export function MenuRow({ icon, label, sub, onPress, danger, color = C.accent, right, last }: { icon: IconName; label: string; sub?: string; onPress?: () => void; danger?: boolean; color?: string; right?: React.ReactNode; last?: boolean }) {
+  const c = danger ? C.danger : color;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [s.row, !last && s.rowLine, pressed && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+      <View style={[s.rowIcon, { backgroundColor: c + '22' }]}><Icon name={icon} size={17} color={c} stroke={2.2} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <T style={[s.rowLabel, danger && { color: C.danger }]} numberOfLines={1}>{label}</T>
+        {sub ? <T style={s.rowSub} numberOfLines={1}>{sub}</T> : null}
+      </View>
+      {right !== undefined ? right : (onPress ?<View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.faint} stroke={2.4} /></View> : null)}
+    </Pressable>
+  );
+}
+
+/** Gruppe von Zeilen auf einer Glasfläche. */
+export const Card = ({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) => (
+  <Glass style={[s.card, style]} intensity={20}>{children}</Glass>
+);
+
+/** Umschalter mit mehreren Feldern (z. B. Erstellen / Beitreten / Entdecken). */
+export function Seg<K extends string>({ items, value, onChange, style }: { items: [K, string][]; value: K; onChange: (k: K) => void; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[s.seg, style]}>
+      {items.map(([k, l]) => (
+        <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: value === k }} onPress={() => onChange(k)} style={[s.segItem, value === k && s.segOn]}>
+          <T style={[s.segText, value === k && { color: C.text }]} numberOfLines={1}>{l}</T>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/** Kopfzeile eines Blatts (Modal): Titel, links Schließen, rechts optional eine Aktion. */
+export function SheetHead({ title, onClose, right }: { title: string; onClose: () => void; right?: React.ReactNode }) {
+  return (
+    <View style={s.sheetHead}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={10} onPress={onClose} style={s.sheetX}><Icon name="x" size={18} color={C.text2} stroke={2.4} /></Pressable>
+      <T style={s.sheetHeadTitle} numberOfLines={1}>{title}</T>
+      <View style={{ minWidth: 34, alignItems: 'flex-end' }}>{right}</View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   btnIn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 18 },
   btnShine: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.22)', borderRadius: R.md },
@@ -180,5 +235,18 @@ const s = StyleSheet.create({
   itemText: { fontSize: 16, fontWeight: '600' },
   emptyIcon: { width: 64, height: 64, borderRadius: 22, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.accentLine },
   section: { color: C.faint, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, minHeight: 50 },
+  rowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line },
+  rowIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  rowLabel: { fontSize: 15.5, fontWeight: '700' },
+  rowSub: { color: C.muted, fontSize: 12.5, marginTop: -2 },
+  card: { borderRadius: 16, overflow: 'hidden' },
+  seg: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 13, padding: 3, borderWidth: 1, borderColor: C.line },
+  segItem: { flex: 1, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  segOn: { backgroundColor: C.bg4, borderWidth: 1, borderColor: C.line },
+  segText: { color: C.muted, fontWeight: '700', fontSize: 14 },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  sheetX: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  sheetHeadTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800' },
 });
 export { F };

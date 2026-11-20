@@ -1,9 +1,9 @@
 // Start wie die Web-App am Handy: links die Leiste (Direktnachrichten, Server im Farbverlauf, wenn ausgewählt),
 // rechts eine schwebende Glasfläche mit Direktnachrichten oder den Kanälen des Servers (Banner, Kategorien, Schloss).
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
@@ -22,6 +22,9 @@ export default function Home() {
   const [sel, setSel] = useState<string | null>(null); // null = Direktnachrichten
   const server = servers.find((x) => x.id === sel) || null;
   const router = useRouter();
+  // von außen einen Server öffnen (Einladung angenommen, Server erstellt): /?server=<id>
+  const want = useLocalSearchParams<{ server?: string; t?: string }>();
+  useEffect(() => { if (want.server) setSel(want.server); }, [want.server, want.t]);
   return (
     <View style={{ flex: 1 }}>
       <Glow />
@@ -38,8 +41,8 @@ export default function Home() {
             return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={ment} onPress={() => setSel(sv.id)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
           })}
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
-          <RailItem active={false} onPress={() => webAction(router, 'add-server')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
-          <RailItem active={false} onPress={() => openWeb(router, '/discover')} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/server-new')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
           <RailItem active={false} onPress={() => openWeb(router, '/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
@@ -68,6 +71,16 @@ function HeadBtn({ icon, label, onPress }: { icon: IconName; label: string; onPr
   );
 }
 
+function ToolChip({ icon, label, onPress, color = C.accent, primary }: { icon: IconName; label: string; onPress: () => void; color?: string; primary?: boolean }) {
+  return (
+    <Press label={label} onPress={onPress} scale={0.94} style={[s.chip, primary ? s.chipPrimary : { backgroundColor: color + '1c', borderColor: color + '40' }]}>
+      {primary ? <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
+      <View><Icon name={icon} size={15} color={primary ? '#fff' : color} stroke={2.3} /></View>
+      <T style={[s.chipText, { color: primary ? '#fff' : color }]}>{label}</T>
+    </Press>
+  );
+}
+
 function DmPanel() {
   const dms = useStore((s) => s.dms);
   const me = useStore((s) => s.me);
@@ -77,8 +90,8 @@ function DmPanel() {
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
       <View style={[s.head, s.headRow]}>
         <T style={[s.headText, { flex: 1 }]}>Direktnachrichten</T>
-        <HeadBtn icon="search" label="Unterhaltung finden" onPress={() => webAction(router, 'switch')} />
-        <HeadBtn icon="plus" label="Gruppe erstellen" onPress={() => webAction(router, 'new-group')} />
+        <HeadBtn icon="search" label="In Direktnachrichten suchen" onPress={() => router.push('/search')} />
+        <HeadBtn icon="users" label="Gruppe erstellen" onPress={() => router.push('/group-new')} />
       </View>
       <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
         <View style={[s.iconBubble]}><Icon name="userPlus" size={20} color={C.accent} /></View>
@@ -130,14 +143,15 @@ function ServerPanel({ server }: { server: Server }) {
   const banner = mediaSource(server.banner);
   const mod = can(server.id, 'mod'), admin = can(server.id, 'admin');
   // Server-Werkzeuge wie im Menü der Web-App: Einladen, Suchen, Kanal/Kategorie erstellen, Einstellungen bzw. Moderation
+  // beschriftete Knöpfe in Farbe, waagerecht wischbar – „Einladen“ hervorgehoben
   const tools = (
-    <View style={s.tools}>
-      <HeadBtn icon="userPlus" label="Leute einladen" onPress={() => webAction(router, 'invite', { sid: server.id })} />
-      <HeadBtn icon="search" label="Suchen" onPress={() => webAction(router, 'search', { sid: server.id })} />
-      {admin ? <HeadBtn icon="plusCircle" label="Kanal erstellen" onPress={() => webAction(router, 'create-channel', { sid: server.id })} /> : null}
-      {admin ? <HeadBtn icon="folder" label="Kategorie erstellen" onPress={() => webAction(router, 'create-category', { sid: server.id })} /> : null}
-      {mod ? <HeadBtn icon={admin ? 'gear' : 'shield'} label={admin ? 'Server-Einstellungen' : 'Moderation'} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
-    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tools}>
+      <ToolChip icon="userPlus" label="Einladen" primary onPress={() => router.push({ pathname: '/server-invite', params: { sid: server.id } })} />
+      <ToolChip icon="search" label="Suchen" color={C.info} onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
+      {admin ? <ToolChip icon="plusCircle" label="Kanal" color={C.ok} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
+      {admin ? <ToolChip icon="folder" label="Kategorie" color={C.warn} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
+      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} color={C.text2} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
+    </ScrollView>
   );
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
@@ -197,7 +211,10 @@ const s = StyleSheet.create({
   headText: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingHorizontal: 10, paddingBottom: 4 },
+  tools: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 2, paddingBottom: 6 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 11, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  chipPrimary: { borderColor: 'transparent' },
+  chipText: { fontSize: 13, fontWeight: '800' },
   green: { backgroundColor: 'rgba(61,220,151,0.10)', borderColor: 'rgba(61,220,151,0.25)' },
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },

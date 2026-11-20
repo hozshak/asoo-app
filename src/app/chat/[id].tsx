@@ -14,6 +14,8 @@ import { api, errText, mediaSource, upload } from '@/lib/api';
 import { addPending, can, channelInfo, dmTitle, getState, loadMessages, markFailed, markRead, mentionsMe, replaceMsg, roleColor, userOf, useStore, type Msg } from '@/lib/store';
 import { send, setViewing } from '@/lib/live';
 import { openWeb, webAction } from '@/lib/web';
+import { inviteCodes, openLink } from '@/lib/links';
+import { InviteCard } from '@/components/InviteCard';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { Avatar, Glass, Glow, Press, Sheet, T, type SheetItem } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -53,19 +55,12 @@ export default function Chat() {
           <T style={{ fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{title}</T>
         </View>
       ),
-      // Anrufe (Sprache/Video) laufen über die Web-Ansicht der Unterhaltung (room.tsx)
-      // Angeheftete und Suche als Dialog der Web-App, Treffer öffnen wieder hier (lib/web.ts)
+      // Angeheftete und Suche nativ (search.tsx); Anrufe (Sprache/Video) über die Web-Ansicht der Unterhaltung (room.tsx)
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingRight: 4 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Angeheftete Nachrichten" hitSlop={8} onPress={() => webAction(router, 'pins', { ch: id, sid: sid || undefined })}>
-            <Icon name="pin" size={20} color={C.text2} />
-          </Pressable>
-          {sid ? <Pressable accessibilityRole="button" accessibilityLabel="Suchen" hitSlop={8} onPress={() => webAction(router, 'search', { sid })}>
-            <Icon name="search" size={20} color={C.text2} />
-          </Pressable> : null}
-          {dm ? <Pressable accessibilityRole="button" accessibilityLabel="Anrufen" hitSlop={8} onPress={() => openWeb(router, `/channels/@me/${dm.id}`)}>
-            <Icon name="phone" size={21} color={C.text2} />
-          </Pressable> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 2 }}>
+          <HeadIcon icon="pin" label="Angeheftete Nachrichten" color={C.warn} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
+          <HeadIcon icon="search" label="Suchen" color={C.info} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
+          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.ok} onPress={() => openWeb(router, `/channels/@me/${dm.id}`)} /> : null}
         </View>
       ),
     });
@@ -157,7 +152,7 @@ export default function Chat() {
               const day = !prev || new Date(prev.created).toDateString() !== new Date(item.created).toDateString();
               return <>
                 {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
-                <MessageRow m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} />
+                <MessageRow m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
               </>;
             }}
             ListFooterComponent={box.hasMore ? <ActivityIndicator color={C.faint} style={{ margin: 12 }} /> : (
@@ -197,7 +192,15 @@ export default function Chat() {
   );
 }
 
-function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser }: { m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void }) {
+function HeadIcon({ icon, label, color, onPress }: { icon: 'pin' | 'search' | 'phone'; label: string; color: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.headIcon, { backgroundColor: color + (pressed ? '33' : '1c') }]}>
+      <Icon name={icon} size={17} color={color} stroke={2.2} />
+    </Pressable>
+  );
+}
+
+function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink }: { m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
   const u = userOf(m.author_id);
   if (m.kind !== 'default') return (
     <View style={s.sys}><View style={s.sysIcon}><Icon name="userPlus" size={13} color={C.ok} /></View><T style={s.sysText}><T style={{ color: C.text, fontWeight: '700' }}>{u.display}</T> ist gerade gelandet. 👋</T></View>
@@ -209,13 +212,14 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser }: 
     <Pressable onLongPress={onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
       {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || 'Bild'}</T></View> : null}
       <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
+        <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} frame={false} /></Pressable> : null}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
           {head ? <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
             <T style={[s.name, color ? { color } : null]} numberOfLines={1} onPress={() => onUser(m.author_id)}>{u.display}</T>
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
-          {m.content ? <RichText text={m.content} sid={sid} meName={meName} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
+          {m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
+          {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
           {m.edited ? <T style={s.edited}>(bearbeitet)</T> : null}
           {m.attachments?.map((a, i) => {
             const src = a.local ? { uri: a.local } : mediaSource(a.key);
@@ -233,6 +237,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser }: 
 }
 
 const s = StyleSheet.create({
+  headIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   msg: { paddingHorizontal: 14, paddingVertical: 2 },
   mentioned: { backgroundColor: C.mention, borderLeftWidth: 3, borderLeftColor: C.mentionLine, paddingLeft: 11 },
   name: { fontWeight: '700', fontSize: 15.5, flexShrink: 1 },

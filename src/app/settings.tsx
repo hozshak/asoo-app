@@ -49,14 +49,14 @@ export default function Settings() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {msg ? <View style={s.msg}><T style={{ color: C.text }}>{msg}</T></View> : null}
         <Section style={s.h2}>Profil</Section>
         <Glass style={s.card} intensity={20}>
           {field({ label: "Anzeigename", value: display, onChangeText: setDisplay, maxLength: 32, })}
           {field({ label: "Status-Text", value: custom, onChangeText: setCustom, maxLength: 80, placeholder: "z. B. „Zocke gerade 🎮“", })}
           {field({ label: "Über mich", value: bio, onChangeText: setBio, maxLength: 300, multiline: true, })}
-          <Btn title="Speichern" onPress={() => patch({ display, bio, custom_status: custom })} style={{ marginTop: 14 }} />
+          <Btn title="Speichern" onPress={() => patch({ display, bio, custom_status: custom })} small style={{ marginTop: 12 }} />
         </Glass>
         <Section style={s.h2}>Profilrahmen</Section>
         <Glass style={s.card} intensity={20}>
@@ -65,7 +65,7 @@ export default function Settings() {
               const on = (me.deco || 'none') === k;
               return (
                 <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ deco: k }, 'Rahmen gesetzt ✓')} style={[s.frame, on && s.frameOn]}>
-                  <View style={{ height: 84, alignItems: 'center', justifyContent: 'center' }}><Avatar user={{ ...me, deco: k }} force size={k === 'none' ? 48 : Math.min(48, 92 / Math.max(FRAMES[k].w, FRAMES[k].h))} /></View>
+                  <View style={{ height: 62, alignItems: 'center', justifyContent: 'center' }}><Avatar user={{ ...me, deco: k }} force size={k === 'none' ? 38 : Math.min(38, 70 / Math.max(FRAMES[k].w, FRAMES[k].h))} /></View>
                   <T style={s.frameName} numberOfLines={1}>{name}</T>
                 </Pressable>
               );
@@ -76,7 +76,7 @@ export default function Settings() {
         <Glass style={s.card} intensity={20}>
           {field({ label: "Aktuelles Passwort", value: oldPw, onChangeText: setOldPw, secureTextEntry: true, textContentType: "password", })}
           {field({ label: "Neues Passwort", value: newPw, onChangeText: setNewPw, secureTextEntry: true, textContentType: "newPassword", placeholder: "mindestens 8 Zeichen", })}
-          <Btn title="Passwort ändern" kind="secondary" onPress={changePw} disabled={!oldPw || newPw.length < 8} style={{ marginTop: 14 }} />
+          <Btn title="Passwort ändern" kind="secondary" onPress={changePw} disabled={!oldPw || newPw.length < 8} small style={{ marginTop: 12 }} />
         </Glass>
         <Section style={s.h2}>Rechtliches</Section>
         <Glass style={[s.card, { padding: 6 }]} intensity={20}>
@@ -88,21 +88,21 @@ export default function Settings() {
         <Glass style={[s.card, { borderColor: 'rgba(255,77,94,0.3)' }]} intensity={20}>
           <T style={{ color: C.text2, lineHeight: 21 }}>Dein Konto und alles, was du geschrieben und hochgeladen hast, wird endgültig gelöscht.</T>
           {field({ label: "Passwort zur Bestätigung", value: delPw, onChangeText: setDelPw, secureTextEntry: true, })}
-          <Btn title="Konto endgültig löschen" kind="danger" icon="trash" onPress={del} style={{ marginTop: 14 }} />
+          <Btn title="Konto endgültig löschen" kind="danger" icon="trash" onPress={del} small style={{ marginTop: 12 }} />
         </Glass>
       </ScrollView>
     </View>
   );
 }
 const s = StyleSheet.create({
-  h2: { marginTop: 22, marginBottom: 8 },
-  card: { borderRadius: 18, padding: 14 },
-  label: { color: C.faint, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 10, marginBottom: 6 },
-  input: { backgroundColor: 'rgba(255,255,255,0.05)', color: C.text, borderRadius: R.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 14, minHeight: 48, fontSize: 16, fontFamily: F.medium },
+  h2: { marginTop: 16, marginBottom: 6 },
+  card: { borderRadius: 16, padding: 12 },
+  label: { color: C.faint, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 8, marginBottom: 5 },
+  input: { backgroundColor: 'rgba(255,255,255,0.05)', color: C.text, borderRadius: R.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 13, minHeight: 44, fontSize: 15.5, fontFamily: F.medium },
   msg: { backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, borderRadius: 14, padding: 12 },
-  link: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, minHeight: 50, borderRadius: 12 },
-  frames: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  frame: { width: '30%', flexGrow: 1, alignItems: 'center', paddingVertical: 8, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(0,0,0,0.2)' },
+  link: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, minHeight: 44, borderRadius: 12 },
+  frames: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  frame: { width: '23.3%', alignItems: 'center', paddingVertical: 4, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(0,0,0,0.2)' },
   frameOn: { borderColor: C.accent, backgroundColor: C.accentSoft },
-  frameName: { fontSize: 12, color: C.text2, marginTop: 2, fontWeight: '600' },
+  frameName: { fontSize: 11, color: C.text2, marginTop: 0, fontWeight: '600', paddingHorizontal: 2 },
 });

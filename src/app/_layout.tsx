@@ -53,6 +53,13 @@ export default function Root() {
           <Stack.Screen name="chat/[id]" options={{ title: '' }} />
           <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings" options={{ title: 'Einstellungen' }} />
+          {/* Blätter von unten (nativ statt Web-Dialog) */}
+          <Stack.Screen name="server-new" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="server-invite" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="channel-new" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="group-new" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="search" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="invite/[code]" options={{ headerShown: false, presentation: 'modal' }} />
           {/* Räume: kein Wischen zum Zurückgehen – im 3D-Raum wischt man, um sich umzusehen */}
           <Stack.Screen name="room" options={{ headerShown: false, gestureEnabled: false, animation: 'fade_from_bottom' }} />
         </Stack>

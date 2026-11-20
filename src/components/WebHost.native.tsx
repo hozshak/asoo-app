@@ -1,7 +1,8 @@
 // Das dauerhafte Web-Fenster (lib/webhost.ts). Liegt über der ganzen App; geschlossen wird es nur aus dem Bild
 // geschoben, nicht beendet – so laufen Anrufe und Sprachräume weiter, und die nächste Seite ist sofort da.
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ScreenCapturePickerView } from 'react-native-webrtc';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
@@ -9,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { BASE, getToken } from '@/lib/api';
 import { attachInject, getHost, onWebMessage, useHost } from '@/lib/webhost';
 import { signOut } from '@/lib/session';
+import { isSharing, onScreenShare, startScreenShare, stopScreenShare, type ScreenQuality } from '@/lib/screenshare';
 import { C } from '@/lib/theme';
 import { T } from './ui';
 
@@ -16,6 +18,9 @@ import { T } from './ui';
 const WV = WebView as unknown as React.ComponentType<any>;
 
 const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
+// Was die App der Web-Seite anbietet (dort erscheinen dann passende Knöpfe, z. B. „Bildschirm teilen“ am iPhone)
+const CAPS = Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;';
+const PICK = Platform.OS === 'ios' ? (ScreenCapturePickerView as unknown as React.ComponentType<any>) : null;
 
 export function WebHost() {
   const started = useHost((s) => s.started);
@@ -33,6 +38,19 @@ export function WebHost() {
     source.current = { uri: `${ORIGIN}/api/auth/app-web?to=${encodeURIComponent(to)}`, headers: { authorization: `Bearer ${getToken() || ''}`, 'x-client': 'asoo-app' } };
   }
   useEffect(() => { attachInject((js) => ref.current?.injectJavaScript(js)); return () => attachInject(null); }, []);
+  // Bildschirm teilen: Zustand an die Web-Seite melden (ihr Knopf leuchtet dann)
+  const picker = useRef<any>(null);
+  useEffect(() => onScreenShare((on) => ref.current?.injectJavaScript(`window.__asooScreen && window.__asooScreen(${on});true;`)), []);
+  const toggleShare = () => {
+    if (isSharing()) { stopScreenShare(); return; }
+    const room = getHost().voice?.room;
+    if (!room) { Alert.alert('Bildschirm teilen', 'Tritt zuerst einem Sprachraum oder Anruf bei.'); return; }
+    const opts: [string, ScreenQuality | null][] = [['720p – spart Daten', '720'], ['1080p – Full HD', '1080'], ['Volle Auflösung', 'max'], ['Abbrechen', null]];
+    ActionSheetIOS.showActionSheetWithOptions({ title: 'Bildschirm teilen', message: 'Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden über den roten Balken oben oder das Kontrollzentrum.', options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
+      const q = opts[i]?.[1];
+      if (q) startScreenShare(room, picker.current, q).catch(() => Alert.alert('Bildschirm teilen', 'Das hat nicht geklappt. Bitte versuch es noch einmal.'));
+    });
+  };
   if (!started || !source.current) return null;
   const onMessage = (e: WebViewMessageEvent) => {
     let m: any = null;
@@ -40,6 +58,7 @@ export function WebHost() {
     const r = onWebMessage(m);
     if (r.open) router.push({ pathname: '/chat/[id]', params: { id: r.open } });
     if (r.auth) signOut(false);
+    if (r.share) toggleShare();
   };
   return (
     <View pointerEvents={visible ? 'auto' : 'none'} style={[StyleSheet.absoluteFill, s.host, !visible && { transform: [{ translateY: height + 50 }] }]}>
@@ -47,6 +66,7 @@ export function WebHost() {
         <WV
           ref={ref}
           source={source.current}
+          injectedJavaScriptBeforeContentLoaded={CAPS}
           style={{ flex: 1, backgroundColor: C.bg0 }}
           onMessage={onMessage}
           mediaCapturePermissionGrantType="grant"
@@ -67,6 +87,7 @@ export function WebHost() {
           // stürzt der Inhalt ab (z. B. wenig Speicher), neu laden statt eines weißen Fensters
           onContentProcessDidTerminate={() => ref.current?.reload()}
         />
+        {PICK ? <PICK ref={picker} style={s.picker} /> : null}
         {busy ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>Wird geladen …</T></View> : null}
       </SafeAreaView>
     </View>
@@ -76,4 +97,5 @@ export function WebHost() {
 const s = StyleSheet.create({
   host: { zIndex: 50, elevation: 50, backgroundColor: C.bg0 },
   wait: { alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg0 },
+  picker: { position: 'absolute', width: 1, height: 1, opacity: 0, left: 0, top: 0 },
 });

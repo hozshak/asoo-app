@@ -2,6 +2,7 @@
 // Es bleibt geladen, auch wenn man es schließt: Ein Anruf läuft weiter (oben erscheint die Anruf-Leiste), und die
 // nächste Web-Seite öffnet sofort, ohne Neuladen. Gegenstück in der Web-App: embedBridge() in public/js/app.js.
 import { useSyncExternalStore } from 'react';
+import { isSharing, stopScreenShare } from './screenshare';
 
 export type VoiceInfo = { room: string; title: string; path: string; kind: string; video: boolean };
 export type RingInfo = { dm: string; from: string; name: string; title: string; avatar?: string | null };
@@ -40,7 +41,7 @@ export function answerCall(dm: string) { set({ ring: null }); run(`window.__asoo
 export function declineCall() { const r = st.ring; set({ ring: null }); if (r) run(`window.__asooDecline(${JSON.stringify(r.dm)})`); }
 
 /** Nachrichten aus der Web-App. Rückgabe: was die App zusätzlich tun soll. */
-export function onWebMessage(m: any): { open?: string; auth?: boolean } {
+export function onWebMessage(m: any): { open?: string; auth?: boolean; share?: boolean } {
   switch (m?.t) {
     case 'ready': {
       const first = !st.loaded;
@@ -51,11 +52,16 @@ export function onWebMessage(m: any): { open?: string; auth?: boolean } {
       return {};
     }
     case 'close': hideWeb(); return {};
-    case 'voice': set({ voice: m.room ? { room: m.room, title: m.title || '', path: m.path || '/channels/@me', kind: m.kind || 'call', video: !!m.video } : null }); return {};
+    case 'voice':
+      // Sprachraum verlassen: auch das Bildschirm-Teilen beenden
+      if (!m.room && isSharing()) stopScreenShare();
+      else if (m.room && isSharing() && getHost().voice && getHost().voice!.room !== m.room) stopScreenShare();
+      set({ voice: m.room ? { room: m.room, title: m.title || '', path: m.path || '/channels/@me', kind: m.kind || 'call', video: !!m.video } : null }); return {};
     case 'ring': set({ ring: { dm: m.dm, from: m.from, name: m.name, title: m.title, avatar: m.avatar } }); return {};
     case 'ringstop': if (st.ring?.dm === m.dm) set({ ring: null }); return {};
     case 'open': hideWeb(); return { open: typeof m.ch === 'string' ? m.ch : undefined };
     case 'auth': return { auth: true };
+    case 'screenshare': return { share: true };
   }
   return {};
 }

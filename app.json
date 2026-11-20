@@ -20,7 +20,14 @@
           "audio"
         ],
         "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören.",
-        "NSCameraUsageDescription": "Damit du in Sprachräumen und Anrufen deine Kamera teilen kannst."
+        "NSCameraUsageDescription": "Damit du in Sprachräumen und Anrufen deine Kamera teilen kannst.",
+        "RTCAppGroupIdentifier": "group.de.feierabendcode.asoo",
+        "RTCScreenSharingExtension": "de.feierabendcode.asoo.broadcast"
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.de.feierabendcode.asoo"
+        ]
       }
     },
     "web": {
@@ -52,7 +59,9 @@
         {
           "color": "#7c5cff"
         }
-      ]
+      ],
+      "@config-plugins/react-native-webrtc",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": false

@@ -43,15 +43,16 @@ export default function Friends() {
   const online = f.friends.filter((u) => live(u).status && live(u).status !== 'offline');
   const list = tab === 'online' ? online : f.friends;
   const row = (u: User, right: React.ReactNode, i: number) => (
-    <Animated.View key={u.id} entering={FadeInDown.delay(i * 25).duration(260)}>
-      <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })} style={({ pressed }) => [s.row, pressed && { backgroundColor: C.accentSoft }]}>
-        <Avatar user={live(u)} size={44} status />
+    // Knöpfe rechts stehen NEBEN der antippbaren Zeile, nicht darin (verschachtelte Knöpfe fangen sich gegenseitig die Berührung ab)
+    <Animated.View key={u.id} entering={FadeInDown.delay(i * 25).duration(260)} style={s.rowWrap}>
+      <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })} style={({ pressed }) => [s.row, { flex: 1 }, pressed && { backgroundColor: C.accentSoft }]}>
+        <Avatar user={live(u)} size={44} status frame={false} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <T style={s.name} numberOfLines={1}>{live(u).display}</T>
           <T style={s.sub} numberOfLines={1}>{live(u).custom_status || STATUS_LABEL[live(u).status || 'offline'] || '@' + u.username}</T>
         </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>{right}</View>
       </Pressable>
+      <View style={{ flexDirection: 'row', gap: 8, paddingRight: 14 }}>{right}</View>
     </Animated.View>
   );
   const tabs: [typeof tab, string, number][] = [['online', 'Online', online.length], ['all', 'Alle', f.friends.length], ['requests', 'Anfragen', f.incoming.length + f.outgoing.length]];
@@ -106,7 +107,8 @@ const s = StyleSheet.create({
   count: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: C.bg5, alignItems: 'center', justifyContent: 'center' },
   countText: { color: '#fff', fontSize: 11, fontWeight: '800', lineHeight: 14 },
   sec: { marginTop: 20, marginBottom: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 8, marginHorizontal: -8, borderRadius: 14 },
+  rowWrap: { flexDirection: 'row', alignItems: 'center', marginHorizontal: -8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 14 },
   name: { fontSize: 16, fontWeight: '700' },
   sub: { color: C.muted, fontSize: 13, marginTop: -2 },
   icon: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },

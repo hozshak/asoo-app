@@ -57,10 +57,10 @@ export default function Chat() {
       ),
       // Angeheftete und Suche nativ (search.tsx); Anrufe (Sprache/Video) über die Web-Ansicht der Unterhaltung (room.tsx)
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 8 }}>
           <HeadIcon icon="pin" label="Angeheftete Nachrichten" color={C.warn} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
           <HeadIcon icon="search" label="Suchen" color={C.info} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
-          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.ok} onPress={() => openWeb(router, `/channels/@me/${dm.id}`)} /> : null}
+          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.ok} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=1`)} /> : null}
         </View>
       ),
     });

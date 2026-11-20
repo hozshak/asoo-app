@@ -43,7 +43,7 @@ export default function Profile() {
   const u = d.user, me = u.id === meId;
   const act = async (fn: () => Promise<unknown>, ok?: string) => { try { await fn(); await load(); if (ok) setMsg(ok); } catch (e) { setMsg(errText(e)); } };
   const banner = mediaSource(u.banner);
-  const call = async () => { try { const x = await api<any>('POST', '/api/dms', { user_id: u.id }); openWeb(router, `/channels/@me/${x.dm.id}`); } catch (e) { setMsg(errText(e)); } };
+  const call = async () => { try { const x = await api<any>('POST', '/api/dms', { user_id: u.id }); openWeb(router, `/channels/@me/${x.dm.id}?call=1`); } catch (e) { setMsg(errText(e)); } };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />

@@ -9,6 +9,7 @@ import { setState, type Notif } from '@/lib/store';
 import { Avatar, Empty, Glow, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { timeLabel } from '@/lib/text';
+import { openWeb } from '@/lib/web';
 import { C } from '@/lib/theme';
 
 const KIND: Record<string, [string, IconName, string]> = {
@@ -33,6 +34,7 @@ export default function Notifications() {
   const open = (n: Notif) => {
     const ch = /\/channels\/([^/?]+)\/([^/?]+)/.exec(n.url || '')?.[2];
     if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
+    else if (/^\/(post|feed)/.test(n.url || '')) openWeb(router, n.url!);
     else if (n.actor) router.push({ pathname: '/user/[id]', params: { id: n.actor.id } });
   };
   return (
@@ -52,7 +54,7 @@ export default function Notifications() {
               <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 30).duration(260)}>
                 <Pressable accessibilityRole="button" onPress={() => open(n)} style={({ pressed }) => [s.row, !n.read && s.unread, pressed && { backgroundColor: C.accentSoft }]}>
                   <View>
-                    <Avatar user={n.actor} size={44} />
+                    <Avatar user={n.actor} size={44} frame={false} />
                     <View style={[s.kind, { backgroundColor: color }]}><Icon name={icon} size={11} color="#fff" stroke={2.6} /></View>
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -75,8 +77,8 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: 12, paddingVertical: 12, marginHorizontal: 8, marginVertical: 3, borderRadius: 16 },
   unread: { backgroundColor: 'rgba(132,104,255,0.08)', borderWidth: 1, borderColor: 'rgba(132,104,255,0.2)' },
   kind: { position: 'absolute', right: -3, bottom: -3, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg1 },
-  title: { color: C.text2, fontSize: 15 },
-  text: { color: C.muted, marginTop: 1 },
+  title: { color: C.text2, fontSize: 15, lineHeight: 20 },
+  text: { color: C.muted, marginTop: 2, fontSize: 14, lineHeight: 19 },
   time: { color: C.faint, fontSize: 12, marginTop: 3 },
   dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.accent2, alignSelf: 'center' },
 });

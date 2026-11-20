@@ -15,7 +15,7 @@ import { openWeb } from '@/lib/web';
 import { Card, Glow, MenuRow, T } from '@/components/ui';
 import { ProfileHead } from '@/components/ProfileHead';
 import { Icon } from '@/components/Icon';
-import { FRAMES } from '@/lib/frames';
+import { frameOf } from '@/lib/frames';
 import { C, statusColor } from '@/lib/theme';
 
 const STATUS: [string, string][] = [['online', 'Online'], ['idle', 'Abwesend'], ['dnd', 'Bitte nicht stören'], ['invisible', 'Unsichtbar']];
@@ -35,7 +35,7 @@ export default function Me() {
   };
   const banner = mediaSource(me.banner);
   const raw = me.status_raw || me.status;
-  const frame = me.deco && FRAMES[me.deco] ? FRAMES[me.deco].name : '';
+  const frame = frameOf(me.deco)?.name || '';
   return (
     <View style={{ flex: 1 }}>
       <Glow />

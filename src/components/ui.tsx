@@ -11,7 +11,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, GRAD, GRAD_POS, R, F, fontFor, statusColor } from '@/lib/theme';
 import { mediaSource } from '@/lib/api';
-import { FRAMES, frameMin } from '@/lib/frames';
+import { frameOf, frameMin } from '@/lib/frames';
 import type { Server, User } from '@/lib/store';
 import { Icon, type IconName } from './Icon';
 
@@ -94,7 +94,7 @@ export function Btn({ title, onPress, kind = 'primary', icon, disabled, busy, st
 /** Profilbild mit Status und – wenn die Person einen hat – animiertem Rahmen wie in der Web-App. */
 export function Avatar({ user, size = 40, status = false, frame = true, live = false, ring, force = false }: { user?: (User & { deco?: string }) | null; size?: number; status?: boolean; frame?: boolean; live?: boolean; ring?: string; force?: boolean }) {
   const src = mediaSource(user?.avatar);
-  const f = frame && user && (user as any).deco ? FRAMES[(user as any).deco] : null;
+  const f = frame && user ? frameOf((user as any).deco) : null;
   const showFrame = f && (force || size >= frameMin(f));
   const dot = size * 0.3;
   return (
@@ -107,7 +107,7 @@ export function Avatar({ user, size = 40, status = false, frame = true, live = f
       {showFrame ? (() => {
         const w = f!.w * size, h = f!.h * size, left = size / 2 - f!.x * size, top = size / 2 - f!.y * size;
         return <View pointerEvents="none" style={{ position: 'absolute', left, top, width: w, height: h }}>
-          {live && HAS_LOTTIE ? <LottieFrame source={f!.json} width={w} height={h} /> : <Image source={f!.still} style={{ width: w, height: h }} contentFit="contain" />}
+          {live && HAS_LOTTIE && f!.json ? <LottieFrame source={f!.json} width={w} height={h} /> : <Image source={f!.still} style={{ width: w, height: h }} contentFit="contain" />}
         </View>;
       })() : null}
       {status ? <View style={{ position: 'absolute', right: -1, bottom: -1, width: dot, height: dot, borderRadius: dot, backgroundColor: statusColor(user?.status), borderWidth: Math.max(2, size * 0.06), borderColor: C.bg1 }} /> : null}

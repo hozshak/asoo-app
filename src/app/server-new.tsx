@@ -4,7 +4,9 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api, errText, mediaSource } from '@/lib/api';
+import * as ImagePicker from 'expo-image-picker';
+import { api, errText, mediaSource, upload } from '@/lib/api';
+import { Icon } from '@/components/Icon';
 import { bootstrap, getState, useStore } from '@/lib/store';
 import { Btn, Glow, Seg, ServerIcon, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
@@ -50,10 +52,16 @@ function Create() {
   const [name, setName] = useState(`Server von ${me?.display || 'mir'}`);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [icon, setIcon] = useState<string | null>(null);
+  const pick = async () => {
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
+    if (r.canceled || !r.assets?.[0]) return;
+    try { setErr(''); const up = await upload('icon', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); setIcon(up.key); } catch (e) { setErr(errText(e)); }
+  };
   const create = async () => {
     setBusy(true); setErr('');
     try {
-      const d = await api<any>('POST', '/api/servers', { name: name.trim(), icon_emoji: emoji, color: tpl.color, template: tpl.id || undefined });
+      const d = await api<any>('POST', '/api/servers', { name: name.trim(), icon_emoji: emoji, color: tpl.color, icon: icon || undefined, template: tpl.id || undefined });
       await bootstrap();
       openServer(router, d.server?.id || d.id);
     } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
@@ -78,7 +86,10 @@ function Create() {
         })}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <ServerIcon server={{ id: 'x', name, icon_emoji: emoji, color: tpl.color, owner_id: '', role: 'owner', channels: [] }} size={56} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Server-Bild wählen" onPress={pick}>
+          <ServerIcon server={{ id: 'x', name, icon, icon_emoji: emoji, color: tpl.color, owner_id: '', role: 'owner', channels: [] }} size={56} />
+          <View style={s.camBadge}><Icon name="image" size={11} color="#fff" /></View>
+        </Pressable>
         <View style={{ flex: 1 }}><Field label="Server-Name" value={name} onChangeText={setName} maxLength={50} /></View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
@@ -154,6 +165,7 @@ const s = StyleSheet.create({
   emo: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line },
   emoOn: { borderColor: C.accent, backgroundColor: C.accentSoft },
   err: { color: C.danger, fontSize: 14 },
+  camBadge: { position: 'absolute', right: -3, bottom: -3, width: 22, height: 22, borderRadius: 11, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },
   disc: { borderRadius: 16, overflow: 'hidden', backgroundColor: C.bg2, borderWidth: 1, borderColor: C.line },
   discBanner: { height: 54 },
   discBody: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, marginTop: -24 },

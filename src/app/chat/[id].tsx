@@ -59,9 +59,10 @@ export default function Chat() {
       // Angeheftete und Suche nativ (search.tsx); Anrufe (Sprache/Video) über die Web-Ansicht der Unterhaltung (room.tsx)
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 8 }}>
-          <HeadIcon icon="pin" label="Angeheftete Nachrichten" color={C.warn} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
-          <HeadIcon icon="search" label="Suchen" color={C.info} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
-          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.ok} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=1`)} /> : null}
+          <HeadIcon icon="pin" label="Angeheftete Nachrichten" color={C.text2} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
+          <HeadIcon icon="search" label="Suchen" color={C.text2} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
+          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.accent} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=1`)} /> : null}
+          {dm ? <HeadIcon icon="video" label="Videoanruf" color={C.accent} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=video`)} /> : null}
         </View>
       ),
     });
@@ -193,9 +194,9 @@ export default function Chat() {
   );
 }
 
-function HeadIcon({ icon, label, color, onPress }: { icon: 'pin' | 'search' | 'phone'; label: string; color: string; onPress: () => void }) {
+function HeadIcon({ icon, label, color, onPress }: { icon: 'pin' | 'search' | 'phone' | 'video'; label: string; color: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.headIcon, { backgroundColor: color + (pressed ? '33' : '1c') }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.headIcon, { backgroundColor: pressed ? C.accentSoft : 'rgba(255,255,255,0.07)', transform: [{ scale: pressed ? 0.92 : 1 }] }]}>
       <Icon name={icon} size={17} color={color} stroke={2.2} />
     </Pressable>
   );

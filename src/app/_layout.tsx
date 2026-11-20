@@ -12,6 +12,9 @@ import { bootstrap, useStore } from '@/lib/store';
 import { connect } from '@/lib/live';
 import { registerPush, onPushTap, chatFromUrl } from '@/lib/push';
 import { C, F } from '@/lib/theme';
+import { prewarmWeb } from '@/lib/webhost';
+import { WebHost } from '@/components/WebHost';
+import { CallBar, IncomingCall } from '@/components/CallBar';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -41,6 +44,8 @@ export default function Root() {
   }, [booted, me, segs]);
   // Push: nach dem Anmelden das Gerät melden; Tippen auf eine Mitteilung öffnet den Chat
   useEffect(() => { if (me) registerPush(); }, [me?.id]);
+  // Web-Fenster nach dem Anmelden im Hintergrund vorladen: erste 3D-/Web-Seite ist dann sofort da, Anrufe kommen an
+  useEffect(() => { if (!me) return; const t = setTimeout(prewarmWeb, 1500); return () => clearTimeout(t); }, [me?.id]);
   useEffect(() => onPushTap((url) => { const ch = chatFromUrl(url); if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } }); }), []);
   if (!booted || !fonts) return <View style={{ flex: 1, backgroundColor: C.bg0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.accent} /></View>;
   return (
@@ -61,8 +66,12 @@ export default function Root() {
           <Stack.Screen name="search" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="invite/[code]" options={{ headerShown: false, presentation: 'modal' }} />
           {/* Räume: kein Wischen zum Zurückgehen – im 3D-Raum wischt man, um sich umzusehen */}
-          <Stack.Screen name="room" options={{ headerShown: false, gestureEnabled: false, animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="room" options={{ headerShown: false, animation: 'none' }} />
         </Stack>
+        {/* dauerhaftes Web-Fenster (3D, Anrufe, Feed …), darüber Anruf-Leiste und eingehende Anrufe */}
+        {me ? <WebHost /> : null}
+        {me ? <CallBar /> : null}
+        {me ? <IncomingCall /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

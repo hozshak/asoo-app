@@ -1,16 +1,18 @@
 // Start wie die Web-App am Handy: links die Leiste (Direktnachrichten, Server im Farbverlauf, wenn ausgewählt),
 // rechts eine schwebende Glasfläche mit Direktnachrichten oder den Kanälen des Servers (Banner, Kategorien, Schloss).
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
-import { Avatar, Badge, Empty, Glass, Glow, Press, Section, ServerIcon, T } from '@/components/ui';
+import { Avatar, Badge, Empty, Glass, Glow, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
-import { mediaSource } from '@/lib/api';
-import { can, dmTitle, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
+import { api, errText, mediaSource, upload } from '@/lib/api';
+import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
 import { C, GRAD, GRAD_POS } from '@/lib/theme';
 
@@ -25,6 +27,30 @@ export default function Home() {
   // von außen einen Server öffnen (Einladung angenommen, Server erstellt): /?server=<id>
   const want = useLocalSearchParams<{ server?: string; t?: string }>();
   useEffect(() => { if (want.server) setSel(want.server); }, [want.server, want.t]);
+  // lange drücken auf einen Server: Menü wie in der Web-App
+  const [menuFor, setMenuFor] = useState<Server | null>(null);
+  const [note, setNote] = useState('');
+  const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
+  const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.9 });
+    if (r.canceled || !r.assets?.[0]) return;
+    try {
+      setNote(kind === 'icon' ? 'Server-Bild wird hochgeladen …' : 'Banner wird hochgeladen …');
+      const up = await upload(kind, r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg');
+      await api('PATCH', `/api/servers/${sv.id}`, { [kind]: up.key });
+      await bootstrap();
+      setNote('Gespeichert ✓'); setTimeout(() => setNote(''), 1800);
+    } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3500); }
+  };
+  const markServerRead = (sv: Server) => {
+    for (const c of sv.channels) if (getState().unread[c.id] || getState().mentions[c.id]) markRead(c.id);
+  };
+  const leave = (sv: Server) => {
+    const go = async () => { try { await api('POST', `/api/servers/${sv.id}/leave`, {}); setSel(null); await bootstrap(); } catch (e) { setNote(errText(e)); } };
+    if (Platform.OS === 'web') { if (confirm(`„${sv.name}“ verlassen?`)) go(); return; }
+    Alert.alert(`„${sv.name}“ verlassen?`, 'Du kannst nur mit einer neuen Einladung wieder beitreten.', [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Verlassen', style: 'destructive', onPress: go }]);
+  };
+  const menuAdmin = menuFor ? can(menuFor.id, 'admin') : false;
   return (
     <View style={{ flex: 1 }}>
       <Glow />
@@ -38,27 +64,38 @@ export default function Home() {
           {servers.map((sv) => {
             const has = sv.channels.some((c) => unread[c.id]);
             const ment = sv.channels.reduce((n, c) => n + (mentions[c.id] || 0), 0);
-            return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={ment} onPress={() => setSel(sv.id)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
+            // Zahl = neue Nachrichten im ganzen Server; rot, wenn dich jemand erwähnt hat
+            const count = sv.channels.reduce((n, c) => n + (unread[c.id] || 0), 0);
+            return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
           })}
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
-          <RailItem active={false} onPress={() => router.push('/server-new')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
-          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/server-new')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.accent} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
           <RailItem active={false} onPress={() => openWeb(router, '/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
-          {server ? <ServerPanel key={server.id} server={server} /> : <DmPanel />}
+          {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
         </Glass>
       </SafeAreaView>
+      {note ? <View style={s.note} pointerEvents="none"><T style={{ color: C.text, fontWeight: '700' }}>{note}</T></View> : null}
+      <Sheet open={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor?.name} items={menuFor ? [
+        { label: 'Als gelesen markieren', icon: 'check', onPress: () => markServerRead(menuFor) },
+        { label: 'Leute einladen', icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
+        menuAdmin ? { label: 'Server-Bild ändern', icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
+        menuAdmin ? { label: 'Banner ändern', icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
+        menuAdmin ? { label: 'Server-Einstellungen', icon: 'gear', onPress: () => webAction(router, 'server-settings', { sid: menuFor.id }) } : null,
+        menuFor.role !== 'owner' ? { label: 'Server verlassen', icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
+      ] : []} />
     </View>
   );
 }
 
-function RailItem({ active, unread, badge, onPress, label, children }: { active: boolean; unread?: boolean; badge?: number; onPress: () => void; label: string; children: React.ReactNode }) {
+function RailItem({ active, unread, badge, hot = true, onPress, onLong, label, children }: { active: boolean; unread?: boolean; badge?: number; hot?: boolean; onPress: () => void; onLong?: () => void; label: string; children: React.ReactNode }) {
   return (
     <View style={{ width: 72, alignItems: 'center' }}>
       {active ? <Animated.View entering={FadeIn} style={[s.pip, { height: 40 }]} /> : unread ? <View style={[s.pip, { height: 8, backgroundColor: C.text }]} /> : null}
-      <Press onPress={onPress} label={label} scale={0.92}>{children}</Press>
-      {badge ? <Badge n={badge} style={{ position: 'absolute', right: 8, bottom: -4 }} /> : null}
+      <Press onPress={onPress} onLongPress={onLong} label={label} scale={0.92}>{children}</Press>
+      {badge ? <Badge n={badge} style={[{ position: 'absolute', right: 8, bottom: -4 }, !hot && { backgroundColor: C.accent }]} /> : null}
     </View>
   );
 }
@@ -73,10 +110,10 @@ function HeadBtn({ icon, label, onPress }: { icon: IconName; label: string; onPr
 
 function ToolChip({ icon, label, onPress, color = C.accent, primary }: { icon: IconName; label: string; onPress: () => void; color?: string; primary?: boolean }) {
   return (
-    <Press label={label} onPress={onPress} scale={0.94} style={[s.chip, primary ? s.chipPrimary : { backgroundColor: color + '1c', borderColor: color + '40' }]}>
+    <Press label={label} onPress={onPress} scale={0.94} style={[s.chip, primary ? s.chipPrimary : s.chipPlain]}>
       {primary ? <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
-      <View><Icon name={icon} size={15} color={primary ? '#fff' : color} stroke={2.3} /></View>
-      <T style={[s.chipText, { color: primary ? '#fff' : color }]}>{label}</T>
+      <View><Icon name={icon} size={15} color={primary ? '#fff' : C.text2} stroke={2.3} /></View>
+      <T style={[s.chipText, { color: primary ? '#fff' : C.text2 }]}>{label}</T>
     </Press>
   );
 }
@@ -119,7 +156,7 @@ function DmPanel() {
   );
 }
 
-function ServerPanel({ server }: { server: Server }) {
+function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void }) {
   const router = useRouter();
   const unread = useStore((s) => s.unread);
   const mentions = useStore((s) => s.mentions);
@@ -137,7 +174,7 @@ function ServerPanel({ server }: { server: Server }) {
   }, [server]);
   // Textkanäle nativ, Sprach- und 3D-Räume aus der Web-App (room.tsx)
   const open = (c: Channel) => {
-    if (c.type !== 'text') return router.push({ pathname: '/room', params: { path: `/channels/${server.id}/${c.id}` } });
+    if (c.type !== 'text') return openWeb(router, `/channels/${server.id}/${c.id}`);
     markRead(c.id); router.push({ pathname: '/chat/[id]', params: { id: c.id } });
   };
   const banner = mediaSource(server.banner);
@@ -147,16 +184,20 @@ function ServerPanel({ server }: { server: Server }) {
   const tools = (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tools}>
       <ToolChip icon="userPlus" label="Einladen" primary onPress={() => router.push({ pathname: '/server-invite', params: { sid: server.id } })} />
-      <ToolChip icon="search" label="Suchen" color={C.info} onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
-      {admin ? <ToolChip icon="plusCircle" label="Kanal" color={C.ok} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
-      {admin ? <ToolChip icon="folder" label="Kategorie" color={C.warn} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
-      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} color={C.text2} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
+      <ToolChip icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
+      {admin ? <ToolChip icon="plusCircle" label="Kanal" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
+      {admin ? <ToolChip icon="folder" label="Kategorie" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
+      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
     </ScrollView>
   );
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-      {banner ? <View style={s.banner}><Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" /><LinearGradient colors={['transparent', 'rgba(14,15,24,0.95)']} style={StyleSheet.absoluteFill} /><T style={[s.headText, { position: 'absolute', left: 16, bottom: 10 }]} numberOfLines={1}>{server.name}</T></View>
-        : <View style={s.head}><T style={s.headText} numberOfLines={1}>{server.name}</T>{server.member_count ? <T style={s.headSub}>{server.member_count} Mitglieder</T> : null}</View>}
+      {/* Kopf antippen = Server-Menü (wie in der Web-App) */}
+      <Pressable accessibilityRole="button" accessibilityLabel="Server-Menü" onPress={onMenu}>
+        {banner ? <View style={s.banner}><Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" /><LinearGradient colors={['transparent', 'rgba(14,15,24,0.95)']} style={StyleSheet.absoluteFill} />
+            <View style={[s.headRow, { position: 'absolute', left: 16, right: 12, bottom: 10 }]}><T style={[s.headText, { flex: 1 }]} numberOfLines={1}>{server.name}</T><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View></View>
+          : <View style={[s.head, s.headRow]}><View style={{ flex: 1, minWidth: 0 }}><T style={s.headText} numberOfLines={1}>{server.name}</T>{server.member_count ? <T style={s.headSub}>{server.member_count} Mitglieder</T> : null}</View><Icon name="chevron" size={14} color={C.muted} stroke={2.4} /></View>}
+      </Pressable>
       {tools}
       {groups.map((g) => (!g.chs.length && g.id !== '_') ? null : (
         <View key={g.id}>
@@ -214,8 +255,9 @@ const s = StyleSheet.create({
   tools: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 2, paddingBottom: 6 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 11, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   chipPrimary: { borderColor: 'transparent' },
+  chipPlain: { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: C.line },
   chipText: { fontSize: 13, fontWeight: '800' },
-  green: { backgroundColor: 'rgba(61,220,151,0.10)', borderColor: 'rgba(61,220,151,0.25)' },
+  green: { backgroundColor: C.bg3, borderColor: C.line },
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 8, borderRadius: 14 },
@@ -230,6 +272,7 @@ const s = StyleSheet.create({
   chName: { color: C.muted, fontSize: 16, flex: 1, fontWeight: '500' },
   lock: { position: 'absolute', right: -5, bottom: -4, backgroundColor: C.bg2, borderRadius: 6, padding: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.text },
+  note: { position: 'absolute', left: 20, right: 20, bottom: 110, padding: 12, borderRadius: 14, backgroundColor: C.bg4, borderWidth: 1, borderColor: C.line, alignItems: 'center' },
   limit: { color: C.muted, fontSize: 12, fontWeight: '700', backgroundColor: C.bg3, borderRadius: 8, paddingHorizontal: 6, overflow: 'hidden' },
   vUser: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 42, paddingRight: 14, minHeight: 30 },
   vName: { color: C.text2, fontSize: 14, flex: 1 },

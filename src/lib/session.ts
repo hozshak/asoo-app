@@ -3,10 +3,13 @@ import { api, saveToken } from '@/lib/api';
 import { clearState } from '@/lib/store';
 import { disconnect } from '@/lib/live';
 import { unregisterPush } from '@/lib/push';
+import { leaveCall, resetWeb } from '@/lib/webhost';
 
 export async function signOut(tellServer = true) {
   await unregisterPush().catch(() => {});
   if (tellServer) { try { await api('POST', '/api/auth/logout', {}); } catch {} }
+  leaveCall();
+  resetWeb();
   disconnect();
   await saveToken(null);
   clearState();

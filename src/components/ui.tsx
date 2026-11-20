@@ -5,6 +5,7 @@ import { Modal, Platform, Pressable, StyleSheet, Text as RNText, View, ActivityI
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,12 +62,15 @@ function splitStyle(style: StyleProp<ViewStyle>) {
   return { outer, inner };
 }
 
+/** Leichtes Antippen-Gefühl (nur am Handy). */
+export const tick = () => { if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {}); };
+
 export function Press({ onPress, onLongPress, style, children, disabled, label, role = 'button', scale = 0.96 }: { onPress?: () => void; onLongPress?: () => void; style?: StyleProp<ViewStyle>; children?: React.ReactNode; disabled?: boolean; label?: string; role?: any; scale?: number }) {
   const s = useSharedValue(1);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
   const { outer, inner } = splitStyle(style);
   return (
-    <Pressable accessibilityRole={role} accessibilityLabel={label} disabled={disabled} onPress={onPress} onLongPress={onLongPress} delayLongPress={300} style={outer}
+    <Pressable accessibilityRole={role} accessibilityLabel={label} disabled={disabled} onPress={onPress ? () => { tick(); onPress(); } : undefined} onLongPress={onLongPress} delayLongPress={300} style={outer}
       onPressIn={() => { s.value = withSpring(scale, { damping: 18, stiffness: 400 }); }} onPressOut={() => { s.value = withSpring(1, { damping: 14, stiffness: 300 }); }}>
       <Animated.View style={[inner, a, disabled && { opacity: 0.5 }]}>{children}</Animated.View>
     </Pressable>
@@ -180,7 +184,7 @@ export const Section = ({ children, style }: { children: React.ReactNode; style?
 export function MenuRow({ icon, label, sub, onPress, danger, color = C.accent, right, last }: { icon: IconName; label: string; sub?: string; onPress?: () => void; danger?: boolean; color?: string; right?: React.ReactNode; last?: boolean }) {
   const c = danger ? C.danger : color;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [s.row, !last && s.rowLine, pressed && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress ? () => { tick(); onPress(); } : undefined} style={({ pressed }) => [s.row, !last && s.rowLine, pressed && { backgroundColor: 'rgba(255,255,255,0.05)', transform: [{ scale: 0.985 }] }]}>
       <View style={[s.rowIcon, { backgroundColor: c + '22' }]}><Icon name={icon} size={17} color={c} stroke={2.2} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <T style={[s.rowLabel, danger && { color: C.danger }]} numberOfLines={1}>{label}</T>

@@ -28,6 +28,7 @@ export function connect() {
     if (sock !== ws) return;
     backoff = 1000; lastMsg = Date.now();
     setState(() => ({ online: true }));
+    reportAct(true);
     clearInterval(ping);
     ping = setInterval(() => {
       if (sock !== ws) return;
@@ -66,8 +67,20 @@ export function disconnect() {
 }
 export function send(obj: unknown) { try { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); } catch {} }
 
+// Schaue ich gerade hin? Der Server schickt Pushs nur, wenn auf keinem Gerät jemand hinschaut. Geht die App in den
+// Hintergrund, sofort „nein“ melden – sonst kämen keine Pushs, solange die Verbindung noch offen ist.
+let lastAct: boolean | null = null;
+function reportAct(force = false) {
+  const on = AppState.currentState === 'active';
+  if (!force && on === lastAct) return;
+  lastAct = on;
+  send({ t: 'act', on });
+}
 // App kommt zurück in den Vordergrund: Verbindung prüfen
-AppState.addEventListener('change', (st) => { if (st === 'active' && want) { if (!ws || ws.readyState > 1) { backoff = 500; connect(); } } });
+AppState.addEventListener('change', (st) => {
+  reportAct();
+  if (st === 'active' && want) { if (!ws || ws.readyState > 1) { backoff = 500; connect(); } }
+});
 
 // ---------- Ereignisse in den Zustand übernehmen ----------
 function apply(m: any) {

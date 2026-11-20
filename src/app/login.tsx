@@ -40,7 +40,7 @@ function RoomBackdrop() {
 }
 
 export default function Login() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [display, setDisplay] = useState('');
@@ -48,17 +48,45 @@ export default function Login() {
   const [accept, setAccept] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
   const [focus, setFocus] = useState('');
+  // E-Mail (wie im Web): beim Registrieren Pflicht, sobald der Server Mails schicken kann; „Passwort vergessen“ per Code
+  const [mailOn, setMailOn] = useState(false);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  useEffect(() => { api<{ mail?: boolean }>('GET', '/api/me').then((d) => setMailOn(!!d.mail)).catch(() => {}); }, []);
+  const switchMode = (m: typeof mode) => { setMode(m); setErr(''); setInfo(''); setCode(''); setCodeSent(false); };
+  const signedIn = async (d: { token?: string }) => {
+    if (!d.token) throw new Error('kein Schlüssel');
+    await saveToken(d.token);
+    await bootstrap();
+    connect();
+  };
+  const sendCode = async () => {
+    setErr(''); setInfo(''); setSending(true);
+    try {
+      const r = mode === 'forgot'
+        ? await api<{ dev_code?: string }>('POST', '/api/auth/forgot', { login: username.trim() })
+        : await api<{ dev_code?: string }>('POST', '/api/auth/email-code', { email: email.trim(), lang: 'de' });
+      setCodeSent(true);
+      setInfo(mode === 'forgot' ? 'Wenn zu diesem Konto eine bestätigte E-Mail gehört, ist der Code jetzt unterwegs. Er gilt 15 Minuten.' : 'Wir haben dir einen 6-stelligen Code geschickt. Schau auch im Spam-Ordner nach.');
+      if (r.dev_code) setCode(r.dev_code);
+    } catch (e) { setErr(errText(e)); } finally { setSending(false); }
+  };
+  const needMail = mode === 'register' && mailOn;
   const submit = async () => {
     setErr(''); setBusy(true);
     try {
-      const body = mode === 'login' ? { username: username.trim(), password } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: 'de' };
-      const d = await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', body);
-      if (!d.token) throw new Error('kein Schlüssel');
-      await saveToken(d.token);
-      await bootstrap();
-      connect();
-    } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
+      if (mode === 'forgot') {
+        await signedIn(await api<{ token?: string }>('POST', '/api/auth/reset', { login: username.trim(), code: code.trim(), password }));
+        return;
+      }
+      if (needMail && !code.trim()) throw new Error(codeSent ? 'Bitte gib den Code aus der Mail ein.' : 'Bitte lass dir zuerst einen Code an deine E-Mail schicken.');
+      const body = mode === 'login' ? { username: username.trim(), password } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: 'de', ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
+      await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', body));
+    } catch (e) { setErr(e instanceof Error && !(e as any).code && /^Bitte /.test(e.message) ? e.message : errText(e)); } finally { setBusy(false); }
   };
   const field = (key: string, props: any) => (
     <TextInput {...props} onFocus={() => setFocus(key)} onBlur={() => setFocus('')} placeholderTextColor={C.faint}
@@ -83,27 +111,53 @@ export default function Login() {
             </Animated.View>
             <Animated.View entering={FadeIn.delay(150).duration(500)}>
               <Glass style={s.card} intensity={40} tint="rgba(19,20,32,0.78)">
-                <View style={s.tabs}>
-                  {(['login', 'register'] as const).map((m) => (
-                    <Pressable key={m} accessibilityRole="tab" accessibilityState={{ selected: mode === m }} onPress={() => { setMode(m); setErr(''); }} style={[s.tab, mode === m && s.tabOn]}>
-                      <T style={[s.tabText, mode === m && { color: C.text }]}>{m === 'login' ? 'Anmelden' : 'Registrieren'}</T>
-                    </Pressable>
-                  ))}
-                </View>
-                <T style={s.label}>Benutzername</T>
-                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: 'dein.name' })}
+                {mode === 'forgot' ? (
+                  <View style={{ marginBottom: 4 }}>
+                    <T style={{ fontSize: 20, fontWeight: '800' }}>Passwort vergessen?</T>
+                    <T style={{ color: C.text2, marginTop: 4 }}>Wir schicken dir einen Code an die E-Mail deines Kontos.</T>
+                  </View>
+                ) : (
+                  <View style={s.tabs}>
+                    {(['login', 'register'] as const).map((m) => (
+                      <Pressable key={m} accessibilityRole="tab" accessibilityState={{ selected: mode === m }} onPress={() => switchMode(m)} style={[s.tab, mode === m && s.tabOn]}>
+                        <T style={[s.tabText, mode === m && { color: C.text }]}>{m === 'login' ? 'Anmelden' : 'Registrieren'}</T>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <T style={s.label}>{mode === 'forgot' ? 'Benutzername oder E-Mail' : 'Benutzername'}</T>
+                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: mode === 'forgot' ? 'dein.name oder name@mail.de' : 'dein.name', editable: !(mode === 'forgot' && codeSent) })}
                 {mode === 'register' ? <>
                   <T style={s.label}>Anzeigename</T>
                   {field('d', { value: display, onChangeText: setDisplay, placeholder: 'So sehen dich andere', maxLength: 32 })}
                 </> : null}
-                <T style={s.label}>Passwort</T>
-                {field('p', { value: password, onChangeText: setPassword, secureTextEntry: true, textContentType: mode === 'login' ? 'password' : 'newPassword', autoComplete: mode === 'login' ? 'password' : 'new-password', placeholder: mode === 'login' ? '••••••••' : 'mindestens 8 Zeichen', onSubmitEditing: submit })}
+                {needMail ? <>
+                  <T style={s.label}>E-Mail</T>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>{field('e', { value: email, onChangeText: setEmail, autoCapitalize: 'none', autoCorrect: false, keyboardType: 'email-address', textContentType: 'emailAddress', autoComplete: 'email', placeholder: 'name@mail.de' })}</View>
+                    <Btn title={codeSent ? 'Neu senden' : 'Code senden'} kind="secondary" onPress={sendCode} busy={sending} disabled={!email.includes('@')} style={{ height: 50 }} />
+                  </View>
+                </> : null}
+                {mode === 'forgot' && !codeSent ? <Btn title="Code senden" onPress={sendCode} busy={sending} disabled={!username.trim()} style={{ marginTop: 18 }} /> : null}
+                {info ? <T style={{ color: C.text2, marginTop: 12, lineHeight: 20 }}>{info}</T> : null}
+                {(needMail && codeSent) || (mode === 'forgot' && codeSent) ? <>
+                  <T style={s.label}>Code aus der Mail</T>
+                  {field('c', { value: code, onChangeText: (v: string) => setCode(v.replace(/\D/g, '').slice(0, 6)), keyboardType: 'number-pad', textContentType: 'oneTimeCode', autoComplete: 'one-time-code', placeholder: '123456', maxLength: 6 })}
+                </> : null}
+                {mode !== 'forgot' || codeSent ? <>
+                  <T style={s.label}>{mode === 'forgot' ? 'Neues Passwort' : 'Passwort'}</T>
+                  {field('p', { value: password, onChangeText: setPassword, secureTextEntry: true, textContentType: mode === 'login' ? 'password' : 'newPassword', autoComplete: mode === 'login' ? 'password' : 'new-password', placeholder: mode === 'login' ? '••••••••' : 'mindestens 8 Zeichen', onSubmitEditing: submit })}
+                </> : null}
+                {mode === 'login' ? <T style={s.forgot} onPress={() => switchMode('forgot')}>Passwort vergessen?</T> : null}
                 {mode === 'register' ? <>
                   <Check on={age} set={setAge}>Ich bin mindestens 16 Jahre alt.</Check>
                   <Check on={accept} set={setAccept}>Ich stimme den <T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('regeln'))}>Regeln</T> und der <T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('datenschutz'))}>Datenschutzerklärung</T> zu.</Check>
                 </> : null}
                 {err ? <View style={s.err}><Icon name="ban" size={16} color={C.danger} /><T style={{ color: C.danger, flex: 1 }}>{err}</T></View> : null}
-                <Btn title={mode === 'login' ? 'Anmelden' : 'Konto erstellen'} onPress={submit} busy={busy} disabled={!username || !password || (mode === 'register' && (!age || !accept))} style={{ marginTop: 20 }} />
+                {mode !== 'forgot' || codeSent
+                  ? <Btn title={mode === 'login' ? 'Anmelden' : mode === 'forgot' ? 'Passwort speichern' : 'Konto erstellen'} onPress={submit} busy={busy} disabled={!username || !password || (mode === 'register' && (!age || !accept)) || (mode === 'forgot' && code.length < 6)} style={{ marginTop: 20 }} />
+                  : null}
+                {mode === 'forgot' ? <T style={[s.forgot, { alignSelf: 'center' }]} onPress={() => switchMode('login')}>Zurück zur Anmeldung</T> : null}
               </Glass>
             </Animated.View>
             <View style={s.legal}>
@@ -140,4 +194,5 @@ const s = StyleSheet.create({
   legal: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 18 },
   legalLink: { color: C.muted, fontSize: 13 },
   legalDot: { color: C.faint },
+  forgot: { color: C.info, fontWeight: '700', fontSize: 13, alignSelf: 'flex-end', marginTop: 10, paddingVertical: 4 },
 });

@@ -11,6 +11,7 @@ import { api, errText, mediaSource } from '@/lib/api';
 import { bootstrap, putUsers, useStore } from '@/lib/store';
 import { openWeb } from '@/lib/web';
 import { openServer } from '@/components/InviteCard';
+import { ProfileHead } from '@/components/ProfileHead';
 import { Avatar, Btn, Card, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { openDm, setFriend } from '../(tabs)/friends';
@@ -48,21 +49,10 @@ export default function Profile() {
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: ins.bottom + 30 }} bounces>
-        <View style={s.banner}>
-          {banner ? <Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" />
-            : <LinearGradient colors={[u.banner_color || u.accent || C.accent, '#ff5c9a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
-          <LinearGradient colors={['transparent', 'rgba(7,7,13,0.9)']} style={StyleSheet.absoluteFill} />
-          <View style={s.grab} />
-          <Pressable accessibilityLabel="Schließen" hitSlop={8} onPress={() => router.back()} style={[s.round, { left: 12 }]}><Icon name="x" size={17} color="#fff" stroke={2.4} /></Pressable>
-          {!me && !u.deleted ? <Pressable accessibilityLabel="Mehr" hitSlop={8} onPress={() => setMore(true)} style={[s.round, { right: 12 }]}><Icon name="more" size={18} color="#fff" /></Pressable> : null}
-        </View>
-        <Animated.View entering={FadeInDown.duration(300)} style={s.head}>
-          <View style={s.avWrap}><Avatar user={u} size={96} status live /></View>
-          <T style={s.name} numberOfLines={1}>{u.display}</T>
-          <T style={s.handle} numberOfLines={1}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
-          <View style={s.statusLine}><View style={[s.dot, { backgroundColor: statusColor(u.status) }]} /><T style={s.statusText}>{STATUS_TEXT[u.status || 'offline'] || 'Offline'}</T></View>
-          {u.custom_status ? <View style={s.bubble}><T style={{ color: C.text2, textAlign: 'center' }} numberOfLines={3}>{u.custom_status}</T></View> : null}
-        </Animated.View>
+        <ProfileHead u={u}
+          topLeft={<Pressable accessibilityLabel="Schließen" hitSlop={8} onPress={() => router.back()} style={s.round}><Icon name="x" size={17} color="#fff" stroke={2.4} /></Pressable>}
+          topRight={!me && !u.deleted ? <Pressable accessibilityLabel="Mehr" hitSlop={8} onPress={() => setMore(true)} style={s.round}><Icon name="more" size={18} color="#fff" /></Pressable> : undefined} />
+        <View style={s.grab} />
 
         {!me && !u.deleted && !d.blocked ? <View style={s.actions}>
           {d.friend === 'friends' ? <>
@@ -105,8 +95,8 @@ export default function Profile() {
 }
 const s = StyleSheet.create({
   banner: { height: 130, overflow: 'hidden' },
-  grab: { position: 'absolute', top: 8, alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-  round: { position: 'absolute', top: 18, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
+  grab: { position: 'absolute', top: 6, alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
+  round: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
   head: { alignItems: 'center', marginTop: -54, paddingHorizontal: 20 },
   avWrap: { borderRadius: 60, borderWidth: 5, borderColor: C.bg0 },
   name: { fontSize: 25, fontWeight: '800', marginTop: 8, letterSpacing: -0.3, maxWidth: '100%' },

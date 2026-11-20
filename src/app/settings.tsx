@@ -10,6 +10,8 @@ import { unregisterPush } from '@/lib/push';
 import { Avatar, Btn, Glass, Glow, Section, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { FRAMES } from '@/lib/frames';
+import { NameText, NAME_STYLES } from '@/components/NameText';
+import { EFFECTS, ProfileFx } from '@/components/ProfileFx';
 import { C, F, R } from '@/lib/theme';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
@@ -72,6 +74,34 @@ export default function Settings() {
             })}
           </View>
         </Glass>
+        <Section style={s.h2}>Namens-Stil</Section>
+        <Glass style={s.card} intensity={20}>
+          <View style={s.frames}>
+            {NAME_STYLES.map(([k, l]) => {
+              const on = (me.name_style || 'default') === k;
+              return (
+                <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ name_style: k }, 'Namens-Stil gesetzt ✓')} style={[s.style, on && s.frameOn]}>
+                  <NameText name={me.display} styleId={k} style={s.styleName} />
+                  <T style={s.frameName} numberOfLines={1}>{l}</T>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Glass>
+        <Section style={s.h2}>Profil-Effekt</Section>
+        <Glass style={s.card} intensity={20}>
+          <View style={s.frames}>
+            {[['none', 'Kein Effekt'] as [string, string], ...EFFECTS.map(([k, l]) => [k, l] as [string, string])].map(([k, l]) => {
+              const on = (me.effect || 'none') === k;
+              return (
+                <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ effect: k }, 'Effekt gesetzt ✓')} style={[s.fx, on && s.frameOn]}>
+                  <View style={s.fxDemo}><ProfileFx id={k} dense={0.6} /></View>
+                  <T style={s.frameName} numberOfLines={1}>{l}</T>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Glass>
         <Section style={s.h2}>Passwort ändern</Section>
         <Glass style={s.card} intensity={20}>
           {field({ label: "Aktuelles Passwort", value: oldPw, onChangeText: setOldPw, secureTextEntry: true, textContentType: "password", })}
@@ -104,5 +134,9 @@ const s = StyleSheet.create({
   frames: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   frame: { width: '23.3%', alignItems: 'center', paddingVertical: 4, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(0,0,0,0.2)' },
   frameOn: { borderColor: C.accent, backgroundColor: C.accentSoft },
+  style: { width: '31.5%', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 4, gap: 2, borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(0,0,0,0.2)' },
+  styleName: { fontSize: 16, fontWeight: '800', maxWidth: '100%' },
+  fx: { width: '31.5%', alignItems: 'center', paddingBottom: 6, gap: 4, borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(0,0,0,0.2)', overflow: 'hidden' },
+  fxDemo: { width: '100%', height: 54, backgroundColor: '#1d1838' },
   frameName: { fontSize: 11, color: C.text2, marginTop: 0, fontWeight: '600', paddingHorizontal: 2 },
 });

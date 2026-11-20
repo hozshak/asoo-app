@@ -16,6 +16,7 @@ import { send, setViewing } from '@/lib/live';
 import { openWeb, webAction } from '@/lib/web';
 import { inviteCodes, openLink } from '@/lib/links';
 import { InviteCard } from '@/components/InviteCard';
+import { NameText } from '@/components/NameText';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { Avatar, Glass, Glow, Press, Sheet, T, type SheetItem } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -215,7 +216,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
         <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} frame={false} /></Pressable> : null}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
           {head ? <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-            <T style={[s.name, color ? { color } : null]} numberOfLines={1} onPress={() => onUser(m.author_id)}>{u.display}</T>
+            <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} />
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
           {m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}

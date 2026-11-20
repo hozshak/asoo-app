@@ -12,7 +12,8 @@ import { api, errText, mediaSource, upload } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { signOut } from '@/lib/session';
 import { openWeb } from '@/lib/web';
-import { Avatar, Card, Glow, MenuRow, T } from '@/components/ui';
+import { Card, Glow, MenuRow, T } from '@/components/ui';
+import { ProfileHead } from '@/components/ProfileHead';
 import { Icon } from '@/components/Icon';
 import { FRAMES } from '@/lib/frames';
 import { C, statusColor } from '@/lib/theme';
@@ -39,22 +40,11 @@ export default function Me() {
     <View style={{ flex: 1 }}>
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={s.banner}>
-          {banner ? <Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" />
-            : <LinearGradient colors={[me.banner_color || me.accent || C.accent, '#ff5c9a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
-          <LinearGradient colors={['transparent', 'rgba(7,7,13,0.85)']} style={StyleSheet.absoluteFill} />
-          <SafeAreaView edges={['top']}><Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={19} color="#fff" /></Pressable></SafeAreaView>
-        </View>
-        <Animated.View entering={FadeInDown.duration(350)} style={s.head}>
-          <Pressable accessibilityLabel="Profilbild ändern" onPress={pickAvatar} style={s.avWrap}>
-            <Avatar user={me} size={92} status live />
-            <View style={s.cam}><Icon name="image" size={13} color="#fff" /></View>
-          </Pressable>
-          <T style={s.name} numberOfLines={1}>{me.display}</T>
-          <T style={s.handle} numberOfLines={1}>@{me.username}{me.pronouns ? ' · ' + me.pronouns : ''}</T>
-          {me.custom_status ? <T style={s.custom} numberOfLines={2}>{me.custom_status}</T> : null}
+        <SafeAreaView edges={['top']} style={{ backgroundColor: C.bg0 }} />
+        <ProfileHead u={me} status={raw} onAvatar={pickAvatar}
+          topRight={<Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={19} color="#fff" /></Pressable>}>
           {me.bio ? <T style={s.bio} numberOfLines={3}>{me.bio}</T> : null}
-        </Animated.View>
+        </ProfileHead>
 
         <View style={s.statusRow}>
           {STATUS.map(([k, l]) => (
@@ -88,7 +78,7 @@ export default function Me() {
 }
 const s = StyleSheet.create({
   banner: { height: 130, overflow: 'hidden' },
-  gear: { alignSelf: 'flex-end', margin: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  gear: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
   head: { alignItems: 'center', marginTop: -52, paddingHorizontal: 20 },
   avWrap: { borderRadius: 60, borderWidth: 5, borderColor: C.bg0 },
   cam: { position: 'absolute', right: 2, top: 2, width: 26, height: 26, borderRadius: 13, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },

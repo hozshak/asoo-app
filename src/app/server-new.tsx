@@ -54,7 +54,7 @@ function Create() {
   const [err, setErr] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
   const pick = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.75, exif: false });
     if (r.canceled || !r.assets?.[0]) return;
     try { setErr(''); const up = await upload('icon', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); setIcon(up.key); } catch (e) { setErr(errText(e)); }
   };

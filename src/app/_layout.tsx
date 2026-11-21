@@ -58,9 +58,13 @@ export default function Root() {
           <Stack.Screen name="chat/[id]" options={{ title: '' }} />
           <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings" options={{ title: 'Einstellungen' }} />
+          <Stack.Screen name="feed" options={{ title: 'Feed' }} />
+          <Stack.Screen name="post/[id]" options={{ title: 'Beitrag' }} />
           {/* Blätter von unten (nativ statt Web-Dialog) */}
           <Stack.Screen name="server-new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="server-invite" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="admin" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="server-settings" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="channel-new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="group-new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="search" options={{ headerShown: false, presentation: 'modal' }} />

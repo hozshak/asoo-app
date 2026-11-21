@@ -50,8 +50,24 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
 
 /** Bild hochladen (kind: attachment | avatar | banner | icon). uri: lokale Datei aus der Bildauswahl. */
 export async function upload(kind: string, uri: string, mime = 'image/jpeg'): Promise<{ key: string; url: string; type: string; size: number }> {
+  const url = `${BASE}/api/upload?kind=${encodeURIComponent(kind)}`;
+  if (Platform.OS !== 'web') {
+    // Am iPhone die Datei direkt vom Gerät hochladen. Der frühere Weg über fetch(…).blob() blieb bei großen Fotos
+    // manchmal einfach hängen (Profilbild „lädt“ endlos).
+    const FS = await import('expo-file-system/legacy');
+    const r = await FS.uploadAsync(url, uri, { httpMethod: 'POST', uploadType: FS.FileSystemUploadType.BINARY_CONTENT, headers: headers({ 'content-type': mime }) });
+    let data: any = null;
+    try { data = JSON.parse(r.body); } catch {}
+    if (r.status < 200 || r.status >= 300) throw new ApiError(r.status, data?.error || 'server_error', data);
+    return data;
+  }
   const blob = await (await fetch(uri)).blob();
-  const res = await fetch(`${BASE}/api/upload?kind=${encodeURIComponent(kind)}`, { method: 'POST', headers: headers({ 'content-type': blob.type || mime }), body: blob });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 90000);
+  let res: Response;
+  try { res = await fetch(url, { method: 'POST', headers: headers({ 'content-type': blob.type || mime }), body: blob, signal: ctl.signal }); }
+  catch { throw new ApiError(0, 'offline', null); }
+  finally { clearTimeout(timer); }
   let data: any = null;
   try { data = await res.json(); } catch {}
   if (!res.ok) throw new ApiError(res.status, data?.error || 'server_error', data);

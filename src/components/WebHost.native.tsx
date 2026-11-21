@@ -18,6 +18,8 @@ import { T } from './ui';
 const WV = WebView as unknown as React.ComponentType<any>;
 
 const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
+// Genau die eigene Adresse – „startsWith“ hätte auch z. B. https://zuno-app.altraex.workers.dev.fremd.de durchgelassen
+const ownUrl = (u?: string) => { try { return !!u && new URL(u).origin === ORIGIN; } catch { return false; } };
 // Was die App der Web-Seite anbietet (dort erscheinen dann passende Knöpfe, z. B. „Bildschirm teilen“ am iPhone)
 const CAPS = Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;';
 const PICK = Platform.OS === 'ios' ? (ScreenCapturePickerView as unknown as React.ComponentType<any>) : null;
@@ -53,6 +55,8 @@ export function WebHost() {
   };
   if (!started || !source.current) return null;
   const onMessage = (e: WebViewMessageEvent) => {
+    // Befehle (abmelden, Chat öffnen, Bildschirm teilen) nur von der eigenen Seite annehmen
+    if (!ownUrl(e.nativeEvent.url)) return;
     let m: any = null;
     try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
     const r = onWebMessage(m);
@@ -80,7 +84,7 @@ export function WebHost() {
           overScrollMode="never"
           setSupportMultipleWindows={false}
           onShouldStartLoadWithRequest={(r: any) => {
-            if (!r.isTopFrame || r.url.startsWith(ORIGIN) || r.url.startsWith('about:') || r.url.startsWith('blob:')) return true;
+            if (!r.isTopFrame || ownUrl(r.url) || r.url === 'about:blank' || r.url.startsWith('blob:' + ORIGIN)) return true;
             if (/^https?:/.test(r.url)) WebBrowser.openBrowserAsync(r.url).catch(() => {});
             return false;
           }}

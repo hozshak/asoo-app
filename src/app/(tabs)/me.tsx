@@ -29,7 +29,7 @@ export default function Me() {
     try { const d = await api<any>('PATCH', '/api/me', body); setState((s) => ({ me: { ...s.me!, ...d.user } })); } catch (e) { setMsg(errText(e)); }
   };
   const pickAvatar = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.75, exif: false });
     if (r.canceled || !r.assets?.[0]) return;
     try { const up = await upload('avatar', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); await patch({ avatar: up.key }); } catch (e) { setMsg(errText(e)); }
   };
@@ -59,14 +59,14 @@ export default function Me() {
         <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 14 }}>
           <Card>
             <MenuRow icon="cube" label="3D-Avatar" sub="Figur, Kleidung und Tänze" onPress={() => openWeb(router, '/settings/avatar?solo=1')} />
-            <MenuRow icon="edit" label="Profil bearbeiten" sub={frame ? `Rahmen „${frame}“, Name, Über mich` : 'Rahmen, Name, Über mich'} onPress={() => router.push('/settings')} />
+            <MenuRow icon="edit" label="Profil bearbeiten" sub="Name, Status, Pronomen, Über mich" onPress={() => router.push({ pathname: '/settings', params: { page: 'profile' } })} />
             <MenuRow icon="user" label="Mein Profil ansehen" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} last />
           </Card>
           <Card>
-            <MenuRow icon="gear" label="Alle Einstellungen" sub="Banner, Farben, Privatsphäre, Sprache, Mitteilungen" onPress={() => openWeb(router, '/settings/profile')} />
-            <MenuRow icon="sparkle" label="Feed" onPress={() => openWeb(router, '/feed')} />
+            <MenuRow icon="gear" label="Alle Einstellungen" sub="Bild, Banner, Farben, Privatsphäre, Geräte, Mitteilungen" onPress={() => router.push('/settings')} />
+            <MenuRow icon="sparkle" label="Feed" onPress={() => router.push('/feed')} />
             <MenuRow icon="compass" label="Server entdecken" onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} last={!me.is_admin} />
-            {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" onPress={() => openWeb(router, '/admin')} last /> : null}
+            {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" onPress={() => router.push('/admin')} last /> : null}
           </Card>
           <Card>
             <MenuRow icon="logout" label="Abmelden" danger onPress={() => signOut()} right={null} last />

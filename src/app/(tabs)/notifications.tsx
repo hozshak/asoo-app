@@ -9,7 +9,6 @@ import { setState, type Notif } from '@/lib/store';
 import { Avatar, Empty, Glow, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { timeLabel } from '@/lib/text';
-import { openWeb } from '@/lib/web';
 import { C } from '@/lib/theme';
 
 const KIND: Record<string, [string, IconName, string]> = {
@@ -34,7 +33,8 @@ export default function Notifications() {
   const open = (n: Notif) => {
     const ch = /\/channels\/([^/?]+)\/([^/?]+)/.exec(n.url || '')?.[2];
     if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
-    else if (/^\/(post|feed)/.test(n.url || '')) openWeb(router, n.url!);
+    else if (/^\/post\/[\w-]+/.test(n.url || '')) router.push({ pathname: '/post/[id]', params: { id: n.url!.split('/')[2].split('?')[0] } });
+    else if (/^\/feed/.test(n.url || '')) router.push('/feed');
     else if (n.actor) router.push({ pathname: '/user/[id]', params: { id: n.actor.id } });
   };
   return (

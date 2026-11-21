@@ -8,7 +8,7 @@
 // (höflich ist, wessen Kennung kleiner ist), Datenkanal Nr. 7 („room“), Generationen-Nummer `g` je Verbindung.
 import { NativeModules, findNodeHandle, Platform } from 'react-native';
 import { File, Paths } from 'expo-file-system';
-import { mediaDevices, RTCPeerConnection, type MediaStream } from 'react-native-webrtc';
+import { mediaDevices, RTCPeerConnection, RTCRtpReceiver, type MediaStream } from 'react-native-webrtc';
 import { api } from './api';
 import { send, onLive, myCid } from './live';
 
@@ -16,9 +16,40 @@ export type ScreenQuality = '720' | '1080' | 'max';
 type Peer = { cid: string; pc: RTCPeerConnection; gen: number; polite: boolean; makingOffer: boolean; ignoreOffer: boolean; queue: Promise<void>; dc: any };
 type Listener = (on: boolean) => void;
 
-const S: { room: string | null; stream: MediaStream | null; peers: Map<string, Peer>; ice: any[]; off: (() => void) | null; members: Set<string>; since: number } = {
-  room: null, stream: null, peers: new Map(), ice: [], off: null, members: new Set(), since: 0,
+const S: { room: string | null; stream: MediaStream | null; peers: Map<string, Peer>; ice: any[]; off: (() => void) | null; members: Set<string>; since: number; q: ScreenQuality } = {
+  room: null, stream: null, peers: new Map(), ice: [], off: null, members: new Set(), since: 0, q: '1080',
 };
+// Obergrenze der Datenrate je Zuschauer (darunter regelt das Netz selbst nach)
+const RATE: Record<ScreenQuality, number> = { '720': 2500000, '1080': 4500000, max: 6000000 };
+
+/**
+ * H.264 zuerst anbieten: Das iPhone rechnet es mit seinem Video-Chip. Ohne Vorgabe einigte man sich oft auf VP8, das das
+ * iPhone in Software rechnen muss – das Bild ruckelte und das Handy wurde heiß.
+ */
+function preferH264(pc: RTCPeerConnection) {
+  try {
+    const codecs: any[] = (RTCRtpReceiver as any).getCapabilities?.('video')?.codecs || [];
+    if (!codecs.length) return;
+    const h264 = (c: any) => (/h264/i.test(c.mimeType) ? 1 : 0);
+    const sorted = [...codecs].sort((a, b) => h264(b) - h264(a));
+    for (const t of (pc as any).getTransceivers?.() || []) if (t.sender?.track?.kind === 'video') t.setCodecPreferences(sorted);
+  } catch { /* ohne diese Funktion: wie bisher */ }
+}
+/** Bild flüssig halten: höchstens 30 Bilder pro Sekunde, Obergrenze nach Qualität; wird das Netz eng, lieber unschärfer als ruckelig. */
+async function tuneSender(p: Peer) {
+  for (const sd of (p.pc as any).getSenders?.() || []) {
+    if (sd.track?.kind !== 'video') continue;
+    try {
+      const par = sd.getParameters();
+      const e = par?.encodings?.[0];
+      if (!e || (e.maxBitrate === RATE[S.q] && e.maxFramerate === 30)) continue;
+      e.maxBitrate = RATE[S.q]; e.maxFramerate = 30;
+      par.degradationPreference = 'maintain-framerate';
+      await sd.setParameters(par);
+    } catch {}
+  }
+}
+
 const subs = new Set<Listener>();
 export const onScreenShare = (fn: Listener) => { subs.add(fn); return () => { subs.delete(fn); }; };
 export const isSharing = () => !!S.stream;
@@ -43,6 +74,7 @@ export async function startScreenShare(room: string, pickerRef: any, quality: Sc
   if (Platform.OS !== 'ios') throw new Error('nur iPhone');
   if (S.stream) await stopScreenShare();
   writeQuality(quality);
+  S.q = quality;
   try { S.ice = (await api<{ iceServers: any[] }>('GET', '/api/rtc-config')).iceServers || []; } catch { S.ice = [{ urls: 'stun:stun.cloudflare.com:3478' }]; }
   // Bild-Quelle anlegen (wartet auf die Erweiterung) und dann das iOS-Auswahlfenster zeigen
   const stream = await mediaDevices.getDisplayMedia({});
@@ -78,6 +110,8 @@ function makePeer(cid: string, gen = 0): Peer {
   // derselbe ausgehandelte Datenkanal wie im Web (dort laufen 3D-Positionen; hier nur, damit die Gegenseite ihn offen sieht)
   try { p.dc = (pc as any).createDataChannel('room', { negotiated: true, id: 7, ordered: false, maxRetransmits: 0 }); } catch {}
   for (const tr of S.stream?.getTracks() || []) pc.addTrack(tr, S.stream!);
+  preferH264(pc);
+  (pc as any).addEventListener('signalingstatechange', () => { if (live() && pc.signalingState === 'stable') tuneSender(p); });
   (pc as any).addEventListener('negotiationneeded', async () => {
     if (!live()) return;
     try {
@@ -91,7 +125,11 @@ function makePeer(cid: string, gen = 0): Peer {
   (pc as any).addEventListener('icecandidate', (e: any) => { if (e.candidate && live()) send({ t: 'rtc', to: cid, data: { cand: e.candidate, g: gen } }); });
   // Ton und Bild der anderen braucht der Helfer nicht (die App spielt den Ton schon über das Web-Fenster) – stumm schalten
   (pc as any).addEventListener('track', (e: any) => { try { e.track.enabled = false; e.track._setVolume?.(0); } catch {} });
-  (pc as any).addEventListener('connectionstatechange', () => { if (live() && pc.connectionState === 'failed') { try { (pc as any).restartIce?.(); } catch {} } });
+  (pc as any).addEventListener('connectionstatechange', () => {
+    if (!live()) return;
+    if (pc.connectionState === 'connected') tuneSender(p);
+    if (pc.connectionState === 'failed') { try { (pc as any).restartIce?.(); } catch {} }
+  });
   S.peers.set(cid, p);
   return p;
 }

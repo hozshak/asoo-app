@@ -18,6 +18,7 @@ import { inviteCodes, openLink } from '@/lib/links';
 import { InviteCard } from '@/components/InviteCard';
 import { NameText } from '@/components/NameText';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
+import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
 import { Avatar, Glass, Glow, Press, Sheet, T, type SheetItem } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
@@ -99,7 +100,7 @@ export default function Chat() {
     } catch (e) { markFailed(id, nonce); setErr(errText(e)); }
   };
   const sendImage = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, exif: false });
     if (r.canceled || !r.assets?.[0]) return;
     const a = r.assets[0];
     const nonce = 'n' + Date.now().toString(36);
@@ -134,11 +135,13 @@ export default function Chat() {
     menu.author_id === me?.id || isMod ? { label: 'Löschen', icon: 'trash', danger: true, onPress: () => del(menu) } : null,
   ] : [];
   const canSend = !!text.trim();
+  const headerOffset = useHeaderOffset();
+  const composerPad = useComposerPad(10);
 
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         {info && info.channel.type !== 'text' ? <View style={s.voiceNote}><Icon name={info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={16} color={C.accent} /><T style={s.voiceText}>Sprach- und 3D-Räume kommen mit dem nächsten Update in die App. Den Chat dieses Raums kannst du schon nutzen.</T></View> : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
           <FlatList
@@ -167,7 +170,7 @@ export default function Chat() {
           />}
         {typers.length ? <Animated.View entering={FadeIn} style={s.typingRow}><View style={s.typingDots}><View style={s.td} /><View style={[s.td, { opacity: 0.7 }]} /><View style={[s.td, { opacity: 0.4 }]} /></View><T style={s.typing}>{typers.slice(0, 3).join(', ')} {typers.length === 1 ? 'tippt …' : 'tippen …'}</T></Animated.View> : null}
         {err ? <Pressable onPress={() => setErr('')}><T style={s.err}>{err}</T></Pressable> : null}
-        <Glass style={[s.composerWrap, { paddingBottom: Math.max(ins.bottom, 10) }]} intensity={40} tint="rgba(14,15,24,0.86)">
+        <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
           {reply || editing ? <Animated.View entering={FadeInDown.duration(180)} style={s.bar}>
             <Icon name={editing ? 'edit' : 'reply'} size={14} color={C.accent} />
             <T style={s.barText} numberOfLines={1}>{editing ? 'Nachricht bearbeiten' : `Antwort an ${userOf(reply!.author_id).display}`}</T>

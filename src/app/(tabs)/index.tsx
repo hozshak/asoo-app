@@ -32,7 +32,7 @@ export default function Home() {
   const [note, setNote] = useState('');
   const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
   const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.9 });
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, exif: false });
     if (r.canceled || !r.assets?.[0]) return;
     try {
       setNote(kind === 'icon' ? 'Server-Bild wird hochgeladen …' : 'Banner wird hochgeladen …');
@@ -71,7 +71,7 @@ export default function Home() {
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
           <RailItem active={false} onPress={() => router.push('/server-new')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.accent} /></View></RailItem>
           <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
-          <RailItem active={false} onPress={() => openWeb(router, '/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
@@ -83,7 +83,7 @@ export default function Home() {
         { label: 'Leute einladen', icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
         menuAdmin ? { label: 'Server-Bild ändern', icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
         menuAdmin ? { label: 'Banner ändern', icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
-        menuAdmin ? { label: 'Server-Einstellungen', icon: 'gear', onPress: () => webAction(router, 'server-settings', { sid: menuFor.id }) } : null,
+        menuAdmin ? { label: 'Server-Einstellungen', icon: 'gear', onPress: () => router.push({ pathname: '/server-settings', params: { sid: menuFor.id } }) } : null,
         menuFor.role !== 'owner' ? { label: 'Server verlassen', icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
       ] : []} />
     </View>
@@ -187,7 +187,7 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
       <ToolChip icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
       {admin ? <ToolChip icon="plusCircle" label="Kanal" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
       {admin ? <ToolChip icon="folder" label="Kategorie" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
-      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} onPress={() => webAction(router, 'server-settings', { sid: server.id, tab: admin ? 'overview' : 'bans' })} /> : null}
+      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} onPress={() => router.push({ pathname: '/server-settings', params: { sid: server.id, tab: admin ? 'overview' : 'members' } })} /> : null}
     </ScrollView>
   );
   return (

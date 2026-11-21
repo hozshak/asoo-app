@@ -23,6 +23,7 @@ export function inviteCodes(text: string) {
 export function openLink(router: Router, raw: string) {
   let u: URL;
   try { u = new URL(raw); } catch { return; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return; // keine javascript:/file:/andere Schemata
   if (!own(u)) { WebBrowser.openBrowserAsync(raw).catch(() => {}); return; }
   const p = u.pathname.replace(/\/+$/, '');
   let m: RegExpMatchArray | null;
@@ -39,6 +40,8 @@ export function openLink(router: Router, raw: string) {
     const id = Object.values(st.users).find((x) => x.id === m![1] || x.username === m![1])?.id || m[1];
     return router.push({ pathname: '/user/[id]', params: { id } });
   }
-  if (/^\/(post|feed|discover|settings)/.test(p)) return openWeb(router, p + u.search);
+  if ((m = p.match(/^\/post\/([\w-]+)$/))) return router.push({ pathname: '/post/[id]', params: { id: m[1] } });
+  if (p === '/feed') return router.push('/feed');
+  if (/^\/(discover|settings)/.test(p)) return openWeb(router, p + u.search);
   WebBrowser.openBrowserAsync(raw).catch(() => {});
 }

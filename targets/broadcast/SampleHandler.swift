@@ -1,5 +1,7 @@
 // Einstieg der Erweiterung „Bildschirm teilen“: iOS ruft sie auf, wenn man im Übertragungs-Fenster „Asoo“ wählt.
-// Sie verbindet sich mit der App (SocketConnection) und schickt jedes zweite Bild (≈ 15 pro Sekunde) hinüber.
+// Sie verbindet sich mit der App (SocketConnection) und schickt bis zu 30 Bilder pro Sekunde hinüber (nach der Uhr,
+// nicht „jedes zweite Bild“ – iOS liefert je nach Gerät 30 oder 60 Bilder, das ergab oft nur ≈ 15 und ruckelte).
+// Ist die App mit dem letzten Bild noch beschäftigt, lässt SampleUploader das neue aus.
 // Nach dem Vorbild der Bildschirm-Teilen-Erweiterung von Jitsi (jitsi-meet-sdk-samples, Apache-2.0).
 import ReplayKit
 
@@ -10,7 +12,7 @@ private enum Constants {
 class SampleHandler: RPBroadcastSampleHandler {
   private var clientConnection: SocketConnection?
   private var uploader: SampleUploader?
-  private var frameCount = 0
+  private var lastSent: TimeInterval = 0
 
   var socketFilePath: String {
     let sharedContainer = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Constants.appGroupIdentifier)
@@ -27,7 +29,7 @@ class SampleHandler: RPBroadcastSampleHandler {
   }
 
   override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
-    frameCount = 0
+    lastSent = 0
     openConnection()
   }
 
@@ -41,9 +43,11 @@ class SampleHandler: RPBroadcastSampleHandler {
   override func processSampleBuffer(_ sampleBuffer: CMSampleBuffer, with sampleBufferType: RPSampleBufferType) {
     switch sampleBufferType {
     case .video:
-      frameCount += 1
-      if frameCount % 2 == 0 {
-        uploader?.send(sample: sampleBuffer)
+      let now = ProcessInfo.processInfo.systemUptime
+      if now - lastSent >= 1.0 / 31.0 {
+        if uploader?.send(sample: sampleBuffer) == true {
+          lastSent = now
+        }
       }
     default:
       break

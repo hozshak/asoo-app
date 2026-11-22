@@ -10,7 +10,7 @@ import { Field } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { C } from '@/lib/theme';
 
-type Kind = 'text' | 'voice' | 'voice3d';
+type Kind = 'text' | 'voice' | 'voice3d' | 'game';
 const ROOMS: [string, string, any][] = [
   ['lounge', 'Skylounge', require('../../assets/rooms/lounge.webp')], ['beach', 'Strand', require('../../assets/rooms/beach.webp')],
   ['theater', 'Kino', require('../../assets/rooms/theater.webp')], ['wedding', 'Dawet (Hochzeit)', require('../../assets/rooms/wedding.webp')],
@@ -43,7 +43,7 @@ export default function ChannelNew() {
       <SheetHead title={isCat ? 'Kategorie erstellen' : 'Kanal erstellen'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          {!isCat ? <Seg<Kind> items={[['text', '# Text'], ['voice', '🔊 Sprache'], ['voice3d', '🧊 3D-Raum']]} value={kind} onChange={setKind} /> : null}
+          {!isCat ? <Seg<Kind> items={[['text', '# Text'], ['voice', '🔊 Sprache'], ['voice3d', '🧊 3D-Raum'], ['game', '🎯 Spiel']]} value={kind} onChange={setKind} /> : null}
           <Field label={isCat ? 'Name der Kategorie' : 'Name'} value={name} onChangeText={setName} placeholder={isCat ? 'z. B. 🎮 Gaming' : kind === 'text' ? 'z. B. allgemein' : 'z. B. Chillecke'} maxLength={isCat ? 40 : 50} autoFocus />
           {!isCat && kind === 'voice3d' ? <>
             <T style={s.label}>Raum</T>

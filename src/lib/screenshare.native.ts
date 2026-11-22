@@ -149,9 +149,10 @@ function onRoom(members: any[]) {
     return;
   }
   S.members = new Set(members.map((x) => x.cid));
-  for (const [cid, p] of S.peers) if (!S.members.has(cid)) { closePeer(p); S.peers.delete(cid); }
+  for (const [cid, p] of S.peers) if (!S.members.has(cid) || members.find((x) => x.cid === cid)?.uid === me.uid) { closePeer(p); S.peers.delete(cid); }
   for (const x of members) {
-    if (x.cid === myCid || x.so || S.peers.has(x.cid)) continue;
+    // nicht mit sich selbst verbinden (eigene Web-Ansicht in der App): sonst käme das eigene Bild zurück aufs Handy
+    if (x.cid === myCid || x.so || x.uid === me.uid || S.peers.has(x.cid)) continue;
     // wie im Web: wer später kam, baut auf – der Helfer kommt meist zuletzt und bietet allen sein Bild an
     if (x.since < me.since || (x.since === me.since && x.cid < (myCid || ''))) makePeer(x.cid);
   }

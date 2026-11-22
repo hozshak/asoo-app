@@ -247,7 +247,7 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
             const row = (
               <Pressable key={c.id} accessibilityRole="button" onPress={() => open(c)} style={({ pressed }) => [s.ch, pressed && s.chPressed]}>
                 <View>
-                  <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : 'volume'} size={18} color={n ? C.text : C.faint} />
+                  <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : c.type === 'game' ? 'target' : 'volume'} size={18} color={n ? C.text : C.faint} />
                   {priv ? <View style={s.lock}><Icon name="lock" size={9} color={C.text2} stroke={2.6} /></View> : null}
                 </View>
                 <T style={[s.chName, n ? { color: C.text, fontWeight: '700' } : null]} numberOfLines={1}>{c.name}</T>

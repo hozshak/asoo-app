@@ -7,7 +7,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 export type PickedImage = { uri: string; mime: string; width?: number; height?: number };
 type Source = 'camera' | 'library' | 'files';
-type Opts = { title?: string; crop?: [number, number]; quality?: number; maxSide?: number };
+type Opts = { title?: string; crop?: [number, number]; quality?: number; maxSide?: number; onWork?: () => void };
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -31,30 +31,41 @@ function askSource(title: string): Promise<Source | null> {
 export async function pickImage(o: Opts = {}): Promise<PickedImage | null> {
   const raw = await pickRaw(o);
   if (!raw || raw.mime === 'image/gif') return raw; // GIFs bleiben (sonst wären sie nicht mehr bewegt)
-  return (await shrink(raw.uri, o.maxSide ?? 1600)) || raw;
+  o.onWork?.(); // ab hier sieht man „wird vorbereitet …“ statt eines stehenden Bildschirms
+  return (await shrink(raw, o.maxSide ?? 1600, o.crop)) || raw;
 }
 
 /**
  * Verkleinern vor dem Hochladen: Handyfotos haben oft 4–8 MB – der Server nimmt fürs Profilbild höchstens 3 MB, und so
  * große Dateien brauchen im Mobilnetz lange. Längste Seite auf maxSide Pixel, als JPEG.
  */
-async function shrink(uri: string, maxSide: number): Promise<PickedImage | null> {
+async function shrink(raw: PickedImage, maxSide: number, crop?: [number, number]): Promise<PickedImage | null> {
   try {
-    const ctx = ImageManipulator.manipulate(uri);
-    let img = await ctx.renderAsync();
-    if (Math.max(img.width, img.height) > maxSide) {
-      ctx.resize(img.width >= img.height ? { width: maxSide } : { height: maxSide });
-      img = await ctx.renderAsync();
+    const ctx = ImageManipulator.manipulate(raw.uri);
+    // Größe ist meist schon bekannt (Bildauswahl liefert sie mit): dann gleich verkleinert zeichnen – das volle Bild
+    // (12–48 Megapixel) nur einmal zu entpacken spart am iPhone spürbar Zeit
+    let w = raw.width || 0, hgt = raw.height || 0;
+    // Beim Zuschneiden die echte (gedrehte) Größe nehmen: Handyfotos stehen oft nur per Kennzeichen hochkant
+    if (!w || !hgt || crop) { const probe = await ctx.renderAsync(); w = probe.width; hgt = probe.height; }
+    // Zuschneiden (z. B. quadratisch fürs Profilbild): mittig, selbst – die Bildauswahl mit eingebautem Zuschneiden
+    // ist am iPhone die alte, langsame (öffnet die Fotos erst nach Sekunden)
+    if (crop) {
+      const want = crop[0] / crop[1], cw = w / hgt > want ? Math.round(hgt * want) : w, ch = w / hgt > want ? hgt : Math.round(w / want);
+      if (cw < w || ch < hgt) { ctx.crop({ originX: Math.round((w - cw) / 2), originY: Math.round((hgt - ch) / 2), width: cw, height: ch }); w = cw; hgt = ch; }
     }
+    if (Math.max(w, hgt) > maxSide) ctx.resize(w >= hgt ? { width: maxSide } : { height: maxSide });
+    const img = await ctx.renderAsync();
     const out = await img.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
     return { uri: out.uri, mime: 'image/jpeg', width: img.width, height: img.height };
   } catch { return null; }
 }
 
-async function pickRaw({ title = 'Bild wählen', crop, quality = 0.75 }: Opts): Promise<PickedImage | null> {
+async function pickRaw({ title = 'Bild wählen', crop }: Opts): Promise<PickedImage | null> {
   const src = await askSource(title);
   if (!src) return null;
-  const common: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality, exif: false, ...(crop ? { allowsEditing: true, aspect: crop } : {}) };
+  // Current: das Foto so übernehmen, wie es ist (kein Umwandeln von HEIC nach JPEG in voller Größe – das dauerte am iPhone
+  // mehrere Sekunden). Verkleinert und nach JPEG gebracht wird es danach in einem Schritt (shrink).
+  const common: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, exif: false, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current };
   if (src === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {

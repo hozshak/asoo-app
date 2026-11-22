@@ -12,6 +12,7 @@ import { bootstrap, putUsers, useStore } from '@/lib/store';
 import { openWeb } from '@/lib/web';
 import { openServer } from '@/components/InviteCard';
 import { ProfileHead } from '@/components/ProfileHead';
+import { ProfileFx } from '@/components/ProfileFx';
 import { Avatar, Btn, Card, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { Icon, type IconName } from '@/components/Icon';
@@ -87,6 +88,7 @@ export default function Profile() {
           </Card>
         </View>
       </ScrollView>
+      <ProfileFx id={u.effect} />
       <Sheet open={more} onClose={() => setMore(false)} items={[
         d.friend === 'friends' ? { label: 'Freundschaft beenden', icon: 'minusCircle', onPress: () => act(() => setFriend(u.id, false)) } : null,
         !d.blocked ? { label: 'Blockieren', icon: 'ban', danger: true, onPress: () => act(() => api('POST', `/api/users/${u.id}/block`, { on: true }).then(bootstrap), 'Blockiert. Ihr seht keine Nachrichten mehr voneinander.') } : null,

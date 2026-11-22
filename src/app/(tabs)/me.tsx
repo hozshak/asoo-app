@@ -1,5 +1,7 @@
-// Ich: kompaktes Profil (Banner, Rahmen, Name, Status-Text), Status als kleine Knöpfe, darunter alles als Liste –
-// 3D-Avatar, Profil bearbeiten, alle Einstellungen, eigenes Profil, Admin, Abmelden.
+// Ich – wie bei Discord: großes Banner bis unter die Statusleiste, Profilbild links mit Rahmen, Name und Status,
+// „Profil bearbeiten“, Status-Zeile, „Über mich“ und „Mitglied seit“. Alles Weitere (3D-Avatar, Feed, Server entdecken,
+// Admin, Abmelden) steckt hinter dem Zahnrad in den Einstellungen – keine lange Knopf-Liste mehr.
+// Der Profil-Effekt liegt über dem ganzen Bildschirm, damit er nirgends abgeschnitten wird.
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +16,7 @@ import { signOut } from '@/lib/session';
 import { openWeb } from '@/lib/web';
 import { Card, Glow, MenuRow, T, Btn } from '@/components/ui';
 import { ProfileHead } from '@/components/ProfileHead';
+import { ProfileFx } from '@/components/ProfileFx';
 import { Icon } from '@/components/Icon';
 import { StatusGlyph, StatusSheet, statusLabel } from '@/components/MeBar';
 import { frameOf } from '@/lib/frames';
@@ -31,7 +34,7 @@ export default function Me() {
     try { const d = await api<any>('PATCH', '/api/me', body); setState((s) => ({ me: { ...s.me!, ...d.user } })); } catch (e) { setMsg(errText(e)); }
   };
   const pickAvatar = async () => {
-    const r = await chooseImage({ title: 'Profilbild ändern', crop: [1, 1], quality: 0.75, maxSide: 1024 });
+    const r = await chooseImage({ title: 'Profilbild ändern', crop: [1, 1], maxSide: 768, onWork: () => setMsg('Bild wird vorbereitet …') });
     if (!r) return;
     setMsg('Profilbild wird hochgeladen …');
     try { const up = await upload('avatar', r.uri, r.mime); await patch({ avatar: up.key }); setMsg('Profilbild gespeichert ✓'); } catch (e) { setMsg(errText(e)); }
@@ -43,10 +46,8 @@ export default function Me() {
     <View style={{ flex: 1 }}>
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <SafeAreaView edges={['top']} style={{ backgroundColor: C.bg0 }} />
-        <ProfileHead u={me} status={raw} onAvatar={pickAvatar}
+        <ProfileHead u={me} status={raw} onAvatar={pickAvatar} safeTop
           topRight={<Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={19} color="#fff" /></Pressable>}>
-          {me.bio ? <T style={s.bio} numberOfLines={3}>{me.bio}</T> : null}
         </ProfileHead>
 
         {/* wie bei Discord: Status als eine Zeile (antippen = Auswahl von unten) und groß „Profil bearbeiten“ */}
@@ -63,21 +64,11 @@ export default function Me() {
         {msg ? <T style={s.msg}>{msg}</T> : null}
 
         <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 14 }}>
-          <Card>
-            <MenuRow icon="cube" label="3D-Avatar" sub="Figur, Kleidung und Tänze" onPress={() => openWeb(router, '/settings/avatar?solo=1')} />
-            <MenuRow icon="user" label="Mein Profil ansehen" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} last />
-          </Card>
-          <Card>
-            <MenuRow icon="gear" label="Alle Einstellungen" sub="Bild, Banner, Farben, Privatsphäre, Geräte, Mitteilungen" onPress={() => router.push('/settings')} />
-            <MenuRow icon="sparkle" label="Feed" onPress={() => router.push('/feed')} />
-            <MenuRow icon="compass" label="Server entdecken" onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} last={!me.is_admin} />
-            {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" onPress={() => router.push('/admin')} last /> : null}
-          </Card>
-          <Card>
-            <MenuRow icon="logout" label="Abmelden" danger onPress={() => signOut()} right={null} last />
-          </Card>
+          {me.bio ? <Card style={s.card}><T style={s.cardTitle}>Über mich</T><T style={s.bio}>{me.bio}</T></Card> : null}
+          {me.created ? <Card style={s.card}><T style={s.cardTitle}>Mitglied seit</T><T style={s.bio}>{new Date(me.created).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</T></Card> : null}
         </View>
       </ScrollView>
+      <ProfileFx id={me.effect} />
     </View>
   );
 }
@@ -90,7 +81,9 @@ const s = StyleSheet.create({
   name: { fontSize: 24, fontWeight: '800', marginTop: 8, letterSpacing: -0.3, maxWidth: '100%' },
   handle: { color: C.muted, fontSize: 14, marginTop: -2 },
   custom: { color: C.text2, fontSize: 14, marginTop: 6, textAlign: 'center' },
-  bio: { color: C.muted, fontSize: 13.5, marginTop: 4, textAlign: 'center', lineHeight: 19 },
+  bio: { color: C.text2, fontSize: 14.5, marginTop: 4, lineHeight: 20 },
+  card: { padding: 14 },
+  cardTitle: { color: C.muted, fontSize: 12.5, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
   stRow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.bg2, borderWidth: 1, borderColor: C.line },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 16, marginTop: 14 },
   st: { width: '48.5%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 12, backgroundColor: C.bg2, borderWidth: 1, borderColor: C.line, paddingHorizontal: 6 },

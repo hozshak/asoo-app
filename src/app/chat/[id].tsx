@@ -171,7 +171,7 @@ export default function Chat() {
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
         title={
           <Pressable accessibilityRole="button" disabled={!other} onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={18} color={C.muted} /> : other ? <Avatar user={other} size={30} status frame={false} /> : null}
+            {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={18} color={C.muted} /> : other ? <Avatar user={other} size={30} status frame={false} /> : null}
             <T style={{ fontSize: 17, fontWeight: '800', flexShrink: 1 }} numberOfLines={1}>{title}</T>
           </Pressable>
         }
@@ -191,7 +191,7 @@ export default function Chat() {
         </Pressable>
       ) : null}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
-        {info && info.channel.type !== 'text' ? <View style={s.voiceNote}><Icon name={info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={16} color={C.accent} /><T style={s.voiceText}>Sprach- und 3D-Räume kommen mit dem nächsten Update in die App. Den Chat dieses Raums kannst du schon nutzen.</T></View> : null}
+        {info && info.channel.type !== 'text' ? <View style={s.voiceNote}><Icon name={info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={16} color={C.accent} /><T style={s.voiceText}>Sprach- und 3D-Räume kommen mit dem nächsten Update in die App. Den Chat dieses Raums kannst du schon nutzen.</T></View> : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
           <FlatList
             inverted
@@ -229,10 +229,14 @@ export default function Chat() {
             {recording ? <View style={{ flex: 1 }}><VoiceRecorder onCancel={() => setRecording(false)} onDone={(uri, dur) => { setRecording(false); sendAttachment(uri, 'audio/mp4', { name: 'sprachnachricht.m4a', voice: true, dur }); }} /></View> : <>
             <Press label="Bild, Datei oder Umfrage" onPress={() => setPlus(true)} style={s.plus}><Icon name="plus" size={22} color={C.text2} /></Press>
             <TextInput {...(Platform.OS === 'web' ? ({ rows: 1 } as any) : {})} style={s.input} value={text} onChangeText={onType} placeholder={`Nachricht an ${info ? '#' : ''}${title}`} placeholderTextColor={C.faint} multiline maxLength={4000} />
-            <Press label="Senden" onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
+            {/* wie bei Discord: ohne Text stehen GIF und Sprachnachricht direkt neben dem Feld, mit Text der Senden-Knopf */}
+            {!text.trim() && !editing ? <>
+              <Press label="GIF" onPress={() => setGifOpen(true)} style={s.side}><T style={s.gifTxt}>GIF</T></Press>
+              <Press label="Sprachnachricht aufnehmen" onPress={() => setRecording(true)} style={s.side}><Icon name="mic" size={21} color={C.text2} /></Press>
+            </> : <Press label="Senden" onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
               <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <View><Icon name="send" size={19} color="#fff" /></View>
-            </Press>
+            </Press>}
             </>}
           </View>
         </Glass>
@@ -337,6 +341,8 @@ const s = StyleSheet.create({
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   plus: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, color: C.text, backgroundColor: C.bg3, borderRadius: 22, borderWidth: 1, borderColor: C.line, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, fontSize: 16, maxHeight: 140, minHeight: 44, fontFamily: F.medium },
+  side: { width: 40, height: 44, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  gifTxt: { color: C.text2, fontSize: 13, fontFamily: F.bold, borderWidth: 1.6, borderColor: C.text2, borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1, overflow: 'hidden' },
   send: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   sendGlow: { shadowColor: '#a060ff', shadowOpacity: 0.7, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   quick: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 6 },

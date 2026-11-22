@@ -153,7 +153,7 @@ function Channels({ sid, say }: P) {
             <Glass key={c.id} style={[s.card, { marginTop: 8, padding: 0 }]} intensity={20}>
               <View style={s.chHead}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`Kanal ${c.name} bearbeiten`} onPress={() => setOpen(open === c.id ? null : c.id)} style={s.chMain}>
-                  <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : 'volume'} size={17} color={C.muted} />
+                  <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : c.type === 'game' ? 'target' : 'volume'} size={17} color={C.muted} />
                   <T style={{ flex: 1, fontWeight: '700' }} numberOfLines={1}>{c.name}</T>
                   {c.view_role && c.view_role !== 'member' ? <Icon name="lock" size={13} color={C.muted} /> : null}
                 </Pressable>

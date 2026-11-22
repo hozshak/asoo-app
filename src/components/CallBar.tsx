@@ -19,12 +19,12 @@ export function CallBar() {
   useEffect(() => { pulse.value = withRepeat(withTiming(0.35, { duration: 900 }), -1, true); }, []);
   const dot = useAnimatedStyle(() => ({ opacity: pulse.value }));
   if (!voice || visible) return null;
-  const label = voice.kind === 'voice3d' ? '3D-Raum' : voice.kind === 'voice' ? 'Sprachraum' : 'Anruf';
+  const label = voice.kind === 'voice3d' ? '3D-Raum' : voice.kind === 'game' ? 'Spiel' : voice.kind === 'voice' ? 'Sprachraum' : 'Anruf';
   return (
     <Animated.View entering={FadeInUp.duration(220)} exiting={FadeOutUp.duration(180)} style={[s.wrap, { top: ins.top + 4 }]} pointerEvents="box-none">
       <Pressable accessibilityRole="button" accessibilityLabel={`Zurück zum ${label}`} onPress={() => { Haptics.selectionAsync().catch(() => {}); showWeb(voice.path); }} style={s.bar}>
         <Animated.View style={[s.live, dot]} />
-        <Icon name={voice.kind === 'voice3d' ? 'cube' : voice.video ? 'video' : 'phone'} size={15} color="#fff" />
+        <Icon name={voice.kind === 'voice3d' ? 'cube' : voice.kind === 'game' ? 'target' : voice.video ? 'video' : 'phone'} size={15} color="#fff" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <T style={s.title} numberOfLines={1}>{voice.title || label}</T>
           <T style={s.sub} numberOfLines={1}>{label} läuft · zum Zurückkehren tippen</T>

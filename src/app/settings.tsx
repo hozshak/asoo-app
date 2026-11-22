@@ -15,6 +15,7 @@ import { FRAMES } from '@/lib/frames';
 import { NameText, NAME_STYLES } from '@/components/NameText';
 import { EFFECTS, ProfileFx } from '@/components/ProfileFx';
 import { LookSection, PrivacySection, PushSection } from '@/components/SettingsMore';
+import { signOut } from '@/lib/session';
 import { C, F, R } from '@/lib/theme';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
@@ -54,6 +55,7 @@ export default function Settings() {
             </Pressable>
             <Section style={s.h2}>Aussehen</Section>
             <Card>
+              <MenuRow icon="cube" label="3D-Avatar" sub="Figur und Farben" onPress={() => router.push('/avatar3d')} />
               <MenuRow icon="image" label="Bild, Banner & Farben" onPress={() => open('look')} />
               <MenuRow icon="sparkle" label="Profilrahmen" sub={frameName || 'Keiner'} onPress={() => open('frame')} />
               <MenuRow icon="edit" label="Namens-Stil" onPress={() => open('name')} />
@@ -67,7 +69,14 @@ export default function Settings() {
             </Card>
             <Section style={s.h2}>Mehr</Section>
             <Card>
-              <MenuRow icon="globe" label="Rechtliches" sub="Regeln, Datenschutz, Impressum" onPress={() => open('legal')} />
+              <MenuRow icon="user" label="Mein Profil ansehen" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
+              <MenuRow icon="sparkle" label="Feed" onPress={() => router.push('/feed')} />
+              <MenuRow icon="compass" label="Server entdecken" onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} />
+              {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" onPress={() => router.push('/admin')} /> : null}
+              <MenuRow icon="globe" label="Rechtliches" sub="Regeln, Datenschutz, Impressum" onPress={() => open('legal')} last />
+            </Card>
+            <Card style={{ marginTop: 12 }}>
+              <MenuRow icon="logout" label="Abmelden" danger onPress={() => signOut()} right={null} />
               <MenuRow icon="trash" label="Konto löschen" danger onPress={() => open('delete')} last />
             </Card>
           </>

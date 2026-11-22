@@ -13,7 +13,7 @@ import { C } from '@/lib/theme';
 
 const KIND: Record<string, [string, IconName, string]> = {
   mention: ['hat dich erwähnt', 'at', C.warn], reply: ['hat dir geantwortet', 'reply', C.accent], friend_request: ['möchte mit dir befreundet sein', 'userPlus', C.accent2],
-  friend_accept: ['hat deine Anfrage angenommen', 'check', C.ok], follow: ['folgt dir jetzt', 'user', C.info], like: ['gefällt dein Beitrag', 'heart', C.accent2], comment: ['hat deinen Beitrag kommentiert', 'comment', C.info],
+  friend_accept: ['hat deine Anfrage angenommen', 'check', C.ok], call: ['hat dich angerufen', 'phone', C.ok], follow: ['folgt dir jetzt', 'user', C.info], like: ['gefällt dein Beitrag', 'heart', C.accent2], comment: ['hat deinen Beitrag kommentiert', 'comment', C.info],
 };
 
 export default function Notifications() {

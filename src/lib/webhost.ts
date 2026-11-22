@@ -6,9 +6,9 @@ import { isSharing, stopScreenShare } from './screenshare';
 
 export type VoiceInfo = { room: string; title: string; path: string; kind: string; video: boolean };
 export type RingInfo = { dm: string; from: string; name: string; title: string; avatar?: string | null };
-type S = { started: boolean; path: string; visible: boolean; busy: boolean; loaded: boolean; voice: VoiceInfo | null; ring: RingInfo | null };
+type S = { started: boolean; path: string; visible: boolean; busy: boolean; loaded: boolean; voice: VoiceInfo | null; ring: RingInfo | null; muted: boolean; deaf: boolean };
 
-let st: S = { started: false, path: '/channels/@me', visible: false, busy: false, loaded: false, voice: null, ring: null };
+let st: S = { started: false, path: '/channels/@me', visible: false, busy: false, loaded: false, voice: null, ring: null, muted: false, deaf: false };
 const subs = new Set<() => void>();
 const set = (p: Partial<S>) => { st = { ...st, ...p }; subs.forEach((f) => f()); };
 export const getHost = () => st;
@@ -21,6 +21,14 @@ let inject: ((js: string) => void) | null = null;
 export function attachInject(fn: ((js: string) => void) | null) { inject = fn; }
 const run = (js: string) => { if (inject && st.loaded) inject(`try{${js}}catch(e){};true;`); };
 
+/** Stumm / Ton aus (Leiste unten, wie bei Discord). Gilt sofort im Anruf, sonst für den nächsten. false = Fenster noch nicht bereit. */
+export function toggleVoice(what: 'mute' | 'deaf'): boolean {
+  if (!inject || !st.loaded) return false;
+  // sofort anzeigen, die Web-App bestätigt kurz danach
+  if (what === 'mute') set({ muted: !st.muted, deaf: false }); else set({ deaf: !st.deaf });
+  run(`window.__asooVoice(${JSON.stringify(what)})`);
+  return true;
+}
 /** Seite der Web-App zeigen (z. B. '/feed', '/channels/<server>/<raum>'). */
 export function showWeb(path: string) {
   if (!st.started) { set({ started: true, path, visible: true, busy: true }); return; }
@@ -34,7 +42,7 @@ export function hideWeb() {
 }
 /** Nach dem Anmelden im Hintergrund schon laden, damit die erste Web-Seite sofort da ist. */
 export function prewarmWeb() { if (!st.started) set({ started: true, path: '/channels/@me', visible: false, busy: false }); }
-export function resetWeb() { st = { started: false, path: '/channels/@me', visible: false, busy: false, loaded: false, voice: null, ring: null }; subs.forEach((f) => f()); }
+export function resetWeb() { st = { started: false, path: '/channels/@me', visible: false, busy: false, loaded: false, voice: null, ring: null, muted: false, deaf: false }; subs.forEach((f) => f()); }
 
 export const leaveCall = () => run('window.__asooLeave()');
 export function answerCall(dm: string) { set({ ring: null }); run(`window.__asooAnswer(${JSON.stringify(dm)})`); showWeb(`/channels/@me/${dm}`); }
@@ -56,6 +64,7 @@ export function onWebMessage(m: any): { open?: string; auth?: boolean; share?: b
       // Sprachraum verlassen: auch das Bildschirm-Teilen beenden
       if (!m.room && isSharing()) stopScreenShare();
       else if (m.room && isSharing() && getHost().voice && getHost().voice!.room !== m.room) stopScreenShare();
+      if (typeof m.muted === 'boolean') set({ muted: m.muted, deaf: !!m.deaf });
       set({ voice: m.room ? { room: m.room, title: m.title || '', path: m.path || '/channels/@me', kind: m.kind || 'call', video: !!m.video } : null }); return {};
     case 'ring': set({ ring: { dm: m.dm, from: m.from, name: m.name, title: m.title, avatar: m.avatar } }); return {};
     case 'ringstop': if (st.ring?.dm === m.dm) set({ ring: null }); return {};

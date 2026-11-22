@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { putUsers, useStore } from '@/lib/store';
-import { Avatar, Btn, Empty, Glow, Seg, T } from '@/components/ui';
+import { Avatar, Btn, Empty, Glow, Seg, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { PostCard, type Post } from '@/components/PostCard';
 import { C, F } from '@/lib/theme';
@@ -47,8 +47,9 @@ export default function Feed() {
   const remove = (id: string) => setPosts((l) => l.filter((x) => x.id !== id));
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: 'Feed' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Glow />
+      <TopBar title={'Feed'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         <FlatList
           data={posts}
@@ -81,10 +82,10 @@ function Composer({ onPosted }: { onPosted: (p: Post) => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const pick = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
+    const r = await chooseImage({ title: 'Bild zum Beitrag', quality: 0.75, maxSide: 1600 });
+    if (!r) return;
     setBusy(true); setErr('');
-    try { const up = await upload('post', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); setImg(up.key); }
+    try { const up = await upload('post', r.uri, r.mime); setImg(up.key); }
     catch (e) { setErr(errText(e)); }
     setBusy(false);
   };

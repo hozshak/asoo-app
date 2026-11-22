@@ -55,11 +55,11 @@ export default function Root() {
         <Stack screenOptions={{ headerStyle: { backgroundColor: C.bg1 }, headerShadowVisible: false, headerTintColor: C.text, headerTitleStyle: { fontFamily: F.bold, fontSize: 17 }, contentStyle: { backgroundColor: C.bg0 }, headerBackButtonDisplayMode: 'minimal' }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="chat/[id]" options={{ title: '' }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-          <Stack.Screen name="settings" options={{ title: 'Einstellungen' }} />
-          <Stack.Screen name="feed" options={{ title: 'Feed' }} />
-          <Stack.Screen name="post/[id]" options={{ title: 'Beitrag' }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="feed" options={{ headerShown: false }} />
+          <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
           {/* Blätter von unten (nativ statt Web-Dialog) */}
           <Stack.Screen name="server-new" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="server-invite" options={{ headerShown: false, presentation: 'modal' }} />

@@ -2,16 +2,16 @@
 // lange drücken = Menü (Reaktion, Antworten, Kopieren, Bearbeiten, Melden, Löschen).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { api, errText, mediaSource, upload } from '@/lib/api';
-import { addPending, can, channelInfo, dmTitle, getState, loadMessages, markFailed, markRead, mentionsMe, replaceMsg, roleColor, userOf, useStore, type Msg } from '@/lib/store';
+import { addPending, setState, can, channelInfo, dmTitle, getState, loadMessages, markFailed, markRead, mentionsMe, replaceMsg, roleColor, userOf, useStore, type Msg } from '@/lib/store';
 import { send, setViewing } from '@/lib/live';
 import { openWeb, webAction } from '@/lib/web';
 import { inviteCodes, openLink } from '@/lib/links';
@@ -19,16 +19,20 @@ import { InviteCard } from '@/components/InviteCard';
 import { NameText } from '@/components/NameText';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
-import { Avatar, Glass, Glow, Press, Sheet, T, type SheetItem } from '@/components/ui';
+import { Avatar, Glass, Glow, Press, Sheet, T, TopBar, TopIcon, type SheetItem } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { CallConfirm, type CallKind } from '@/components/CallConfirm';
+import { useHost } from '@/lib/webhost';
+import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifUrl, type Poll } from '@/components/ChatExtras';
+import * as DocumentPicker from 'expo-document-picker';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
 
+const NO_CALLERS: { uid: string }[] = []; // feste leere Liste (eine neue bei jedem Zeichnen ließe den Zustand endlos neu laden)
 const QUICK = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 const REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['minor_safety', 'Gefahr für Minderjährige'], ['self_harm', 'Selbstverletzung'], ['illegal', 'Illegale Inhalte'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const nav = useNavigation();
   const router = useRouter();
   const ins = useSafeAreaInsets();
   const me = useStore((s) => s.me);
@@ -45,29 +49,19 @@ export default function Chat() {
   const [reportFor, setReportFor] = useState<Msg | null>(null);
   const [big, setBig] = useState<string | null>(null);
   const [err, setErr] = useState('');
+  const [ask, setAsk] = useState<CallKind | null>(null); // „Anruf starten?“
+  // Läuft in diesem Gespräch ein Anruf, bei dem man selbst nicht dabei ist? Dann oben „Beitreten“ (wie bei Discord)
+  const callers = useStore((st) => (dm ? st.voice[dm.id] : undefined)) || NO_CALLERS;
+  const inThisCall = useHost((h) => h.voice?.room === dm?.id);
+  const callOn = !!dm && callers.length > 0 && !inThisCall;
+  const [plus, setPlus] = useState(false); // Plus-Menü (Bild, Datei, Umfrage)
+  const [pollOpen, setPollOpen] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
+  const [recording, setRecording] = useState(false);
   const lastTyping = useRef(0);
   const other = dm && dm.kind === 'dm' ? dm.members.find((u) => u.id !== me?.id) : null;
 
   const title = info ? info.channel.name : dm ? dmTitle(dm, me?.id) : '';
-  useEffect(() => {
-    nav.setOptions({
-      headerTitle: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: 260 }}>
-          {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={18} color={C.muted} /> : other ? <Avatar user={other} size={28} status frame={false} /> : null}
-          <T style={{ fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{title}</T>
-        </View>
-      ),
-      // Angeheftete und Suche nativ (search.tsx); Anrufe (Sprache/Video) über die Web-Ansicht der Unterhaltung (room.tsx)
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 8 }}>
-          <HeadIcon icon="pin" label="Angeheftete Nachrichten" color={C.text2} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
-          <HeadIcon icon="search" label="Suchen" color={C.text2} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
-          {dm ? <HeadIcon icon="phone" label="Anrufen" color={C.accent} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=1`)} /> : null}
-          {dm ? <HeadIcon icon="video" label="Videoanruf" color={C.accent} onPress={() => openWeb(router, `/channels/@me/${dm.id}?call=video`)} /> : null}
-        </View>
-      ),
-    });
-  }, [title, other?.status, dm?.id, sid]);
   useEffect(() => {
     setViewing(id);
     loadMessages(id).catch((e) => setErr(errText(e)));
@@ -100,17 +94,47 @@ export default function Chat() {
     } catch (e) { markFailed(id, nonce); setErr(errText(e)); }
   };
   const sendImage = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
-    const a = r.assets[0];
+    const r = await chooseImage({ title: 'Bild senden', quality: 0.8, maxSide: 1600 });
+    if (!r) return;
+    const a = r;
     const nonce = 'n' + Date.now().toString(36);
     addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: '', created: Date.now(), attachments: [{ key: '', local: a.uri, w: a.width, h: a.height }], reactions: [], kind: 'default', pending: true });
     try {
-      const up = await upload('attachment', a.uri, a.mimeType || 'image/jpeg');
-      const d = await api<any>('POST', `/api/channels/${id}/messages`, { content: '', nonce, attachments: [{ key: up.key, w: a.width, h: a.height, name: a.fileName || 'bild' }] });
+      const up = await upload('attachment', a.uri, a.mime);
+      const d = await api<any>('POST', `/api/channels/${id}/messages`, { content: '', nonce, attachments: [{ key: up.key, w: a.width, h: a.height, name: 'bild.' + (a.mime.split('/')[1] || 'jpg') }] });
       replaceMsg(id, nonce, { ...d.message, nonce });
     } catch (e) { markFailed(id, nonce); setErr(errText(e)); }
   };
+  /** Anhang (Datei oder Sprachnachricht) hochladen und als Nachricht schicken */
+  const sendAttachment = async (uri: string, mime: string, att: { name: string; size?: number; voice?: boolean; dur?: number }) => {
+    const nonce = 'n' + Date.now().toString(36);
+    addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: '', created: Date.now(), attachments: [{ key: '', local: uri, type: mime, ...att }], reactions: [], kind: 'default', pending: true });
+    try {
+      const up = await upload('attachment', uri, mime);
+      const d = await api<any>('POST', `/api/channels/${id}/messages`, { content: '', nonce, attachments: [{ key: up.key, ...att }] });
+      replaceMsg(id, nonce, { ...d.message, nonce });
+    } catch (e) { markFailed(id, nonce); setErr(errText(e)); }
+  };
+  const sendFile = async () => {
+    const d = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
+    if (d.canceled || !d.assets?.[0]) return;
+    const a = d.assets[0];
+    if (a.size && a.size > 10 * 1024 * 1024) { setErr(`„${a.name}“ ist zu groß (höchstens 10 MB).`); return; }
+    sendAttachment(a.uri, a.mimeType || 'application/octet-stream', { name: a.name || 'datei', size: a.size });
+  };
+  const sendGif = async (url: string) => {
+    const nonce = 'n' + Date.now().toString(36);
+    addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: url, created: Date.now(), attachments: [], reactions: [], kind: 'default', pending: true });
+    try { const d = await api<any>('POST', `/api/channels/${id}/messages`, { content: url, nonce }); replaceMsg(id, nonce, { ...d.message, nonce }); }
+    catch (e) { markFailed(id, nonce); setErr(errText(e)); }
+  };
+  const sendPoll = async (poll: { q: string; options: string[]; multi: boolean }) => {
+    const nonce = 'n' + Date.now().toString(36);
+    addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: poll.q, created: Date.now(), attachments: [], reactions: [], kind: 'poll', pending: true, poll: { q: poll.q, multi: poll.multi, options: poll.options.map((t) => ({ t, n: 0 })), voters: 0, mine: [] } });
+    try { const d = await api<any>('POST', `/api/channels/${id}/messages`, { nonce, poll }); replaceMsg(id, nonce, { ...d.message, nonce }); }
+    catch (e) { markFailed(id, nonce); setErr(errText(e)); }
+  };
+  const setPoll = (mid: string, p: Poll) => setState((st) => { const b = st.messages[id]; return b ? { messages: { ...st.messages, [id]: { ...b, list: b.list.map((x) => (x.id === mid ? { ...x, poll: p } : x)) } } } : {}; });
   const onType = (v: string) => {
     setText(v);
     if (Date.now() - lastTyping.current > 3000 && v) { lastTyping.current = Date.now(); send({ t: 'typing', ch: id }); }
@@ -141,6 +165,31 @@ export default function Chat() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
+      {dm ? <CallConfirm kind={ask} who={other} name={dm ? dmTitle(dm, me?.id) : ''} onClose={() => setAsk(null)} onStart={(k) => openWeb(router, `/channels/@me/${dm.id}?call=${k === 'video' ? 'video' : '1'}`)} /> : null}
+      {/* eigene Kopfleiste (die von iOS 26 zeigt helle Glas-Knöpfe) – Anrufe über die Web-Ansicht der Unterhaltung */}
+      <TopBar
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        title={
+          <Pressable accessibilityRole="button" disabled={!other} onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={18} color={C.muted} /> : other ? <Avatar user={other} size={30} status frame={false} /> : null}
+            <T style={{ fontSize: 17, fontWeight: '800', flexShrink: 1 }} numberOfLines={1}>{title}</T>
+          </Pressable>
+        }
+        right={<>
+          <TopIcon icon="pin" label="Angeheftete Nachrichten" onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
+          <TopIcon icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
+          {dm ? <TopIcon icon="phone" label="Anrufen" color={C.accent} onPress={() => setAsk('voice')} /> : null}
+          {dm ? <TopIcon icon="video" label="Videoanruf" color={C.accent} onPress={() => setAsk('video')} /> : null}
+        </>}
+      />
+      {callOn ? (
+        <Pressable accessibilityRole="button" onPress={() => openWeb(router, `/channels/@me/${dm!.id}?call=1`)} style={s.callOn}>
+          <View style={s.callDot} />
+          <Icon name="phone" size={17} color="#062b1b" stroke={2.4} />
+          <T style={{ flex: 1, color: '#062b1b', fontWeight: '800' }} numberOfLines={1}>{callers.length === 1 ? `${userOf(callers[0].uid).display} ruft an` : 'Anruf läuft'}</T>
+          <T style={{ color: '#062b1b', fontWeight: '900' }}>Beitreten</T>
+        </Pressable>
+      ) : null}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         {info && info.channel.type !== 'text' ? <View style={s.voiceNote}><Icon name={info.channel.type === 'voice3d' ? 'cube' : 'volume'} size={16} color={C.accent} /><T style={s.voiceText}>Sprach- und 3D-Räume kommen mit dem nächsten Update in die App. Den Chat dieses Raums kannst du schon nutzen.</T></View> : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
@@ -153,11 +202,11 @@ export default function Chat() {
             contentContainerStyle={{ paddingVertical: 12 }}
             renderItem={({ item, index }) => {
               const prev = data[index + 1];
-              const head = !prev || prev.author_id !== item.author_id || item.created - prev.created > 7 * 60000 || !!item.reply || item.kind !== 'default' || prev.kind !== 'default';
+              const head = !prev || prev.author_id !== item.author_id || item.created - prev.created > 7 * 60000 || !!item.reply || (item.kind !== 'default' && item.kind !== 'poll') || (prev.kind !== 'default' && prev.kind !== 'poll');
               const day = !prev || new Date(prev.created).toDateString() !== new Date(item.created).toDateString();
               return <>
                 {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
-                <MessageRow m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
+                <MessageRow onPoll={setPoll} m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
               </>;
             }}
             ListFooterComponent={box.hasMore ? <ActivityIndicator color={C.faint} style={{ margin: 12 }} /> : (
@@ -177,37 +226,41 @@ export default function Chat() {
             <Pressable accessibilityLabel="Abbrechen" onPress={() => { setReply(null); if (editing) { setEditing(null); setText(''); } }}><Icon name="x" size={18} color={C.muted} /></Pressable>
           </Animated.View> : null}
           <View style={s.composer}>
-            <Press label="Bild senden" onPress={sendImage} style={s.plus}><Icon name="plus" size={22} color={C.text2} /></Press>
+            {recording ? <View style={{ flex: 1 }}><VoiceRecorder onCancel={() => setRecording(false)} onDone={(uri, dur) => { setRecording(false); sendAttachment(uri, 'audio/mp4', { name: 'sprachnachricht.m4a', voice: true, dur }); }} /></View> : <>
+            <Press label="Bild, Datei oder Umfrage" onPress={() => setPlus(true)} style={s.plus}><Icon name="plus" size={22} color={C.text2} /></Press>
             <TextInput {...(Platform.OS === 'web' ? ({ rows: 1 } as any) : {})} style={s.input} value={text} onChangeText={onType} placeholder={`Nachricht an ${info ? '#' : ''}${title}`} placeholderTextColor={C.faint} multiline maxLength={4000} />
             <Press label="Senden" onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
               <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <View><Icon name="send" size={19} color="#fff" /></View>
             </Press>
+            </>}
           </View>
         </Glass>
       </KeyboardAvoidingView>
       <Sheet open={!!menu} onClose={() => setMenu(null)} items={menuItems} header={menu ? (
         <View style={s.quick}>{QUICK.map((e) => <Press key={e} label={`Reaktion ${e}`} onPress={() => { const m = menu; setMenu(null); react(m, e); }} style={s.quickBtn} scale={0.85}><T style={{ fontSize: 26, lineHeight: 34 }}>{e}</T></Press>)}</View>
       ) : null} />
+      <Sheet open={plus} onClose={() => setPlus(false)} title="Senden" items={[
+        { label: 'Foto oder Bild', icon: 'image', onPress: sendImage },
+        { label: 'Datei', icon: 'folder', onPress: sendFile },
+        { label: 'GIF', icon: 'smile', onPress: () => setGifOpen(true) },
+        { label: 'Sprachnachricht', icon: 'mic', onPress: () => setRecording(true) },
+        { label: 'Umfrage', icon: 'check', onPress: () => setPollOpen(true) },
+      ]} />
+      <PollComposer open={pollOpen} onClose={() => setPollOpen(false)} onSend={sendPoll} />
+      <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
       <Sheet open={!!reportFor} onClose={() => setReportFor(null)} title="Warum meldest du das?" items={REASONS.map(([k, l]) => ({ label: l, onPress: () => report(reportFor!, k) }))} />
       <Modal visible={!!big} transparent animationType="fade" onRequestClose={() => setBig(null)}>
-        <Pressable style={s.lightbox} onPress={() => setBig(null)}>{big ? <Image source={mediaSource(big)!} style={{ width: '100%', height: '80%' }} contentFit="contain" /> : null}</Pressable>
+        <Pressable style={s.lightbox} onPress={() => setBig(null)}>{big ? <Image source={big.startsWith('http') ? { uri: big } : mediaSource(big)!} style={{ width: '100%', height: '80%' }} contentFit="contain" /> : null}</Pressable>
       </Modal>
     </View>
   );
 }
 
-function HeadIcon({ icon, label, color, onPress }: { icon: 'pin' | 'search' | 'phone' | 'video'; label: string; color: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.headIcon, { backgroundColor: pressed ? C.accentSoft : 'rgba(255,255,255,0.07)', transform: [{ scale: pressed ? 0.92 : 1 }] }]}>
-      <Icon name={icon} size={17} color={color} stroke={2.2} />
-    </Pressable>
-  );
-}
 
-function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink }: { m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
+function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink, onPoll }: { onPoll: (id: string, p: Poll) => void; m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
   const u = userOf(m.author_id);
-  if (m.kind !== 'default') return (
+  if (m.kind !== 'default' && m.kind !== 'poll') return (
     <View style={s.sys}><View style={s.sysIcon}><Icon name="userPlus" size={13} color={C.ok} /></View><T style={s.sysText}><T style={{ color: C.text, fontWeight: '700' }}>{u.display}</T> ist gerade gelandet. 👋</T></View>
   );
   const me = getState().me;
@@ -223,10 +276,15 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
             <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} />
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
-          {m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
+          {m.kind === 'poll' && m.poll ? <PollCard id={m.id} poll={m.poll} pending={m.pending} onChange={(p) => onPoll(m.id, p)} />
+            : gifUrl(m.content) ? <Pressable onPress={() => onImage(gifUrl(m.content)!)}><Image source={{ uri: gifUrl(m.content)! }} style={{ width: 220, height: 180, borderRadius: 14, marginTop: 6 }} contentFit="cover" autoplay /></Pressable>
+            : m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
           {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
           {m.edited ? <T style={s.edited}>(bearbeitet)</T> : null}
           {m.attachments?.map((a, i) => {
+            const kind = attKind(a);
+            if (kind === 'voice') return <VoiceMsg key={i} a={a} dim={m.pending} />;
+            if (kind !== 'image') return <FileCard key={i} a={a} />;
             const src = a.local ? { uri: a.local } : mediaSource(a.key);
             const w = Math.min(260, a.w || 260), h = a.w && a.h ? Math.min(320, (w / a.w) * a.h) : 200;
             return src ? <Pressable key={i} onPress={() => a.key && onImage(a.key)}><Image source={src} style={{ width: w, height: h, borderRadius: 14, marginTop: 6, opacity: m.pending ? 0.6 : 1, borderWidth: 1, borderColor: C.line }} contentFit="cover" transition={200} /></Pressable> : null;
@@ -242,7 +300,8 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
 }
 
 const s = StyleSheet.create({
-  headIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  callOn: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 10, marginTop: 8, height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: C.ok },
+  callDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#062b1b' },
   msg: { paddingHorizontal: 14, paddingVertical: 2 },
   mentioned: { backgroundColor: C.mention, borderLeftWidth: 3, borderLeftColor: C.mentionLine, paddingLeft: 11 },
   name: { fontWeight: '700', fontSize: 15.5, flexShrink: 1 },

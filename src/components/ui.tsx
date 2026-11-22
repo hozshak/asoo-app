@@ -124,8 +124,9 @@ function shade(hex: string) {
 /** Server-Symbol: rund, beim aktiven Server abgerundetes Quadrat im Farbverlauf (wie die Leiste der Web-App). */
 export function ServerIcon({ server, size = 48, active = false }: { server: Server; size?: number; active?: boolean }) {
   const src = mediaSource(server.icon);
-  const r = useSharedValue(active ? 16 : size / 2);
-  useEffect(() => { r.value = withTiming(active ? 16 : size / 2, { duration: 180 }); }, [active]);
+  // immer rund (der gewählte Server leuchtet nur) – die eckigen Formen wirkten auf dem Handy wie abgeschnitten
+  const r = useSharedValue(size / 2);
+  useEffect(() => { r.value = size / 2; }, [size]);
   const a = useAnimatedStyle(() => ({ borderRadius: r.value }));
   return (
     <Animated.View style={[{ width: size, height: size, overflow: 'hidden', borderWidth: 1, borderColor: active ? 'transparent' : C.line }, a, active && s.activeGlow]}>
@@ -214,6 +215,35 @@ export function Seg<K extends string>({ items, value, onChange, style }: { items
 }
 
 /** Kopfzeile eines Blatts (Modal): Titel, links Schließen, rechts optional eine Aktion. */
+/** Höhe der eigenen Kopfleiste (ohne den Rand oben fürs Handy) – für die Tastatur-Verschiebung (lib/keyboard.ts). */
+export const TOPBAR_H = 52;
+/**
+ * Eigene Kopfleiste statt der von iOS: Ab iOS 26 legt das System um jeden Knopf der Kopfleiste eine helle Glas-Kapsel –
+ * im dunklen Asoo-Design sahen „Zurück“, Anrufen, Suchen … wie weiße Flecken aus. Hier: Zurück-Pfeil, Titel, Knöpfe rechts.
+ */
+export function TopBar({ title, right, onBack }: { title: React.ReactNode; right?: React.ReactNode; onBack: () => void }) {
+  const ins = useSafeAreaInsets();
+  return (
+    <View style={[s.topBar, { paddingTop: ins.top }]}>
+      <View style={s.topRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Zurück" hitSlop={8} onPress={onBack} style={({ pressed }) => [s.topBack, pressed && { backgroundColor: C.accentSoft }]}>
+          <Icon name="back" size={22} color={C.text} stroke={2.4} />
+        </Pressable>
+        <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>{typeof title === 'string' ? <T style={s.topTitle} numberOfLines={1}>{title}</T> : title}</View>
+        {right ? <View style={s.topRight}>{right}</View> : null}
+      </View>
+    </View>
+  );
+}
+/** Runder Knopf für die Kopfleiste (dunkel, passend zum Design). */
+export function TopIcon({ icon, label, color = C.text2, onPress }: { icon: IconName; label: string; color?: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={({ pressed }) => [s.topIcon, pressed && { backgroundColor: C.accentSoft }]}>
+      <Icon name={icon} size={18} color={color} stroke={2.2} />
+    </Pressable>
+  );
+}
+
 export function SheetHead({ title, onClose, right }: { title: string; onClose: () => void; right?: React.ReactNode }) {
   return (
     <View style={s.sheetHead}>
@@ -225,6 +255,12 @@ export function SheetHead({ title, onClose, right }: { title: string; onClose: (
 }
 
 const s = StyleSheet.create({
+  topBar: { backgroundColor: C.bg1, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line, zIndex: 5 },
+  topRow: { height: TOPBAR_H, flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 6, paddingRight: 10 },
+  topBack: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  topTitle: { fontSize: 17, fontWeight: '800' },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  topIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)' },
   btnIn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 18 },
   btnShine: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.22)', borderRadius: R.md },
   btnShadow: { shadowColor: '#8468ff', shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },

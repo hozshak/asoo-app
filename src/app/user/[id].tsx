@@ -13,6 +13,7 @@ import { openWeb } from '@/lib/web';
 import { openServer } from '@/components/InviteCard';
 import { ProfileHead } from '@/components/ProfileHead';
 import { Avatar, Btn, Card, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
+import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { Icon, type IconName } from '@/components/Icon';
 import { openDm, setFriend } from '../(tabs)/friends';
 import { C, statusColor } from '@/lib/theme';
@@ -36,6 +37,7 @@ export default function Profile() {
   const meId = useStore((s) => s.me?.id);
   const [d, setD] = useState<any>(null);
   const [msg, setMsg] = useState('');
+  const [ask, setAsk] = useState<CallKind | null>(null);
   const [report, setReport] = useState(false);
   const [more, setMore] = useState(false);
   const load = async () => { try { const x = await api<any>('GET', `/api/users/${id}`); putUsers([x.user]); setD(x); } catch (e) { setMsg(errText(e)); } };
@@ -47,6 +49,7 @@ export default function Profile() {
   const call = async () => { try { const x = await api<any>('POST', '/api/dms', { user_id: u.id }); openWeb(router, `/channels/@me/${x.dm.id}?call=1`); } catch (e) { setMsg(errText(e)); } };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
+      <CallConfirm kind={ask} who={u} name={u?.display || ''} onClose={() => setAsk(null)} onStart={() => call()} />
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: ins.bottom + 30 }} bounces>
         <ProfileHead u={u}
@@ -57,7 +60,7 @@ export default function Profile() {
         {!me && !u.deleted && !d.blocked ? <View style={s.actions}>
           {d.friend === 'friends' ? <>
             <Action icon="comment" label="Nachricht" onPress={() => openDm(router, u.id).catch((e) => setMsg(errText(e)))} />
-            <Action icon="phone" label="Anrufen" color={C.ok} onPress={call} />
+            <Action icon="phone" label="Anrufen" color={C.ok} onPress={() => setAsk('voice')} />
           </> : null}
           {d.friend === 'none' ? <Action icon="userPlus" label="Hinzufügen" onPress={() => act(() => setFriend(u.id, true), 'Anfrage geschickt ✓')} /> : null}
           {d.friend === 'in' ? <Action icon="check" label="Annehmen" color={C.ok} onPress={() => act(() => setFriend(u.id, true))} /> : null}

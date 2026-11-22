@@ -8,7 +8,7 @@ import { api, errText } from '@/lib/api';
 import { getState, putUsers, userOf, useStore } from '@/lib/store';
 import { RichText, timeLabel } from '@/lib/text';
 import { openLink } from '@/lib/links';
-import { Avatar, Empty, Glow, Sheet, T } from '@/components/ui';
+import { Avatar, Empty, Glow, Sheet, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { NameText } from '@/components/NameText';
 import { PostCard, REPORT_REASONS, type Post } from '@/components/PostCard';
@@ -58,8 +58,9 @@ export default function PostView() {
   const canDel = (c: Comment) => c.author_id === me?.id || post?.author_id === me?.id || !!(getState().me as any)?.is_admin;
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: 'Beitrag' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Glow />
+      <TopBar title={'Beitrag'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         {err ? <Empty icon="sparkle" title="Beitrag nicht gefunden" text={err} /> : !post ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> : (
           <FlatList

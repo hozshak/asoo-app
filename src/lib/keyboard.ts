@@ -1,3 +1,4 @@
+import { TOPBAR_H } from '@/components/ui';
 // Tastatur am iPhone: Ist sie offen, braucht das Eingabefeld unten keinen Platz für den Home-Balken (sonst entsteht eine
 // Lücke über der Tastatur). Der Abstand zur Kopfzeile richtet sich nach dem Gerät (mit Dynamic Island ist sie höher).
 import { useEffect, useState } from 'react';
@@ -17,7 +18,7 @@ export function useKeyboardOpen() {
 /** Höhe der Kopfzeile eines Stapel-Bildschirms (Statusleiste + 44 Punkte Leiste) – für KeyboardAvoidingView. */
 export function useHeaderOffset() {
   const ins = useSafeAreaInsets();
-  return Platform.OS === 'ios' ? ins.top + 44 : 0;
+  return Platform.OS === 'ios' ? ins.top + TOPBAR_H : 0; // eigene Kopfleiste (components/ui TopBar)
 }
 
 /** Abstand unter dem Eingabefeld: Home-Balken bei geschlossener Tastatur, sonst nur ein kleiner Rand. */

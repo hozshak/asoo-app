@@ -4,7 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { Icon } from '@/components/Icon';
 import { bootstrap, getState, useStore } from '@/lib/store';
@@ -54,9 +54,9 @@ function Create() {
   const [err, setErr] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
   const pick = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.75, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
-    try { setErr(''); const up = await upload('icon', r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); setIcon(up.key); } catch (e) { setErr(errText(e)); }
+    const r = await chooseImage({ title: 'Server-Bild', crop: [1, 1], quality: 0.75, maxSide: 1024 });
+    if (!r) return;
+    try { setErr(''); const up = await upload('icon', r.uri, r.mime); setIcon(up.key); } catch (e) { setErr(errText(e)); }
   };
   const create = async () => {
     setBusy(true); setErr('');

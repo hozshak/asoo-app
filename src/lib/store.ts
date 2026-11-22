@@ -8,8 +8,10 @@ export type Channel = { id: string; server_id: string; name: string; type: 'text
 export type Category = { id: string; server_id: string; name: string; position: number; created: number };
 export type Role = { id: string; server_id: string; name: string; color?: string | null; rank?: string; hoist?: number; position: number; mentionable?: number };
 export type Server = { id: string; name: string; icon?: string | null; icon_emoji?: string | null; color?: string | null; banner?: string | null; description?: string; owner_id: string; role: string; member_count?: number; channels: Channel[]; categories?: Category[]; roles?: Role[]; my_roles?: string[] };
-export type DM = { id: string; kind: 'dm' | 'group'; name?: string | null; owner_id?: string | null; last_at: number; members: User[] };
-export type Msg = { id: string; ch: string; author_id: string; content: string; created: number; edited?: number | null; reply_to?: string | null; reply?: any; attachments: { key: string; w?: number; h?: number; name?: string; spoiler?: boolean; local?: string }[]; reactions: { emoji: string; count: number; me: boolean }[]; kind: string; pinned?: boolean; nonce?: string; pending?: boolean; failed?: boolean };
+/** Letzte Nachricht einer Unterhaltung (Vorschau in der Liste): a = Absender, c = Text, att = hat Bild, k = Art, t = Zeit */
+export type LastMsg = { a: string; c: string; att: boolean; k: string; t: number };
+export type DM = { id: string; kind: 'dm' | 'group'; name?: string | null; owner_id?: string | null; last_at: number; last?: LastMsg | null; members: User[] };
+export type Msg = { id: string; ch: string; author_id: string; content: string; created: number; edited?: number | null; reply_to?: string | null; reply?: any; attachments: { key: string; w?: number; h?: number; name?: string; spoiler?: boolean; local?: string; type?: string; size?: number; voice?: boolean; dur?: number }[]; poll?: { q: string; multi: boolean; options: { t: string; n: number }[]; voters: number; mine: number[] }; reactions: { emoji: string; count: number; me: boolean }[]; kind: string; pinned?: boolean; nonce?: string; pending?: boolean; failed?: boolean };
 export type Notif = { id: string; kind: string; actor?: User | null; ref?: string; url?: string; text?: string; created: number; read: number };
 
 export type State = {

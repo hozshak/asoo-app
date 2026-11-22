@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api, errText, mediaSource, upload } from '@/lib/api';
@@ -22,10 +22,10 @@ export function LookSection({ patch, say }: { patch: Patch; say: (t: string) => 
   const [busy, setBusy] = useState<'' | 'avatar' | 'banner'>('');
   if (!me) return null;
   const pick = async (kind: 'avatar' | 'banner') => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
+    const r = await chooseImage({ title: kind === 'avatar' ? 'Profilbild ändern' : 'Banner ändern', crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
+    if (!r) return;
     setBusy(kind);
-    try { const up = await upload(kind, r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); await patch({ [kind]: up.key }, kind === 'avatar' ? 'Profilbild gespeichert ✓' : 'Banner gespeichert ✓'); }
+    try { const up = await upload(kind, r.uri, r.mime); await patch({ [kind]: up.key }, kind === 'avatar' ? 'Profilbild gespeichert ✓' : 'Banner gespeichert ✓'); }
     catch (e) { say(errText(e)); }
     setBusy('');
   };

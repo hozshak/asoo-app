@@ -19,8 +19,8 @@
           "remote-notification",
           "audio"
         ],
-        "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören.",
-        "NSCameraUsageDescription": "Damit du in Sprachräumen und Anrufen deine Kamera teilen kannst.",
+        "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst.",
+        "NSCameraUsageDescription": "Damit du Fotos für dein Profil aufnehmen und in Anrufen deine Kamera teilen kannst.",
         "RTCAppGroupIdentifier": "group.de.feierabendcode.asoo",
         "RTCScreenSharingExtension": "de.feierabendcode.asoo.broadcast"
       },
@@ -50,7 +50,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Damit du Bilder in Chats schicken und ein Profilbild wählen kannst.",
-          "cameraPermission": "Damit du in Sprachräumen und Anrufen deine Kamera teilen kannst.",
+          "cameraPermission": "Damit du Fotos für dein Profil aufnehmen und in Anrufen deine Kamera teilen kannst.",
           "microphonePermission": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören."
         }
       ],
@@ -61,7 +61,9 @@
         }
       ],
       "@config-plugins/react-native-webrtc",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      ["expo-audio", { "microphonePermission": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst." }],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false

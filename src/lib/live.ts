@@ -92,12 +92,13 @@ function apply(m: any) {
       setState((st) => {
         const cur = st.messages[msg.ch];
         const messages = cur ? { ...st.messages, [msg.ch]: { ...cur, list: cur.list.some((x) => x.id === msg.id || (msg.nonce && x.nonce === msg.nonce)) ? cur.list.map((x) => (x.id === msg.id || (msg.nonce && x.nonce === msg.nonce) ? { ...msg, attachments: msg.attachments?.length ? msg.attachments : x.attachments } : x)) : [...cur.list, msg] } } : st.messages;
-        if (msg.author_id === st.me?.id || viewing === msg.ch || st.blocks.includes(msg.author_id)) return { messages };
         const info = channelInfo(msg.ch);
+        // Unterhaltungs-Liste: Vorschau der letzten Nachricht und nach oben (auch für eigene Nachrichten)
+        const dms = info ? st.dms : st.dms.map((d) => (d.id === msg.ch ? { ...d, last_at: msg.created, last: { a: msg.author_id, c: (msg.content || '').slice(0, 120), att: !!msg.attachments?.length, k: msg.kind || 'default', t: msg.created } } : d)).sort((a, b) => b.last_at - a.last_at);
+        if (msg.author_id === st.me?.id || viewing === msg.ch || st.blocks.includes(msg.author_id)) return { messages, dms };
         const unread = { ...st.unread, [msg.ch]: (st.unread[msg.ch] || 0) + 1 };
         const ment = mentionsMe(msg.content || '', info?.server.id) || !info; // Direktnachrichten zählen immer
         const mentions = ment ? { ...st.mentions, [msg.ch]: (st.mentions[msg.ch] || 0) + 1 } : st.mentions;
-        const dms = info ? st.dms : st.dms.map((d) => (d.id === msg.ch ? { ...d, last_at: msg.created } : d)).sort((a, b) => b.last_at - a.last_at);
         return { messages, unread, mentions, dms };
       });
       return;
@@ -120,6 +121,15 @@ function apply(m: any) {
     case 'typing': setState((st) => ({ typing: { ...st.typing, [m.ch]: { ...(st.typing[m.ch] || {}), [m.uid]: Date.now() + 8000 } } })); return;
     case 'read': setState((st) => { const unread = { ...st.unread }, mentions = { ...st.mentions }; delete unread[m.ch]; delete mentions[m.ch]; return { unread, mentions }; }); return;
     case 'user': case 'me': putUsers([m.user]); if (m.user?.id === s.me?.id) setState((st) => ({ me: { ...st.me!, ...m.user } })); return;
+    case 'poll': {
+      // Umfrage-Stand für alle; „mine“ nur übernehmen, wenn man selbst abgestimmt hat
+      setState((st) => {
+        const box = st.messages[m.ch];
+        if (!box) return {};
+        return { messages: { ...st.messages, [m.ch]: { ...box, list: box.list.map((x) => (x.id === m.id ? { ...x, poll: { ...m.poll, mine: m.by === st.me?.id ? m.mine : (x.poll?.mine || []) } } : x)) } } };
+      });
+      return;
+    }
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;

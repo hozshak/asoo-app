@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -11,6 +11,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
 import { Avatar, Badge, Empty, Glass, Glow, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
+import { MeBar } from '@/components/MeBar';
+import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
@@ -32,11 +34,11 @@ export default function Home() {
   const [note, setNote] = useState('');
   const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
   const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
+    const r = await chooseImage({ title: kind === 'icon' ? 'Server-Bild' : 'Server-Banner', crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
+    if (!r) return;
     try {
       setNote(kind === 'icon' ? 'Server-Bild wird hochgeladen …' : 'Banner wird hochgeladen …');
-      const up = await upload(kind, r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg');
+      const up = await upload(kind, r.uri, r.mime);
       await api('PATCH', `/api/servers/${sv.id}`, { [kind]: up.key });
       await bootstrap();
       setNote('Gespeichert ✓'); setTimeout(() => setNote(''), 1800);
@@ -75,6 +77,7 @@ export default function Home() {
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
+          <MeBar onNote={setNote} />
         </Glass>
       </SafeAreaView>
       {note ? <View style={s.note} pointerEvents="none"><T style={{ color: C.text, fontWeight: '700' }}>{note}</T></View> : null}
@@ -118,34 +121,67 @@ function ToolChip({ icon, label, onPress, color = C.accent, primary }: { icon: I
   );
 }
 
+/** Zeit wie bei Discord: „5 Min.“, heute die Uhrzeit, dann „3 T.“, ältere als Datum */
+function ago(t?: number) {
+  if (!t) return '';
+  const d = Date.now() - t, min = 60000, day = 86400000;
+  if (d < min) return 'jetzt';
+  if (d < 60 * min) return Math.floor(d / min) + ' Min.';
+  const dt = new Date(t), now = new Date();
+  if (dt.toDateString() === now.toDateString()) return dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  if (d < 7 * day) return Math.max(1, Math.round(d / day)) + ' T.';
+  return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
+
 function DmPanel() {
   const dms = useStore((s) => s.dms);
   const me = useStore((s) => s.me);
   const unread = useStore((s) => s.unread);
+  useStore((s) => s.users); // Namen in der Vorschau nachzeichnen
   const router = useRouter();
+  const preview = (d: (typeof dms)[number]) => {
+    const l = d.last;
+    if (!l) return d.kind === 'group' ? `${d.members.length} Mitglieder` : '';
+    const who = l.a === me?.id ? 'Du: ' : d.kind === 'group' ? (userOf(l.a)?.display || '') + ': ' : '';
+    if (l.k === 'call') return who + 'Anruf';
+    if (l.k === 'poll') return who + '📊 ' + plainText(l.c);
+    const text = plainText(l.c).replace(/\s+/g, ' ').trim();
+    return who + (text || (l.att ? '📎 Anhang' : ''));
+  };
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+    <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
       <View style={[s.head, s.headRow]}>
-        <T style={[s.headText, { flex: 1 }]}>Direktnachrichten</T>
-        <HeadBtn icon="search" label="In Direktnachrichten suchen" onPress={() => router.push('/search')} />
-        <HeadBtn icon="users" label="Gruppe erstellen" onPress={() => router.push('/group-new')} />
+        <T style={[s.headText, { flex: 1, fontSize: 22 }]}>Nachrichten</T>
       </View>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
-        <View style={[s.iconBubble]}><Icon name="userPlus" size={20} color={C.accent} /></View>
-        <T style={[s.rowName, { color: C.text2 }]}>Freunde finden</T>
-      </Pressable>
-      <Section style={{ paddingHorizontal: 16, marginTop: 10, marginBottom: 4 }}>Gespräche</Section>
-      {!dms.length ? <Empty icon="comment" title="Noch keine Gespräche" text="Unter „Freunde“ findest du Leute und kannst ihnen schreiben." /> : null}
+      {/* wie bei Discord: Suchen, Freunde hinzufügen, neue Gruppe */}
+      <View style={s.dmTools}>
+        <Pressable accessibilityRole="button" accessibilityLabel="In Nachrichten suchen" onPress={() => router.push('/search')} style={({ pressed }) => [s.toolRound, pressed && s.rowPressed]}>
+          <Icon name="search" size={19} color={C.text2} />
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.toolWide, pressed && s.rowPressed]}>
+          <Icon name="userPlus" size={18} color={C.text2} />
+          <T style={{ fontWeight: '700', color: C.text2 }}>Freunde hinzufügen</T>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Neue Gruppe" onPress={() => router.push('/group-new')} style={({ pressed }) => [s.toolPlus, pressed && { opacity: 0.85 }]}>
+          <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+          <View><Icon name="plus" size={22} color="#fff" stroke={2.4} /></View>
+        </Pressable>
+      </View>
+      {!dms.length ? <Empty icon="comment" title="Noch keine Gespräche" text="Unter „Freunde hinzufügen“ findest du Leute und kannst ihnen schreiben." /> : null}
       {dms.map((d, i) => {
         const other = d.kind === 'dm' ? d.members.find((u) => u.id !== me?.id) : null;
         const n = unread[d.id];
+        const pv = preview(d);
         return (
-          <Animated.View key={d.id} entering={FadeInRight.delay(i * 30).duration(300)} layout={LinearTransition}>
-            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/chat/[id]', params: { id: d.id } })} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
-              {other ? <Avatar user={other} size={42} status /> : <LinearGradient colors={GRAD as any} style={s.group}><Icon name="users" size={20} color="#fff" /></LinearGradient>}
+          <Animated.View key={d.id} entering={FadeInRight.delay(Math.min(i, 12) * 25).duration(260)} layout={LinearTransition}>
+            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/chat/[id]', params: { id: d.id } })} style={({ pressed }) => [s.row, s.dmRow, pressed && s.rowPressed]}>
+              {other ? <Avatar user={other} size={46} status /> : <LinearGradient colors={GRAD as any} style={[s.group, { width: 46, height: 46, borderRadius: 23 }]}><Icon name="users" size={20} color="#fff" /></LinearGradient>}
               <View style={{ flex: 1, minWidth: 0 }}>
-                <T style={[s.rowName, n ? { color: C.text, fontWeight: '800' } : null]} numberOfLines={1}>{dmTitle(d, me?.id)}</T>
-                {other?.custom_status ? <T style={s.rowSub} numberOfLines={1}>{other.custom_status}</T> : d.kind === 'group' ? <T style={s.rowSub}>{d.members.length} Mitglieder</T> : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <T style={[s.rowName, { flex: 1 }, n ? { color: C.text, fontWeight: '800' } : null]} numberOfLines={1}>{dmTitle(d, me?.id)}</T>
+                  <T style={[s.when, n ? { color: C.text } : null]}>{ago(d.last?.t || d.last_at)}</T>
+                </View>
+                {pv ? <T style={[s.rowSub, n ? { color: C.text2, fontWeight: '700' } : null]} numberOfLines={1}>{pv}</T> : other?.custom_status ? <T style={s.rowSub} numberOfLines={1}>{other.custom_status}</T> : null}
               </View>
               {n ? <Badge n={n} /> : null}
             </Pressable>
@@ -243,7 +279,7 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
 
 const s = StyleSheet.create({
   rail: { width: 72, flexGrow: 0 },
-  dmBtn: { width: 48, height: 48, borderRadius: 16, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  dmBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   dmOn: { borderColor: 'transparent', shadowColor: '#8468ff', shadowOpacity: 0.8, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   railSep: { width: 28, height: 1, backgroundColor: C.line },
   pip: { position: 'absolute', left: 0, top: '50%', marginTop: -20, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: C.accent },
@@ -261,6 +297,12 @@ const s = StyleSheet.create({
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 8, borderRadius: 14 },
+  dmRow: { paddingVertical: 9 },
+  when: { color: C.faint, fontSize: 12 },
+  dmTools: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10 },
+  toolRound: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  toolWide: { flex: 1, height: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  toolPlus: { width: 44, height: 44, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   rowPressed: { backgroundColor: C.accentSoft },
   rowName: { color: C.text2, fontSize: 16, fontWeight: '600' },
   rowSub: { color: C.muted, fontSize: 13, marginTop: -2 },

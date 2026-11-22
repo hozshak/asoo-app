@@ -9,7 +9,7 @@ import { api, BASE, errText, saveToken } from '@/lib/api';
 import { clearState, setState, useStore } from '@/lib/store';
 import { disconnect } from '@/lib/live';
 import { unregisterPush } from '@/lib/push';
-import { Avatar, Btn, Card, Glass, Glow, MenuRow, Section, T } from '@/components/ui';
+import { Avatar, Btn, Card, Glass, Glow, MenuRow, Section, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { FRAMES } from '@/lib/frames';
 import { NameText, NAME_STYLES } from '@/components/NameText';
@@ -36,8 +36,9 @@ export default function Settings() {
   const p = page && TITLES[page] ? page : null;
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: p ? TITLES[p] : 'Einstellungen' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Glow />
+      <TopBar title={p ? TITLES[p] : 'Einstellungen'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {!p ? (
           <>

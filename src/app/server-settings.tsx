@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Sc
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImage as chooseImage } from '@/lib/pick';
 import { api, BASE, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, loadMembers, putUsers, RANK, serverOf, useStore, type Channel, type Role, type User } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
@@ -70,10 +70,10 @@ function Overview({ sid, say }: P) {
   const [d, setD] = useState({ name: sv.name, description: sv.description || '', icon: sv.icon || null, icon_emoji: sv.icon_emoji || '', color: sv.color || '#5865f2', banner: sv.banner || null, public: !!(sv as any).public });
   const [busy, setBusy] = useState('');
   const pick = async (kind: 'icon' | 'banner') => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, exif: false });
-    if (r.canceled || !r.assets?.[0]) return;
+    const r = await chooseImage({ title: kind === 'icon' ? 'Server-Bild' : 'Server-Banner', crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
+    if (!r) return;
     setBusy(kind);
-    try { const up = await upload(kind, r.assets[0].uri, r.assets[0].mimeType || 'image/jpeg'); setD((x) => ({ ...x, [kind]: up.key })); } catch (e) { say(errText(e)); }
+    try { const up = await upload(kind, r.uri, r.mime); setD((x) => ({ ...x, [kind]: up.key })); } catch (e) { say(errText(e)); }
     setBusy('');
   };
   const save = async () => {

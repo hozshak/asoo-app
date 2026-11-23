@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { api, errText } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { toggleVoice, useHost } from '@/lib/webhost';
+import { useVoice, voice as appVoice } from '@/lib/calls';
 import { Avatar, Badge, T } from './ui';
 import { Icon } from './Icon';
 import { C, HOME, statusColor } from '@/lib/theme';
@@ -65,9 +66,16 @@ export function StatusSheet({ open, onClose }: { open: boolean; onClose: () => v
 /** Schwebende Leiste unten in der Chat-Liste. */
 export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   const me = useStore((s) => s.me) as any;
-  const muted = useHost((s) => s.muted);
-  const deaf = useHost((s) => s.deaf);
-  const inCall = useHost((s) => !!s.voice);
+  // Anruf in der App selbst (calls.ts) oder in der Web-Ansicht (3D-Raum, Spiel, Ersatzweg)
+  const appCall = useVoice((v) => !!v.room);
+  const appMuted = useVoice((v) => v.muted || v.noMic || v.smute);
+  const appDeaf = useVoice((v) => v.deaf || v.sdeaf);
+  const webMuted = useHost((s) => s.muted);
+  const webDeaf = useHost((s) => s.deaf);
+  const webCall = useHost((s) => !!s.voice);
+  const inCall = appCall || webCall;
+  const muted = appCall ? appMuted : webMuted;
+  const deaf = appCall ? appDeaf : webDeaf;
   const notif = useStore((s) => s.notifUnread);
   const router = useRouter();
   const ins = useSafeAreaInsets();
@@ -76,6 +84,7 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   const raw = me.status_raw || me.status || 'online';
   const voice = (what: 'mute' | 'deaf') => {
     Haptics.selectionAsync().catch(() => {});
+    if (appCall) { if (what === 'mute') appVoice.toggleMute(); else appVoice.toggleDeaf(); return; }
     if (!toggleVoice(what)) onNote?.('Einen Moment – die Sprachverbindung wird noch vorbereitet.');
   };
   return (

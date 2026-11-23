@@ -23,6 +23,7 @@ import { Avatar, Glass, Glow, Press, Sheet, T, TopBar, TopIcon, type SheetItem }
 import { Icon } from '@/components/Icon';
 import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { useHost } from '@/lib/webhost';
+import { joinCall, leaveForWeb, nativeCalls, useVoice } from '@/lib/calls';
 import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifUrl, type Poll } from '@/components/ChatExtras';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
@@ -52,7 +53,15 @@ export default function Chat() {
   const [ask, setAsk] = useState<CallKind | null>(null); // „Anruf starten?“
   // Läuft in diesem Gespräch ein Anruf, bei dem man selbst nicht dabei ist? Dann oben „Beitreten“ (wie bei Discord)
   const callers = useStore((st) => (dm ? st.voice[dm.id] : undefined)) || NO_CALLERS;
-  const inThisCall = useHost((h) => h.voice?.room === dm?.id);
+  const inWebCall = useHost((h) => h.voice?.room === dm?.id);
+  const inAppCall = useVoice((v) => !!dm && v.room === dm.id);
+  const inThisCall = inWebCall || inAppCall;
+  /** Anruf starten bzw. beitreten – in der App selbst, sonst (Ersatzweg) über die Web-Ansicht */
+  const startCall = (video: boolean) => {
+    if (!dm) return;
+    if (nativeCalls()) joinCall(dm.id, { video });
+    else openWeb(router, `/channels/@me/${dm.id}?call=${video ? 'video' : '1'}`);
+  };
   const callOn = !!dm && callers.length > 0 && !inThisCall;
   const [plus, setPlus] = useState(false); // Plus-Menü (Bild, Datei, Umfrage)
   const [pollOpen, setPollOpen] = useState(false);
@@ -165,7 +174,7 @@ export default function Chat() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      {dm ? <CallConfirm kind={ask} who={other} name={dm ? dmTitle(dm, me?.id) : ''} onClose={() => setAsk(null)} onStart={(k) => openWeb(router, `/channels/@me/${dm.id}?call=${k === 'video' ? 'video' : '1'}`)} /> : null}
+      {dm ? <CallConfirm kind={ask} who={other} name={dm ? dmTitle(dm, me?.id) : ''} onClose={() => setAsk(null)} onStart={(k) => startCall(k === 'video')} /> : null}
       {/* eigene Kopfleiste (die von iOS 26 zeigt helle Glas-Knöpfe) – Anrufe über die Web-Ansicht der Unterhaltung */}
       <TopBar
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
@@ -183,7 +192,7 @@ export default function Chat() {
         </>}
       />
       {callOn ? (
-        <Pressable accessibilityRole="button" onPress={() => openWeb(router, `/channels/@me/${dm!.id}?call=1`)} style={s.callOn}>
+        <Pressable accessibilityRole="button" onPress={() => startCall(false)} style={s.callOn}>
           <View style={s.callDot} />
           <Icon name="phone" size={17} color="#062b1b" stroke={2.4} />
           <T style={{ flex: 1, color: '#062b1b', fontWeight: '800' }} numberOfLines={1}>{callers.length === 1 ? `${userOf(callers[0].uid).display} ruft an` : 'Anruf läuft'}</T>
@@ -191,7 +200,12 @@ export default function Chat() {
         </Pressable>
       ) : null}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
-        {info && info.channel.type !== 'text' ? <View style={s.voiceNote}><Icon name={info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={16} color={C.accent} /><T style={s.voiceText}>Sprach- und 3D-Räume kommen mit dem nächsten Update in die App. Den Chat dieses Raums kannst du schon nutzen.</T></View> : null}
+        {info && info.channel.type !== 'text' ? (
+          <Pressable accessibilityRole="button" onPress={() => { if (info.channel.type === 'voice' && nativeCalls()) joinCall(info.channel.id); else { leaveForWeb(); openWeb(router, `/channels/${info.server.id}/${info.channel.id}`); } }} style={s.voiceNote}>
+            <Icon name={info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={16} color={C.accent} />
+            <T style={s.voiceText}>{info.channel.type === 'voice' ? 'Das ist der Chat dieses Sprachraums. Tippe hier, um dem Raum beizutreten.' : info.channel.type === 'game' ? 'Das ist der Chat dieses Spiels. Tippe hier, um mitzuspielen.' : 'Das ist der Chat dieses 3D-Raums. Tippe hier, um den Raum zu betreten.'}</T>
+          </Pressable>
+        ) : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
           <FlatList
             inverted

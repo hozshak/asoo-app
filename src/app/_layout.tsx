@@ -13,6 +13,7 @@ import { connect } from '@/lib/live';
 import { registerPush, onPushTap, chatFromUrl } from '@/lib/push';
 import { C, F } from '@/lib/theme';
 import { prewarmWeb } from '@/lib/webhost';
+import { loadCallMode } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
 import { CallBar, IncomingCall } from '@/components/CallBar';
 
@@ -26,6 +27,7 @@ export default function Root() {
   const router = useRouter();
   useEffect(() => {
     (async () => {
+      loadCallMode();
       const tok = await loadToken();
       if (tok) {
         try { const u = await bootstrap(); if (u) connect(); else await saveToken(null); }
@@ -75,6 +77,8 @@ export default function Root() {
           <Stack.Screen name="invite/[code]" options={{ headerShown: false, presentation: 'modal' }} />
           {/* Räume: kein Wischen zum Zurückgehen – im 3D-Raum wischt man, um sich umzusehen */}
           <Stack.Screen name="room" options={{ headerShown: false, animation: 'none' }} />
+          {/* Anruf/Sprachraum in der App: kommt von unten; zurück = verkleinern (der Anruf läuft weiter) */}
+          <Stack.Screen name="call" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
         </Stack>
         {/* dauerhaftes Web-Fenster (3D, Anrufe, Feed …), darüber Anruf-Leiste und eingehende Anrufe */}
         {me ? <WebHost /> : null}

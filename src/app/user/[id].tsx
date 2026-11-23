@@ -8,7 +8,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api, errText, mediaSource } from '@/lib/api';
-import { bootstrap, putUsers, useStore } from '@/lib/store';
+import { bootstrap, getState, putUsers, useStore } from '@/lib/store';
+import { joinCall, nativeCalls } from '@/lib/calls';
 import { openWeb } from '@/lib/web';
 import { openServer } from '@/components/InviteCard';
 import { ProfileHead } from '@/components/ProfileHead';
@@ -47,10 +48,19 @@ export default function Profile() {
   const u = d.user, me = u.id === meId;
   const act = async (fn: () => Promise<unknown>, ok?: string) => { try { await fn(); await load(); if (ok) setMsg(ok); } catch (e) { setMsg(errText(e)); } };
   const banner = mediaSource(u.banner);
-  const call = async () => { try { const x = await api<any>('POST', '/api/dms', { user_id: u.id }); openWeb(router, `/channels/@me/${x.dm.id}?call=1`); } catch (e) { setMsg(errText(e)); } };
+  const call = async (video = false) => {
+    try {
+      const x = await api<any>('POST', '/api/dms', { user_id: u.id });
+      if (!nativeCalls()) { openWeb(router, `/channels/@me/${x.dm.id}?call=${video ? 'video' : '1'}`); return; }
+      // neues Gespräch: erst in die Liste übernehmen (Name/Bild im Anruf), dann anrufen
+      if (!getState().dms.some((d) => d.id === x.dm.id)) await bootstrap().catch(() => {});
+      if (router.canGoBack()) router.back(); // Profil-Blatt schließen, dann der Anruf-Bildschirm
+      joinCall(x.dm.id, { video });
+    } catch (e) { setMsg(errText(e)); }
+  };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
-      <CallConfirm kind={ask} who={u} name={u?.display || ''} onClose={() => setAsk(null)} onStart={() => call()} />
+      <CallConfirm kind={ask} who={u} name={u?.display || ''} onClose={() => setAsk(null)} onStart={(k) => call(k === 'video')} />
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: ins.bottom + 30 }} bounces>
         <ProfileHead u={u}

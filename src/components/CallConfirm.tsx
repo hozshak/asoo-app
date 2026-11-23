@@ -11,8 +11,10 @@ export type CallKind = 'voice' | 'video';
 export function CallConfirm({ kind, who, name, onStart, onClose }: { kind: CallKind | null; who?: User | null; name: string; onStart: (k: CallKind) => void; onClose: () => void }) {
   return (
     <Modal visible={!!kind} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.back} onPress={onClose} accessibilityLabel="Abbrechen">
-        <Pressable onPress={() => {}} style={{ width: '100%', maxWidth: 380 }}>
+      <View style={s.back}>
+        {/* Tippen daneben = abbrechen (eigene Fläche, nicht um die Knöpfe herum – Knopf in Knopf geht im Browser nicht) */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Abbrechen" />
+        <View style={{ width: '100%', maxWidth: 380 }}>
           <Glass style={s.card} intensity={50} tint="rgba(24,25,38,0.96)">
             {who ? <Avatar user={who} size={64} frame={false} /> : <View style={s.icon}><Icon name={kind === 'video' ? 'video' : 'phone'} size={28} color={C.accent} /></View>}
             <T style={s.title}>{kind === 'video' ? 'Videoanruf starten?' : 'Anruf starten?'}</T>
@@ -25,8 +27,8 @@ export function CallConfirm({ kind, who, name, onStart, onClose }: { kind: CallK
               <T style={s.btnText}>Abbrechen</T>
             </Pressable>
           </Glass>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

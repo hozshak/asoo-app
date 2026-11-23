@@ -67,6 +67,23 @@ function writeQuality(q: ScreenQuality) {
 }
 
 /**
+ * Nur die Bild-Quelle holen (für Anrufe in der App selbst, voicecore.ts setScreen): Auswahlfenster „Übertragung starten“
+ * zeigen und den Bildschirm-Strom zurückgeben. Senden übernimmt dann die eigentliche Anruf-Verbindung.
+ */
+export async function captureScreen(pickerRef: any, quality: ScreenQuality = '1080'): Promise<MediaStream> {
+  if (Platform.OS !== 'ios') throw new Error('nur iPhone');
+  writeQuality(quality);
+  S.q = quality;
+  const stream = await mediaDevices.getDisplayMedia({});
+  const tag = findNodeHandle(pickerRef);
+  if (tag != null) NativeModules.ScreenCapturePickerViewManager?.show(tag);
+  return stream;
+}
+/** Für Anrufe in der App: H.264 vorziehen (vor dem Angebot) und die Datenrate einstellen (nach dem Aushandeln). */
+export const prepScreen = (pc: any) => preferH264(pc);
+export const tuneScreen = (pc: any) => { tuneSender({ pc } as Peer); };
+
+/**
  * Teilen starten. pickerRef: die <ScreenCapturePickerView> (unsichtbar), über die iOS das Auswahlfenster
  * „Übertragung starten“ zeigt. room: der Sprachraum, in dem man gerade ist.
  */

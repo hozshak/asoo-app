@@ -15,6 +15,10 @@ export const getHost = () => st;
 export function useHost<T>(sel: (s: S) => T): T {
   return useSyncExternalStore((cb) => { subs.add(cb); return () => subs.delete(cb); }, () => sel(st), () => sel(st));
 }
+export const subscribeHost = (fn: () => void) => { subs.add(fn); return () => { subs.delete(fn); }; };
+// Anrufe laufen in der App selbst (calls.ts): dann klingelt die App selbst, das Klingeln der Web-Ansicht zählt nicht
+let ignoreRing = false;
+export const setIgnoreWebRing = (on: boolean) => { ignoreRing = on; if (on && st.ring) set({ ring: null }); };
 
 // Der WebView meldet sich hier an, damit wir Befehle hineinschicken können
 let inject: ((js: string) => void) | null = null;
@@ -66,7 +70,7 @@ export function onWebMessage(m: any): { open?: string; auth?: boolean; share?: b
       else if (m.room && isSharing() && getHost().voice && getHost().voice!.room !== m.room) stopScreenShare();
       if (typeof m.muted === 'boolean') set({ muted: m.muted, deaf: !!m.deaf });
       set({ voice: m.room ? { room: m.room, title: m.title || '', path: m.path || '/channels/@me', kind: m.kind || 'call', video: !!m.video } : null }); return {};
-    case 'ring': set({ ring: { dm: m.dm, from: m.from, name: m.name, title: m.title, avatar: m.avatar } }); return {};
+    case 'ring': if (ignoreRing) return {}; set({ ring: { dm: m.dm, from: m.from, name: m.name, title: m.title, avatar: m.avatar } }); return {};
     case 'ringstop': if (st.ring?.dm === m.dm) set({ ring: null }); return {};
     case 'open': hideWeb(); return { open: typeof m.ch === 'string' ? m.ch : undefined };
     case 'auth': return { auth: true };

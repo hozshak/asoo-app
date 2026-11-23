@@ -2,7 +2,7 @@
 // (/settings?page=…). Alles nativ: Profil, Bild/Banner/Farben, Rahmen, Namens-Stil, Effekt, Privatsphäre, Mitteilungen,
 // Passwort, Rechtliches, Konto löschen (Apple verlangt das Löschen in der App).
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { api, BASE, errText, saveToken } from '@/lib/api';
@@ -16,12 +16,13 @@ import { NameText, NAME_STYLES } from '@/components/NameText';
 import { EFFECTS, ProfileFx } from '@/components/ProfileFx';
 import { LookSection, PrivacySection, PushSection } from '@/components/SettingsMore';
 import { signOut } from '@/lib/session';
+import { setWebCalls, useCalls } from '@/lib/calls';
 import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
-type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'password' | 'legal' | 'delete';
-const TITLES: Record<Page, string> = { profile: 'Profil', look: 'Bild, Banner & Farben', frame: 'Profilrahmen', name: 'Namens-Stil', effect: 'Profil-Effekt', privacy: 'Privatsphäre & Geräte', push: 'Mitteilungen', password: 'Passwort', legal: 'Rechtliches', delete: 'Konto löschen' };
+type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'legal' | 'delete';
+const TITLES: Record<Page, string> = { profile: 'Profil', look: 'Bild, Banner & Farben', frame: 'Profilrahmen', name: 'Namens-Stil', effect: 'Profil-Effekt', privacy: 'Privatsphäre & Geräte', push: 'Mitteilungen', voice: 'Sprache & Anrufe', password: 'Passwort', legal: 'Rechtliches', delete: 'Konto löschen' };
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -50,6 +51,7 @@ export default function Settings() {
           : p === 'effect' ? <EffectPage me={me} patch={patch} />
           : p === 'privacy' ? <PrivacySection patch={patch} say={setMsg} />
           : p === 'push' ? <PushSection say={setMsg} />
+          : p === 'voice' ? <VoicePage />
           : p === 'password' ? <PasswordPage say={setMsg} />
           : p === 'legal' ? <LegalPage />
           : <DeletePage say={setMsg} />}
@@ -68,11 +70,13 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
   const router = useRouter();
   const ins = useSafeAreaInsets();
   const [q, setQ] = useState('');
+  const webCalls = useCalls((c) => c.webCalls);
   const groups: [string, Item[]][] = [
     ['Konto-Einstellungen', [
       { icon: 'user', label: 'Profil', sub: 'Name, Status-Text, Über mich', keys: 'anzeigename bio pronomen', onPress: () => open('profile') },
       { icon: 'lock', label: 'Privatsphäre & Geräte', sub: 'Wer schreiben darf, Blockierte, Geräte', keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
       { icon: 'bell', label: 'Mitteilungen', keys: 'push benachrichtigungen ton', onPress: () => open('push') },
+      { icon: 'phone', label: 'Sprache & Anrufe', sub: webCalls ? 'Über die Web-Ansicht' : 'Direkt in der App', keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
       { icon: 'shield', label: 'Passwort ändern', keys: 'sicherheit kennwort', onPress: () => open('password') },
     ]],
     ['Aussehen', [
@@ -234,6 +238,28 @@ function PasswordPage({ say }: { say: (t: string) => void }) {
     </Glass>
   );
 }
+/** Anrufe und Sprachräume direkt in der App – oder (Ersatzweg) wie früher über die Web-Ansicht. */
+function VoicePage() {
+  const webCalls = useCalls((c) => c.webCalls);
+  return (
+    <>
+      <Card style={{ padding: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+          <Icon name="phone" size={20} color={C.accent} />
+          <View style={{ flex: 1 }}>
+            <T style={{ fontWeight: '700' }}>Anrufe direkt in der App</T>
+            <T style={{ color: C.muted, fontSize: 12.5 }}>Anrufe und Sprachräume laufen schneller und stabiler, auch mit gesperrtem Handy.</T>
+          </View>
+          <Switch value={!webCalls} onValueChange={(on) => setWebCalls(!on)} trackColor={{ true: C.accent, false: C.bg5 }} />
+        </View>
+      </Card>
+      <T style={{ color: C.muted, fontSize: 12.5, marginTop: 10, paddingHorizontal: 4 }}>
+        Klappt etwas nicht, schalte es aus – dann laufen Anrufe wie früher über die Web-Ansicht. 3D-Räume und Spiele laufen immer über die Web-Ansicht.
+      </T>
+    </>
+  );
+}
+
 function LegalPage() {
   const Link = ({ icon, label, page, last }: { icon: IconName; label: string; page: string; last?: boolean }) => (
     <MenuRow icon={icon} label={label} onPress={() => WebBrowser.openBrowserAsync(LEGAL(page)).catch(() => {})} last={last} />

@@ -16,6 +16,7 @@ import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
+import { joinCall, leaveForWeb, nativeRoom } from '@/lib/calls';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
 
 export default function Home() {
@@ -210,9 +211,10 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
     ];
     return [{ id: '_', name: '', chs: server.channels.filter((c) => !c.parent || !known.has(c.parent)) }, ...cats.map((cat) => ({ id: cat.id, name: cat.name, chs: server.channels.filter((c) => c.parent === cat.id) }))];
   }, [server]);
-  // Textkanäle nativ, Sprach- und 3D-Räume aus der Web-App (room.tsx)
+  // Text- und Sprachkanäle in der App selbst, 3D-Räume und Spiele aus der Web-App
   const open = (c: Channel) => {
-    if (c.type !== 'text') return openWeb(router, `/channels/${server.id}/${c.id}`);
+    if (nativeRoom(c.type)) return joinCall(c.id);
+    if (c.type !== 'text') { leaveForWeb(); return openWeb(router, `/channels/${server.id}/${c.id}`); }
     markRead(c.id); router.push({ pathname: '/chat/[id]', params: { id: c.id } });
   };
   const banner = mediaSource(server.banner);

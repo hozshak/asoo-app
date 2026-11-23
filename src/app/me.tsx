@@ -47,7 +47,8 @@ export default function Me() {
       <View style={[s.sheet, { marginTop: ins.top + 4 }]}>
         <ScrollView contentContainerStyle={{ paddingBottom: 120 + ins.bottom }} showsVerticalScrollIndicator={false}>
           <ProfileHead u={me} status={raw} onAvatar={pickAvatar} onName={() => setSheet(true)} ring={HOME.panel}
-            topLeft={<Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={6} onPress={close} style={s.close}><Icon name="x" size={22} color="#fff" stroke={2.4} /></Pressable>} />
+            topLeft={<Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={6} onPress={close} style={s.close}><Icon name="x" size={22} color="#fff" stroke={2.4} /></Pressable>}
+            bannerRight={<Pressable accessibilityRole="button" accessibilityLabel="Einstellungen" hitSlop={8} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.gear, pressed && { opacity: 0.7 }]}><Icon name="gear" size={21} color={C.text} stroke={2.2} /></Pressable>} />
 
           <View style={{ paddingHorizontal: 16, marginTop: 16, gap: 12 }}>
             <Btn title="Profil bearbeiten" icon="edit" onPress={() => page('profile')} />
@@ -132,6 +133,7 @@ function DockBtn({ icon, label, onPress }: { icon: IconName; label: string; onPr
 
 const s = StyleSheet.create({
   sheet: { flex: 1, backgroundColor: HOME.panel, borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  gear: { width: 42, height: 42, borderRadius: 21, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center' },
   close: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
   msg: { color: C.warn, textAlign: 'center' },
   ampEdge: { borderRadius: 22, padding: 2 },

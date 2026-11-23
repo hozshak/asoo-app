@@ -17,7 +17,7 @@ const STATUS_TEXT: Record<string, string> = { online: 'Online', idle: 'Abwesend'
 const AV = 92;       // Profilbild
 const BANNER = 150;  // Banner-Höhe unterhalb der Statusleiste
 
-export function ProfileHead({ u, status, topLeft, topRight, onAvatar, onName, ring = C.bg0, safeTop = false, children }: { u: any; status?: string; topLeft?: React.ReactNode; topRight?: React.ReactNode; onAvatar?: () => void; onName?: () => void; ring?: string; safeTop?: boolean; children?: React.ReactNode }) {
+export function ProfileHead({ u, status, topLeft, topRight, bannerRight, onAvatar, onName, ring = C.bg0, safeTop = false, children }: { u: any; status?: string; topLeft?: React.ReactNode; topRight?: React.ReactNode; bannerRight?: React.ReactNode; onAvatar?: () => void; onName?: () => void; ring?: string; safeTop?: boolean; children?: React.ReactNode }) {
   const ins = useSafeAreaInsets();
   const top = safeTop ? ins.top : 0;
   const banner = mediaSource(u.banner);
@@ -57,6 +57,8 @@ export function ProfileHead({ u, status, topLeft, topRight, onAvatar, onName, ri
       </Animated.View>
       {topLeft ? <View style={[s.corner, { left: 12, top: top + 10 }]}>{topLeft}</View> : null}
       {topRight ? <View style={[s.corner, { right: 12, top: top + 10 }]}>{topRight}</View> : null}
+      {/* rechts unten am Banner (wie das Zahnrad bei Discord), auf Höhe des Profilbilds */}
+      {bannerRight ? <View style={[s.corner, { right: 14, top: top + BANNER + 10 }]}>{bannerRight}</View> : null}
     </View>
   );
 }

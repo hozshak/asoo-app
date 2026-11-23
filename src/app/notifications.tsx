@@ -1,12 +1,11 @@
 // Mitteilungen: Erwähnungen, Antworten, Freundschaftsanfragen … Tippen öffnet die Stelle.
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api } from '@/lib/api';
 import { setState, type Notif } from '@/lib/store';
-import { Avatar, Empty, Glow, T } from '@/components/ui';
+import { Avatar, Empty, Glow, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { timeLabel } from '@/lib/text';
 import { C } from '@/lib/theme';
@@ -40,8 +39,8 @@ export default function Notifications() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <T style={s.h1}>Mitteilungen</T>
+      <TopBar title="Mitteilungen" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <View style={{ flex: 1 }}>
         <FlatList
           data={list}
           keyExtractor={(n) => n.id}
@@ -68,7 +67,7 @@ export default function Notifications() {
             );
           }}
         />
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

@@ -16,7 +16,7 @@ import { ProfileFx } from '@/components/ProfileFx';
 import { Avatar, Btn, Card, Glow, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { Icon, type IconName } from '@/components/Icon';
-import { openDm, setFriend } from '../(tabs)/friends';
+import { openDm, setFriend } from '../friends';
 import { C, statusColor } from '@/lib/theme';
 
 const REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['minor_safety', 'Gefahr für Minderjährige'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];

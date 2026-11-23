@@ -1,4 +1,5 @@
-// Leiste unten (wie bei Discord): eigenes Bild, Name und Status – antippen ändert den Status; daneben stumm und Ton aus.
+// Leiste unten (wie bei Discord): großes eigenes Bild mit Rahmen (antippen = Profil), Name und Status (antippen = Status ändern),
+// rechts die Glocke für Mitteilungen; stumm und Ton aus nur während eines Gesprächs.
 // Dazu das Fenster „Online-Status ändern“ mit Auswahlkreisen.
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -8,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { api, errText } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { toggleVoice, useHost } from '@/lib/webhost';
-import { Avatar, Glass, T } from './ui';
+import { Avatar, Badge, Glass, T } from './ui';
 import { Icon } from './Icon';
 import { C, statusColor } from '@/lib/theme';
 
@@ -66,6 +67,10 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   const me = useStore((s) => s.me) as any;
   const muted = useHost((s) => s.muted);
   const deaf = useHost((s) => s.deaf);
+  const inCall = useHost((s) => !!s.voice);
+  const notif = useStore((s) => s.notifUnread);
+  const router = useRouter();
+  const ins = useSafeAreaInsets();
   const [sheet, setSheet] = useState(false);
   if (!me) return null;
   const raw = me.status_raw || me.status || 'online';
@@ -75,36 +80,52 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   };
   return (
     <>
-      <Glass style={s.bar} intensity={40} tint="rgba(24,25,38,0.94)">
+      {/* Karte wie bei Discord: großes Profilbild mit Rahmen ragt links heraus, Name mit Pfeil, Status darunter, rechts die Glocke */}
+      <View style={[s.bar, { bottom: Math.max(ins.bottom - 6, 10) }]}>
+        <Glass style={[StyleSheet.absoluteFill, { borderRadius: 24 }]} intensity={40} tint="rgba(30,31,46,0.96)" />
+        <Pressable accessibilityRole="button" accessibilityLabel="Mein Profil" onPress={() => router.push('/me')} style={s.av}>
+          <Avatar user={me} size={AV} force live />
+          <View style={s.glyph}><StatusGlyph k={raw} size={16} /></View>
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Status ändern" onPress={() => setSheet(true)} style={s.who}>
-          <Avatar user={me} size={40} status frame={false} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <T style={s.name} numberOfLines={1}>{me.display}</T>
-              <Icon name="chevron" size={14} color={C.muted} />
-            </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <T style={s.name} numberOfLines={1}>{me.display}</T>
+            <Icon name="chevron" size={15} color={C.text2} stroke={2.4} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <StatusGlyph k={raw} size={10} />
             <T style={s.sub} numberOfLines={1}>{me.custom_status || statusLabel(raw)}</T>
           </View>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Stummschaltung aufheben' : 'Stummschalten'} hitSlop={4} onPress={() => voice('mute')} style={[s.btn, (muted || deaf) && s.btnOff]}>
-          <Icon name={muted || deaf ? 'micOff' : 'mic'} size={19} color={muted || deaf ? C.danger : C.text2} />
+        {/* stumm / Ton aus nur während eines Gesprächs – sonst wie bei Discord nur die Glocke */}
+        {inCall ? <>
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Stummschaltung aufheben' : 'Stummschalten'} hitSlop={4} onPress={() => voice('mute')} style={[s.btn, (muted || deaf) && s.btnOff]}>
+            <Icon name={muted || deaf ? 'micOff' : 'mic'} size={20} color={muted || deaf ? C.danger : C.text2} />
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={deaf ? 'Ton wieder an' : 'Ton aus'} hitSlop={4} onPress={() => voice('deaf')} style={[s.btn, deaf && s.btnOff]}>
+            <Icon name={deaf ? 'headOff' : 'head'} size={20} color={deaf ? C.danger : C.text2} />
+          </Pressable>
+        </> : null}
+        <Pressable accessibilityRole="button" accessibilityLabel={notif ? `Mitteilungen, ${notif} neu` : 'Mitteilungen'} hitSlop={4} onPress={() => router.push('/notifications')} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
+          <Icon name="bell" size={22} color={C.text2} />
+          {notif ? <Badge n={notif} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={deaf ? 'Ton wieder an' : 'Ton aus'} hitSlop={4} onPress={() => voice('deaf')} style={[s.btn, deaf && s.btnOff]}>
-          <Icon name={deaf ? 'headOff' : 'head'} size={19} color={deaf ? C.danger : C.text2} />
-        </Pressable>
-      </Glass>
+      </View>
       <StatusSheet open={sheet} onClose={() => setSheet(false)} />
     </>
   );
 }
+const AV = 58; // Profilbild in der Leiste (mit Rahmen)
 
 const s = StyleSheet.create({
-  // über der Tab-Leiste (die ist 84 hoch und liegt unten über allem)
-  bar: { position: 'absolute', left: 8, right: 8, bottom: 92, height: 60, borderRadius: 20, flexDirection: 'row', alignItems: 'center', paddingLeft: 10, paddingRight: 8, gap: 4 },
-  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  name: { fontSize: 15.5, fontWeight: '800', flexShrink: 1 },
-  sub: { color: C.muted, fontSize: 12.5, marginTop: -2 },
-  btn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  // schwebende Karte ganz unten (keine Tab-Leiste mehr); das Bild ragt oben und links heraus
+  bar: { position: 'absolute', left: 10, right: 10, height: 64, flexDirection: 'row', alignItems: 'center', paddingLeft: AV + 14, paddingRight: 10, gap: 2 },
+  av: { position: 'absolute', left: 4, bottom: 10, width: AV, height: AV },
+  glyph: { position: 'absolute', right: -2, bottom: -2, padding: 3, borderRadius: 14, backgroundColor: 'rgba(30,31,46,1)' },
+  who: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  name: { fontSize: 17, fontWeight: '800', flexShrink: 1 },
+  sub: { color: C.muted, fontSize: 13.5, flexShrink: 1 },
+  btn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   btnOff: { backgroundColor: 'rgba(255,77,94,0.14)' },
   back: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: { backgroundColor: C.bg2, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 16, paddingTop: 8, borderTopWidth: 1, borderColor: C.line },

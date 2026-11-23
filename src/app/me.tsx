@@ -47,6 +47,7 @@ export default function Me() {
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <ProfileHead u={me} status={raw} onAvatar={pickAvatar} safeTop
+          topLeft={<Pressable accessibilityRole="button" accessibilityLabel="Zurück" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={s.gear}><Icon name="back" size={20} color="#fff" stroke={2.4} /></Pressable>}
           topRight={<Pressable accessibilityLabel="Einstellungen" onPress={() => router.push('/settings')} style={s.gear}><Icon name="gear" size={19} color="#fff" /></Pressable>}>
         </ProfileHead>
 

@@ -58,6 +58,9 @@ export default function Root() {
           <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="friends" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="me" options={{ headerShown: false }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />
           <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
           {/* Blätter von unten (nativ statt Web-Dialog) */}

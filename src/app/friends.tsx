@@ -1,13 +1,12 @@
 // Freunde: Liste, offene Anfragen, jemanden über den genauen Namen finden (kein Durchblättern – wie in der Web-App).
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api, errText } from '@/lib/api';
 import { bootstrap, putUsers, useStore, type User } from '@/lib/store';
-import { Avatar, Empty, Glass, Glow, Press, Section, T } from '@/components/ui';
+import { Avatar, Empty, Glass, Glow, Press, Section, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { C, F, GRAD, GRAD_POS, R, statusColor } from '@/lib/theme';
 
@@ -59,9 +58,9 @@ export default function Friends() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+      <TopBar title="Freunde" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <View style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
-          <T style={s.h1}>Freunde</T>
           <Glass style={s.search} intensity={20} tint="rgba(19,20,32,0.8)">
             <Icon name="search" size={18} color={C.faint} />
             <TextInput style={s.input} value={q} onChangeText={setQ} onSubmitEditing={search} placeholder="Genauen Namen eingeben, z. B. @lena" placeholderTextColor={C.faint} autoCapitalize="none" autoCorrect={false} returnKeyType="search" />
@@ -89,7 +88,7 @@ export default function Friends() {
             {list.map((u, i) => row(u, <IconBtn name="comment" label="Nachricht" onPress={() => act(() => openDm(router, u.id))} />, i))}
           </>}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

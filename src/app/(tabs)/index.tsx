@@ -77,9 +77,10 @@ export default function Home() {
         </ScrollView>
         <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
-          <MeBar onNote={setNote} />
         </Glass>
       </SafeAreaView>
+      {/* wie bei Discord über die ganze Breite, auch über der Server-Leiste */}
+      <MeBar onNote={setNote} />
       {note ? <View style={s.note} pointerEvents="none"><T style={{ color: C.text, fontWeight: '700' }}>{note}</T></View> : null}
       <Sheet open={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor?.name} items={menuFor ? [
         { label: 'Als gelesen markieren', icon: 'check', onPress: () => markServerRead(menuFor) },
@@ -137,6 +138,7 @@ function DmPanel() {
   const dms = useStore((s) => s.dms);
   const me = useStore((s) => s.me);
   const unread = useStore((s) => s.unread);
+  const requests = useStore((s) => s.friends.incoming.length); // offene Freundschaftsanfragen (früher in der Tab-Leiste)
   useStore((s) => s.users); // Namen in der Vorschau nachzeichnen
   const router = useRouter();
   const preview = (d: (typeof dms)[number]) => {
@@ -149,7 +151,7 @@ function DmPanel() {
     return who + (text || (l.att ? '📎 Anhang' : ''));
   };
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
+    <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
       <View style={[s.head, s.headRow]}>
         <T style={[s.headText, { flex: 1, fontSize: 22 }]}>Nachrichten</T>
       </View>
@@ -161,6 +163,7 @@ function DmPanel() {
         <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.toolWide, pressed && s.rowPressed]}>
           <Icon name="userPlus" size={18} color={C.text2} />
           <T style={{ fontWeight: '700', color: C.text2 }}>Freunde hinzufügen</T>
+          {requests ? <Badge n={requests} /> : null}
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Neue Gruppe" onPress={() => router.push('/group-new')} style={({ pressed }) => [s.toolPlus, pressed && { opacity: 0.85 }]}>
           <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -314,7 +317,7 @@ const s = StyleSheet.create({
   chName: { color: C.muted, fontSize: 16, flex: 1, fontWeight: '500' },
   lock: { position: 'absolute', right: -5, bottom: -4, backgroundColor: C.bg2, borderRadius: 6, padding: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.text },
-  note: { position: 'absolute', left: 20, right: 20, bottom: 110, padding: 12, borderRadius: 14, backgroundColor: C.bg4, borderWidth: 1, borderColor: C.line, alignItems: 'center' },
+  note: { position: 'absolute', left: 20, right: 20, bottom: 100, padding: 12, borderRadius: 14, backgroundColor: C.bg4, borderWidth: 1, borderColor: C.line, alignItems: 'center' },
   limit: { color: C.muted, fontSize: 12, fontWeight: '700', backgroundColor: C.bg3, borderRadius: 8, paddingHorizontal: 6, overflow: 'hidden' },
   vUser: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 42, paddingRight: 14, minHeight: 30 },
   vName: { color: C.text2, fontSize: 14, flex: 1 },

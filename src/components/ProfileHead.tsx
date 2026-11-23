@@ -17,16 +17,16 @@ const STATUS_TEXT: Record<string, string> = { online: 'Online', idle: 'Abwesend'
 const AV = 92;       // Profilbild
 const BANNER = 150;  // Banner-Höhe unterhalb der Statusleiste
 
-export function ProfileHead({ u, status, topLeft, topRight, onAvatar, safeTop = false, children }: { u: any; status?: string; topLeft?: React.ReactNode; topRight?: React.ReactNode; onAvatar?: () => void; safeTop?: boolean; children?: React.ReactNode }) {
+export function ProfileHead({ u, status, topLeft, topRight, onAvatar, onName, ring = C.bg0, safeTop = false, children }: { u: any; status?: string; topLeft?: React.ReactNode; topRight?: React.ReactNode; onAvatar?: () => void; onName?: () => void; ring?: string; safeTop?: boolean; children?: React.ReactNode }) {
   const ins = useSafeAreaInsets();
   const top = safeTop ? ins.top : 0;
   const banner = mediaSource(u.banner);
   const accent = u.accent || C.accent;
   const st = status || u.status || 'offline';
   const av = (
-    <View style={s.avRing}>
+    <View style={[s.avRing, { backgroundColor: ring }]}>
       <Avatar user={u} size={AV} live />
-      {onAvatar ? <View style={s.cam}><Icon name="image" size={13} color="#fff" /></View> : null}
+      {onAvatar ? <View style={[s.cam, { borderColor: ring }]}><Icon name="image" size={13} color="#fff" /></View> : null}
     </View>
   );
   return (
@@ -41,7 +41,12 @@ export function ProfileHead({ u, status, topLeft, topRight, onAvatar, safeTop = 
         <View style={s.avRow}>
           {onAvatar ? <Pressable accessibilityLabel="Profilbild ändern" onPress={onAvatar}>{av}</Pressable> : av}
         </View>
-        <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} />
+        {/* eigenes Profil: Name mit Pfeil, antippen = Status ändern (wie bei Discord) */}
+        {onName ? <Pressable accessibilityRole="button" accessibilityLabel="Status ändern" onPress={onName} style={s.nameRow}>
+            <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} />
+            <View style={{ marginTop: 12 }}><Icon name="chevron" size={18} color={C.text2} stroke={2.4} /></View>
+          </Pressable>
+          : <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} />}
         <T style={s.handle} numberOfLines={1}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
         <View style={s.statusLine}>
           <View style={[s.dot, { backgroundColor: st === 'invisible' ? C.faint : statusColor(st) }]} />
@@ -65,6 +70,7 @@ const s = StyleSheet.create({
   avRing: { width: AV + 12, height: AV + 12, borderRadius: (AV + 12) / 2, backgroundColor: C.bg0, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   cam: { position: 'absolute', right: 2, bottom: 4, width: 28, height: 28, borderRadius: 14, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.bg0 },
   name: { fontSize: 24, fontWeight: '800', marginTop: 10, letterSpacing: -0.3, maxWidth: '100%' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
   handle: { color: C.muted, fontSize: 14, marginTop: -1 },
   statusLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   dot: { width: 9, height: 9, borderRadius: 5 },

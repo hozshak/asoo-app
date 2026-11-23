@@ -16,7 +16,8 @@ import { NameText, NAME_STYLES } from '@/components/NameText';
 import { EFFECTS, ProfileFx } from '@/components/ProfileFx';
 import { LookSection, PrivacySection, PushSection } from '@/components/SettingsMore';
 import { signOut } from '@/lib/session';
-import { C, F, R } from '@/lib/theme';
+import { C, F, HOME, R } from '@/lib/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
 type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'password' | 'legal' | 'delete';
@@ -35,52 +36,14 @@ export default function Settings() {
   const open = (p: Page) => router.push({ pathname: '/settings', params: { page: p } });
   const frameName = me.deco && me.deco !== 'none' ? FRAMES[me.deco]?.name : null;
   const p = page && TITLES[page] ? page : null;
+  if (!p) return <SettingsHome me={me} open={open} frameName={frameName} />;
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <Glow />
-      <TopBar title={p ? TITLES[p] : 'Einstellungen'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={TITLES[p]} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-        {!p ? (
-          <>
-            <Pressable accessibilityRole="button" onPress={() => open('profile')}>
-              <Glass style={s.head} intensity={20}>
-                <Avatar user={me} size={56} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <NameText name={me.display} styleId={me.name_style} style={{ fontSize: 19, fontWeight: '800' }} />
-                  <T style={s.sub} numberOfLines={1}>@{me.username}{me.custom_status ? ' · ' + me.custom_status : ''}</T>
-                </View>
-                <Icon name="chevron" size={14} color={C.faint} />
-              </Glass>
-            </Pressable>
-            <Section style={s.h2}>Aussehen</Section>
-            <Card>
-              <MenuRow icon="cube" label="3D-Avatar" sub="Figur und Farben" onPress={() => router.push('/avatar3d')} />
-              <MenuRow icon="image" label="Bild, Banner & Farben" onPress={() => open('look')} />
-              <MenuRow icon="sparkle" label="Profilrahmen" sub={frameName || 'Keiner'} onPress={() => open('frame')} />
-              <MenuRow icon="edit" label="Namens-Stil" onPress={() => open('name')} />
-              <MenuRow icon="moon" label="Profil-Effekt" onPress={() => open('effect')} last />
-            </Card>
-            <Section style={s.h2}>Konto</Section>
-            <Card>
-              <MenuRow icon="lock" label="Privatsphäre & Geräte" sub="Wer schreiben darf, Blockierte, angemeldete Geräte" onPress={() => open('privacy')} />
-              <MenuRow icon="bell" label="Mitteilungen" onPress={() => open('push')} />
-              <MenuRow icon="shield" label="Passwort ändern" onPress={() => open('password')} last />
-            </Card>
-            <Section style={s.h2}>Mehr</Section>
-            <Card>
-              <MenuRow icon="user" label="Mein Profil ansehen" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
-              <MenuRow icon="sparkle" label="Feed" onPress={() => router.push('/feed')} />
-              <MenuRow icon="compass" label="Server entdecken" onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} />
-              {me.is_admin ? <MenuRow icon="shield" label="Admin-Bereich" onPress={() => router.push('/admin')} /> : null}
-              <MenuRow icon="globe" label="Rechtliches" sub="Regeln, Datenschutz, Impressum" onPress={() => open('legal')} last />
-            </Card>
-            <Card style={{ marginTop: 12 }}>
-              <MenuRow icon="logout" label="Abmelden" danger onPress={() => signOut()} right={null} />
-              <MenuRow icon="trash" label="Konto löschen" danger onPress={() => open('delete')} last />
-            </Card>
-          </>
-        ) : p === 'profile' ? <ProfilePage me={me} patch={patch} />
+        {p === 'profile' ? <ProfilePage me={me} patch={patch} />
           : p === 'look' ? <LookSection patch={patch} say={setMsg} />
           : p === 'frame' ? <FramePage me={me} patch={patch} />
           : p === 'name' ? <NamePage me={me} patch={patch} />
@@ -95,6 +58,99 @@ export default function Settings() {
     </View>
   );
 }
+
+/**
+ * Startseite der Einstellungen – wie bei Discord eine Karte von unten: X oben links, Titel, Suchfeld,
+ * darunter Gruppen („Konto-Einstellungen“ …) mit Zeilen und Pfeil. Beim Suchen erscheinen nur die passenden Zeilen.
+ */
+type Item = { icon: IconName; label: string; sub?: string; keys?: string; onPress: () => void; danger?: boolean };
+function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => void; frameName: string | null }) {
+  const router = useRouter();
+  const ins = useSafeAreaInsets();
+  const [q, setQ] = useState('');
+  const groups: [string, Item[]][] = [
+    ['Konto-Einstellungen', [
+      { icon: 'user', label: 'Profil', sub: 'Name, Status-Text, Über mich', keys: 'anzeigename bio pronomen', onPress: () => open('profile') },
+      { icon: 'lock', label: 'Privatsphäre & Geräte', sub: 'Wer schreiben darf, Blockierte, Geräte', keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
+      { icon: 'bell', label: 'Mitteilungen', keys: 'push benachrichtigungen ton', onPress: () => open('push') },
+      { icon: 'shield', label: 'Passwort ändern', keys: 'sicherheit kennwort', onPress: () => open('password') },
+    ]],
+    ['Aussehen', [
+      { icon: 'cube', label: '3D-Avatar', sub: 'Figur und Farben', keys: 'figur 3d', onPress: () => router.push('/avatar3d') },
+      { icon: 'image', label: 'Bild, Banner & Farben', keys: 'profilbild hintergrund farbe', onPress: () => open('look') },
+      { icon: 'sparkle', label: 'Profilrahmen', sub: frameName || 'Keiner', keys: 'rahmen deko', onPress: () => open('frame') },
+      { icon: 'edit', label: 'Namens-Stil', keys: 'schrift name farbe', onPress: () => open('name') },
+      { icon: 'moon', label: 'Profil-Effekt', keys: 'effekt schnee herzen', onPress: () => open('effect') },
+    ]],
+    ['Mehr', [
+      { icon: 'user', label: 'So sehen dich andere', keys: 'profil ansehen', onPress: () => router.push({ pathname: '/user/[id]', params: { id: me.id } }) },
+      { icon: 'sparkle', label: 'Feed', keys: 'beiträge posts', onPress: () => router.push('/feed') },
+      { icon: 'compass', label: 'Server entdecken', keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
+      ...(me.is_admin ? [{ icon: 'shield' as IconName, label: 'Admin-Bereich', keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),
+      { icon: 'globe', label: 'Rechtliches', sub: 'Regeln, Datenschutz, Impressum', keys: 'agb', onPress: () => open('legal') },
+    ]],
+    ['', [
+      { icon: 'logout', label: 'Abmelden', danger: true, keys: 'ausloggen', onPress: () => signOut() },
+      { icon: 'trash', label: 'Konto löschen', danger: true, keys: 'entfernen', onPress: () => open('delete') },
+    ]],
+  ];
+  const term = q.trim().toLowerCase();
+  const shown = term ? groups.map(([t, items]) => [t, items.filter((i) => `${i.label} ${i.sub || ''} ${i.keys || ''}`.toLowerCase().includes(term))] as [string, Item[]]).filter(([, items]) => items.length) : groups;
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg0 }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[sh.sheet, { marginTop: ins.top + 4 }]}>
+        <View style={sh.head}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={8} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={sh.close}>
+            <Icon name="x" size={24} color={C.text} stroke={2.3} />
+          </Pressable>
+          <T style={sh.title}>Einstellungen</T>
+        </View>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 + ins.bottom }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+          <View style={sh.search}>
+            <Icon name="search" size={19} color={C.muted} />
+            <TextInput value={q} onChangeText={setQ} placeholder="Suchen" placeholderTextColor={C.faint} style={sh.input} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
+          </View>
+          {!shown.length ? <T style={{ color: C.muted, textAlign: 'center', marginTop: 24 }}>Nichts gefunden.</T> : null}
+          {shown.map(([title, items], gi) => (
+            <View key={title || 'x' + gi}>
+              {title ? <T style={sh.group}>{title}</T> : <View style={{ height: 22 }} />}
+              <View style={sh.card}>
+                {items.map((i, k) => (
+                  <Pressable key={i.label} accessibilityRole="button" accessibilityLabel={i.label} onPress={i.onPress} style={({ pressed }) => [sh.row, pressed && { backgroundColor: HOME.bar }]}>
+                    <Icon name={i.icon} size={22} color={i.danger ? C.danger : C.text} stroke={2.1} />
+                    <View style={[sh.rowBody, k > 0 && sh.line]}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <T style={[sh.label, i.danger && { color: C.danger }]} numberOfLines={1}>{i.label}</T>
+                        {i.sub ? <T style={sh.sub} numberOfLines={1}>{i.sub}</T> : null}
+                      </View>
+                      {i.danger ? null : <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={16} color={C.muted} stroke={2.4} /></View>}
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+const sh = StyleSheet.create({
+  sheet: { flex: 1, backgroundColor: HOME.panel, borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingTop: 18, paddingBottom: 14 },
+  close: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: '800' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, borderRadius: 14, paddingHorizontal: 14, backgroundColor: HOME.rail, borderWidth: 1, borderColor: HOME.edge },
+  input: { flex: 1, color: C.text, fontSize: 16, fontFamily: F.regular, height: '100%' },
+  group: { color: C.muted, fontSize: 15, fontWeight: '700', marginTop: 22, marginBottom: 8, marginLeft: 2 },
+  card: { backgroundColor: HOME.raised, borderRadius: 18, borderWidth: 1, borderColor: HOME.edge, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingLeft: 18 },
+  rowBody: { flex: 1, minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 16, paddingVertical: 8 },
+  line: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.10)' },
+  label: { fontSize: 16.5, fontWeight: '600' },
+  sub: { color: C.muted, fontSize: 13, marginTop: -1 },
+});
 
 type PP = { me: any; patch: (b: any, ok?: string) => Promise<void> };
 const Field = ({ label, ...p }: any) => (<><T style={s.label}>{label}</T><TextInput placeholderTextColor={C.faint} {...p} style={[s.input, p.multiline && { minHeight: 96, textAlignVertical: 'top', paddingTop: 12 }]} /></>);

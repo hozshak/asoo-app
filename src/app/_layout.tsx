@@ -57,10 +57,11 @@ export default function Root() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-          <Stack.Screen name="settings" options={{ headerShown: false }} />
+          {/* Einstellungen kommen wie bei Discord von unten; die Unterseiten (?page=…) schieben sich normal von rechts herein */}
+          <Stack.Screen name="settings" options={({ route }) => ({ headerShown: false, animation: (route.params as any)?.page ? 'default' : 'slide_from_bottom' })} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          <Stack.Screen name="me" options={{ headerShown: false }} />
+          <Stack.Screen name="me" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />
           <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
           {/* Blätter von unten (nativ statt Web-Dialog) */}

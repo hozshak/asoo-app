@@ -7,10 +7,16 @@ import { api, errText } from '@/lib/api';
 import { bootstrap, serverOf } from '@/lib/store';
 import { Btn, Glow, Seg, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
-import { Icon } from '@/components/Icon';
+import { Icon, type IconName } from '@/components/Icon';
 import { C } from '@/lib/theme';
 
 type Kind = 'text' | 'voice' | 'voice3d' | 'game';
+const KINDS: [Kind, IconName, string, string][] = [
+  ['text', 'hash', 'Text', 'Nachrichten, Bilder, GIFs und Umfragen'],
+  ['voice', 'volume', 'Sprachraum', 'Reden, Kamera, Bildschirm teilen'],
+  ['voice3d', 'cube', '3D-Raum', 'Als Avatar herumlaufen und reden'],
+  ['game', 'target', 'Spiel', 'Schattenduell mit euren Avataren – und dabei reden'],
+];
 const ROOMS: [string, string, any][] = [
   ['lounge', 'Skylounge', require('../../assets/rooms/lounge.webp')], ['beach', 'Strand', require('../../assets/rooms/beach.webp')],
   ['theater', 'Kino', require('../../assets/rooms/theater.webp')], ['wedding', 'Dawet (Hochzeit)', require('../../assets/rooms/wedding.webp')],
@@ -43,7 +49,19 @@ export default function ChannelNew() {
       <SheetHead title={isCat ? 'Kategorie erstellen' : 'Kanal erstellen'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          {!isCat ? <Seg<Kind> items={[['text', '# Text'], ['voice', '🔊 Sprache'], ['voice3d', '🧊 3D-Raum'], ['game', '🎯 Spiel']]} value={kind} onChange={setKind} /> : null}
+          {!isCat ? <>
+            <T style={s.label}>Kanal-Art</T>
+            <View style={s.kinds}>{KINDS.map(([k, ic, l, d], i) => (
+              <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: kind === k }} onPress={() => setKind(k)} style={({ pressed }) => [s.kind, i < KINDS.length - 1 && s.kindLine, pressed && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                <Icon name={ic} size={22} color={kind === k ? C.text : C.muted} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <T style={{ fontSize: 16, fontWeight: '700' }}>{l}</T>
+                  <T style={{ color: C.muted, fontSize: 13 }}>{d}</T>
+                </View>
+                <View style={[s.radio, kind === k && s.radioOn]}>{kind === k ? <View style={s.radioDot} /> : null}</View>
+              </Pressable>
+            ))}</View>
+          </> : null}
           <Field label={isCat ? 'Name der Kategorie' : 'Name'} value={name} onChangeText={setName} placeholder={isCat ? 'z. B. 🎮 Gaming' : kind === 'text' ? 'z. B. allgemein' : 'z. B. Chillecke'} maxLength={isCat ? 40 : 50} autoFocus />
           {!isCat && kind === 'voice3d' ? <>
             <T style={s.label}>Raum</T>
@@ -74,6 +92,12 @@ export default function ChannelNew() {
 }
 
 const s = StyleSheet.create({
+  kinds: { borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: C.line, overflow: 'hidden' },
+  kind: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 12 },
+  kindLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: C.faint, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: C.accent },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent },
   label: { color: C.faint, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   room: { width: '31%', flexGrow: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1.5, borderColor: C.line, backgroundColor: C.bg2 },

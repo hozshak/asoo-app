@@ -41,7 +41,8 @@ export default function ServerInvite() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title={`Zu „${server?.name || 'Server'}“ einladen`} onClose={() => router.back()} />
+      <SheetHead title="Freunde einladen" onClose={() => router.back()} />
+      {server ? <T style={{ color: C.muted, textAlign: 'center', marginTop: -6, marginBottom: 6, paddingHorizontal: 20 }} numberOfLines={1}>zu „{server.name}“</T> : null}
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Card style={{ padding: 14, gap: 12 }}>
           <T style={s.label}>Einladungslink</T>

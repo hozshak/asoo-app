@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { api, errText, mediaSource } from '@/lib/api';
 import { putUsers, useStore } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
-import { Avatar, Btn, Glass, Glow, Sheet, SheetHead, T } from '@/components/ui';
+import { Avatar, Btn, Empty, Glass, Glow, Sheet, SheetHead, T } from '@/components/ui';
 import { C, F, R } from '@/lib/theme';
 
 type Tab = 'open' | 'closed' | 'users' | 'stats';
@@ -75,7 +75,7 @@ function Reports({ status, say }: { status: 'open' | 'closed'; say: (t: string) 
     confirmIt('Inhalt löschen?', 'Der gemeldete Inhalt wird gelöscht.', () => send(r, action));
   };
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <T style={s.hint}>{status === 'open' ? 'Keine offenen Meldungen. 🎉' : 'Noch nichts erledigt.'}</T>;
+  if (!list.length) return status === 'open' ? <Empty icon="check" title="Keine offenen Meldungen" text="Alles erledigt. Neue Meldungen erscheinen hier." /> : <Empty icon="flag" title="Noch nichts erledigt" />;
   return (
     <>
       {list.map((r) => {

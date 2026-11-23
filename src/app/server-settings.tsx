@@ -9,8 +9,8 @@ import { pickImage as chooseImage } from '@/lib/pick';
 import { api, BASE, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, loadMembers, putUsers, RANK, serverOf, useStore, type Channel, type Role, type User } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
-import { Avatar, Btn, Glass, Glow, Section, Seg, Sheet, SheetHead, T } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { Avatar, Btn, Card, Empty, Glass, Glow, MenuRow, Section, Seg, Sheet, SheetHead, T, TopBar } from '@/components/ui';
+import { Icon, type IconName } from '@/components/Icon';
 import { C, F, R } from '@/lib/theme';
 
 type Tab = 'overview' | 'channels' | 'roles' | 'members' | 'invites' | 'bans' | 'audit' | 'danger';
@@ -27,36 +27,69 @@ const ask = (title: string, text: string, ok: string, fn: () => void) => {
   Alert.alert(title, text, [{ text: 'Abbrechen', style: 'cancel' }, { text: ok, style: 'destructive', onPress: fn }]);
 };
 
+// Seiten der Server-Einstellungen (wie bei Discord: erst eine Liste, jeder Punkt öffnet eine eigene Seite)
+const PAGES: Record<Tab, { label: string; sub?: string; icon: IconName; min: 'member' | 'mod' | 'admin' | 'owner' }> = {
+  overview: { label: 'Übersicht', sub: 'Name, Bild, Banner, Farbe, Beschreibung', icon: 'home', min: 'admin' },
+  channels: { label: 'Kanäle', sub: 'Umbenennen, sortieren, Rechte', icon: 'hash', min: 'admin' },
+  roles: { label: 'Rollen', sub: 'Farben, Abzeichen und Rechte', icon: 'shield', min: 'admin' },
+  members: { label: 'Mitglieder', sub: 'Rollen vergeben, Timeout, Rauswurf', icon: 'users', min: 'member' },
+  invites: { label: 'Einladungen', sub: 'Links erstellen und löschen', icon: 'link', min: 'admin' },
+  bans: { label: 'Banns', sub: 'Gesperrte Leute', icon: 'ban', min: 'mod' },
+  audit: { label: 'Protokoll', sub: 'Wer hat was geändert', icon: 'clock', min: 'mod' },
+  danger: { label: 'Server löschen', icon: 'trash', min: 'owner' },
+};
+const GROUPS: [string, Tab[]][] = [['Einstellungen', ['overview', 'channels', 'roles']], ['Leute', ['members', 'invites', 'bans']], ['Moderation', ['audit']], ['', ['danger']]];
+
 export default function ServerSettings() {
   const p = useLocalSearchParams<{ sid: string; tab?: Tab }>();
   const router = useRouter();
   const server = useStore((s) => s.servers.find((x) => x.id === p.sid) || null);
   const [note, setNote] = useState('');
   const say = (t: string) => { setNote(t); setTimeout(() => setNote((x) => (x === t ? '' : x)), 2400); };
-  const admin = server ? can(server.id, 'admin') : false;
-  const tabs = useMemo(() => ([admin && ['overview', 'Übersicht'], admin && ['channels', 'Kanäle'], admin && ['roles', 'Rollen'], ['members', 'Mitglieder'], admin && ['invites', 'Einladungen'],
-    ['bans', 'Banns'], ['audit', 'Protokoll'], server?.role === 'owner' && ['danger', 'Löschen']].filter(Boolean) as [Tab, string][]), [admin, server?.role]);
-  const [tab, setTab] = useState<Tab>(tabs.some((x) => x[0] === p.tab) ? p.tab! : tabs[0]?.[0] || 'members');
-  if (!server) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title="Server-Einstellungen" onClose={() => router.back()} /><T style={s.empty}>Server nicht gefunden.</T></View>;
+  const allowed = (k: Tab) => !!server && (PAGES[k].min === 'owner' ? server.role === 'owner' : can(server.id, PAGES[k].min));
+  const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  if (!server) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title="Server-Einstellungen" onClose={back} /><Empty icon="globe" title="Server nicht gefunden" /></View>;
+  const tab = p.tab && PAGES[p.tab] && allowed(p.tab) ? p.tab : null;
   const props = { sid: server.id, say };
+  const open = (k: Tab) => router.push({ pathname: '/server-settings', params: { sid: server.id, tab: k } });
+  const icon = mediaSource(server.icon);
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <SheetHead title={server.name} onClose={() => router.back()} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={s.tabs}>
-        {tabs.map(([k, l]) => (
-          <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)} style={[s.tab, tab === k && s.tabOn]}>
-            <T style={[s.tabText, tab === k && { color: '#fff' }, k === 'danger' && { color: C.danger }]}>{l}</T>
-          </Pressable>
-        ))}
-      </ScrollView>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
-          {tab === 'overview' ? <Overview {...props} /> : tab === 'channels' ? <Channels {...props} /> : tab === 'roles' ? <Roles {...props} />
-            : tab === 'members' ? <Members {...props} /> : tab === 'invites' ? <Invites {...props} /> : tab === 'bans' ? <Bans {...props} />
-              : tab === 'audit' ? <Audit {...props} /> : <Danger {...props} onGone={() => { router.dismissAll?.(); router.replace('/'); }} />}
+      {!tab ? <>
+        <SheetHead title="Server-Einstellungen" onClose={back} />
+        <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60, gap: 6 }}>
+          {/* Kopf: Server-Bild und Name, wie oben in Discords Server-Einstellungen */}
+          <View style={s.srvHead}>
+            <View style={[s.srvIcon, { backgroundColor: server.color || C.accent }]}>
+              {icon ? <Image source={icon} style={StyleSheet.absoluteFill} contentFit="cover" /> : <T style={{ fontSize: 24, fontWeight: '800', color: '#fff' }}>{server.icon_emoji || server.name.slice(0, 1).toUpperCase()}</T>}
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <T style={{ fontSize: 20, fontWeight: '800' }} numberOfLines={1}>{server.name}</T>
+              <T style={s.hint} numberOfLines={1}>{RANK_NAME[server.role] || 'Mitglied'}{server.member_count ? ` · ${server.member_count} Mitglieder` : ''}</T>
+            </View>
+          </View>
+          {GROUPS.map(([title, keys]) => {
+            const ks = keys.filter(allowed);
+            if (!ks.length) return null;
+            return (
+              <View key={title || 'x'} style={{ gap: 6 }}>
+                {title ? <Section style={{ marginTop: 10, marginLeft: 4 }}>{title}</Section> : <View style={{ height: 10 }} />}
+                <Card>{ks.map((k, i) => <MenuRow key={k} icon={PAGES[k].icon} label={PAGES[k].label} sub={PAGES[k].sub} danger={k === 'danger'} onPress={() => open(k)} last={i === ks.length - 1} />)}</Card>
+              </View>
+            );
+          })}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </> : <>
+        <TopBar title={PAGES[tab].label} onBack={back} />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
+            {tab === 'overview' ? <Overview {...props} /> : tab === 'channels' ? <Channels {...props} /> : tab === 'roles' ? <Roles {...props} />
+              : tab === 'members' ? <Members {...props} /> : tab === 'invites' ? <Invites {...props} /> : tab === 'bans' ? <Bans {...props} />
+                : tab === 'audit' ? <Audit {...props} /> : <Danger {...props} onGone={() => { router.dismissAll?.(); router.replace('/'); }} />}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </>}
       {note ? <View style={s.note} pointerEvents="none"><T style={{ fontWeight: '700' }}>{note}</T></View> : null}
     </View>
   );
@@ -384,9 +417,17 @@ function Invites({ sid, say }: P) {
   const load = () => api<any>('GET', `/api/servers/${sid}/invites`).then((d) => setList(d.invites || [])).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { load(); }, []);
   const url = (code: string) => `${BASE || 'https://zuno-app.altraex.workers.dev'}/i/${code}`;
+  const [busy, setBusy] = useState(false);
+  // neue Einladung: 7 Tage gültig, beliebig oft – Link gleich in die Zwischenablage
+  const create = async () => {
+    setBusy(true);
+    try { const d = await api<any>('POST', `/api/servers/${sid}/invites`, { expires_hours: 168, max_uses: 0 }); await Clipboard.setStringAsync(url(d.code)).catch(() => {}); say('Einladung erstellt – Link kopiert'); load(); }
+    catch (e) { say(errText(e)); } finally { setBusy(false); }
+  };
+  const head = <Btn title="Einladung erstellen" icon="userPlus" onPress={create} busy={busy} style={{ marginBottom: 12 }} />;
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <T style={s.hint}>Keine aktiven Einladungen.</T>;
-  return <>{list.map((inv) => (
+  if (!list.length) return <>{head}<Empty icon="link" title="Keine aktiven Einladungen" text="Erstelle einen Link und schick ihn deinen Freunden – damit kommen sie direkt auf den Server." /></>;
+  return <>{head}{list.map((inv) => (
     <Glass key={inv.code} style={[s.card, { marginBottom: 8 }]} intensity={20}>
       <T style={{ fontWeight: '800', fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) }}>{inv.code}</T>
       <T style={s.hint}>{(inv.creator ? inv.creator.display + ' · ' : '') + `${inv.uses} mal benutzt · ` + (inv.expires ? `läuft ab ${new Date(inv.expires).toLocaleString('de-DE')}` : 'läuft nie ab')}</T>
@@ -402,7 +443,7 @@ function Bans({ sid, say }: P) {
   const load = () => api<any>('GET', `/api/servers/${sid}/bans`).then((d) => { putUsers((d.bans || []).map((b: any) => b.user)); setList(d.bans || []); }).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { load(); }, []);
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <T style={s.hint}>Niemand ist gebannt.</T>;
+  if (!list.length) return <Empty icon="ban" title="Niemand ist gebannt" text="Gebannte Leute erscheinen hier. Du kannst den Bann jederzeit wieder aufheben." />;
   return <>{list.map((b) => (
     <View key={b.user?.id} style={s.person}>
       <Avatar user={b.user} size={36} frame={false} />
@@ -417,7 +458,7 @@ function Audit({ sid, say }: P) {
   const [list, setList] = useState<any[] | null>(null);
   useEffect(() => { api<any>('GET', `/api/servers/${sid}/audit`).then((d) => setList(d.entries || [])).catch((e) => { setList([]); say(errText(e)); }); }, []);
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <T style={s.hint}>Noch keine Einträge.</T>;
+  if (!list.length) return <Empty icon="clock" title="Noch keine Einträge" text="Hier steht, wer Kanäle, Rollen oder Mitglieder geändert hat." />;
   return <>{list.map((e, i) => (
     <View key={e.id || i} style={[s.person, { alignItems: 'flex-start' }]}>
       <Avatar user={e.actor} size={30} frame={false} />
@@ -447,6 +488,8 @@ function Danger({ sid, say, onGone }: P & { onGone: () => void }) {
 
 const s = StyleSheet.create({
   empty: { color: C.muted, textAlign: 'center', marginTop: 40 },
+  srvHead: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 4, paddingVertical: 8 },
+  srvIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   tabs: { gap: 6, paddingHorizontal: 12, paddingVertical: 8 },
   tab: { height: 34, paddingHorizontal: 14, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: C.line },
   tabOn: { backgroundColor: C.accent, borderColor: C.accent },

@@ -9,14 +9,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
-import { Avatar, Badge, Empty, Glass, Glow, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
+import { Avatar, Badge, Empty, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { MeBar } from '@/components/MeBar';
 import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
-import { C, GRAD, GRAD_POS } from '@/lib/theme';
+import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
 
 export default function Home() {
   const servers = useStore((s) => s.servers);
@@ -54,8 +54,7 @@ export default function Home() {
   };
   const menuAdmin = menuFor ? can(menuFor.id, 'admin') : false;
   return (
-    <View style={{ flex: 1 }}>
-      <Glow />
+    <View style={{ flex: 1, backgroundColor: HOME.rail }}>
       <SafeAreaView edges={['top']} style={{ flex: 1, flexDirection: 'row' }}>
         <ScrollView style={s.rail} contentContainerStyle={{ alignItems: 'center', paddingVertical: 12, gap: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
           <RailItem active={!sel} onPress={() => setSel(null)} label="Direktnachrichten" badge={dmUnread}>
@@ -75,9 +74,9 @@ export default function Home() {
           <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
           <RailItem active={false} onPress={() => router.push('/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
-        <Glass style={s.panel} intensity={30} tint="rgba(14,15,24,0.86)">
+        <View style={s.panel}>
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
-        </Glass>
+        </View>
       </SafeAreaView>
       {/* wie bei Discord über die ganze Breite, auch über der Server-Leiste */}
       <MeBar onNote={setNote} />
@@ -282,12 +281,12 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
 
 const s = StyleSheet.create({
   rail: { width: 72, flexGrow: 0 },
-  dmBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  dmBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   dmOn: { borderColor: 'transparent', shadowColor: '#8468ff', shadowOpacity: 0.8, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   railSep: { width: 28, height: 1, backgroundColor: C.line },
   pip: { position: 'absolute', left: 0, top: '50%', marginTop: -20, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: C.accent },
-  panel: { flex: 1, borderTopLeftRadius: 22, borderRightWidth: 0, borderBottomWidth: 0 },
-  head: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.line, marginBottom: 6 },
+  panel: { flex: 1, overflow: 'hidden', backgroundColor: HOME.panel, borderTopLeftRadius: 22, borderTopWidth: 1, borderLeftWidth: 1, borderColor: HOME.edge },
+  head: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: HOME.edge, marginBottom: 6 },
   headText: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -296,17 +295,17 @@ const s = StyleSheet.create({
   chipPrimary: { borderColor: 'transparent' },
   chipPlain: { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: C.line },
   chipText: { fontSize: 13, fontWeight: '800' },
-  green: { backgroundColor: C.bg3, borderColor: C.line },
+  green: { backgroundColor: HOME.raised, borderColor: HOME.edge },
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 8, borderRadius: 14 },
   dmRow: { paddingVertical: 9 },
   when: { color: C.faint, fontSize: 12 },
   dmTools: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10 },
-  toolRound: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  toolWide: { flex: 1, height: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  toolRound: { width: 44, height: 44, borderRadius: 22, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center' },
+  toolWide: { flex: 1, height: 44, borderRadius: 22, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   toolPlus: { width: 44, height: 44, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  rowPressed: { backgroundColor: C.accentSoft },
+  rowPressed: { backgroundColor: HOME.raised },
   rowName: { color: C.text2, fontSize: 16, fontWeight: '600' },
   rowSub: { color: C.muted, fontSize: 13, marginTop: -2 },
   iconBubble: { width: 42, height: 42, borderRadius: 14, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, alignItems: 'center', justifyContent: 'center' },

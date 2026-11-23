@@ -23,6 +23,9 @@ export const C = {
   mention: 'rgba(255,176,46,0.10)',
   mentionLine: '#ffb02e',
 };
+/** Startseite wie bei Discord: drei ruhige Stufen derselben Farbe statt Leuchten –
+ *  links die Server-Leiste am dunkelsten, rechts die Liste eine Stufe heller, Knöpfe und Profilleiste noch eine Stufe heller. */
+export const HOME = { rail: '#0c0c13', panel: '#14151f', raised: '#1d1e2b', bar: '#202131', edge: 'rgba(255,255,255,0.06)' };
 /** Der Farbverlauf der Web-App (--grad): Knöpfe, aktiver Server, Senden. */
 export const GRAD = ['#8468ff', '#b260ff', '#ff5c9a'] as const;
 export const GRAD_POS = [0, 0.52, 1] as const;

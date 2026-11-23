@@ -9,9 +9,9 @@ import * as Haptics from 'expo-haptics';
 import { api, errText } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
 import { toggleVoice, useHost } from '@/lib/webhost';
-import { Avatar, Badge, Glass, T } from './ui';
+import { Avatar, Badge, T } from './ui';
 import { Icon } from './Icon';
-import { C, statusColor } from '@/lib/theme';
+import { C, HOME, statusColor } from '@/lib/theme';
 
 const STATUS: [string, string][] = [['online', 'Online'], ['idle', 'Abwesend'], ['dnd', 'Bitte nicht stören'], ['invisible', 'Unsichtbar']];
 export const statusLabel = (k?: string) => STATUS.find(([x]) => x === k)?.[1] || 'Online';
@@ -82,7 +82,7 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
     <>
       {/* Karte wie bei Discord: großes Profilbild mit Rahmen ragt links heraus, Name mit Pfeil, Status darunter, rechts die Glocke */}
       <View style={[s.bar, { bottom: Math.max(ins.bottom - 6, 10) }]}>
-        <Glass style={[StyleSheet.absoluteFill, { borderRadius: 24 }]} intensity={40} tint="rgba(30,31,46,0.96)" />
+        <View style={[StyleSheet.absoluteFill, s.card]} />
         <Pressable accessibilityRole="button" accessibilityLabel="Mein Profil" onPress={() => router.push('/me')} style={s.av}>
           <Avatar user={me} size={AV} force live />
           <View style={s.glyph}><StatusGlyph k={raw} size={16} /></View>
@@ -120,8 +120,9 @@ const AV = 58; // Profilbild in der Leiste (mit Rahmen)
 const s = StyleSheet.create({
   // schwebende Karte ganz unten (keine Tab-Leiste mehr); das Bild ragt oben und links heraus
   bar: { position: 'absolute', left: 10, right: 10, height: 64, flexDirection: 'row', alignItems: 'center', paddingLeft: AV + 14, paddingRight: 10, gap: 2 },
+  card: { borderRadius: 24, backgroundColor: HOME.bar, borderWidth: 1, borderColor: HOME.edge, shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   av: { position: 'absolute', left: 4, bottom: 10, width: AV, height: AV },
-  glyph: { position: 'absolute', right: -2, bottom: -2, padding: 3, borderRadius: 14, backgroundColor: 'rgba(30,31,46,1)' },
+  glyph: { position: 'absolute', right: -2, bottom: -2, padding: 3, borderRadius: 14, backgroundColor: HOME.bar },
   who: { flex: 1, minWidth: 0, justifyContent: 'center' },
   name: { fontSize: 17, fontWeight: '800', flexShrink: 1 },
   sub: { color: C.muted, fontSize: 13.5, flexShrink: 1 },

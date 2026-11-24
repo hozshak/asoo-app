@@ -254,7 +254,7 @@ function Intro({ onStart, bottom }: { onStart: () => void; bottom: number }) {
       </Animated.View>
       <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 22 }}>
         <Point icon="user" title="Erst einmal anonym" text="Andere sehen dein Profilbild, Banner und deine Spiele – aber nicht deinen Namen." />
-        <Point icon="heart" title="Gegenseitiges Like = Match" text="Erst wenn ihr euch beide likt, seht ihr eure Namen und könnt in Asoo schreiben." />
+        <Point icon="heart" title="Gegenseitiges Like = Match" text="Erst wenn ihr euch beide likt, seht ihr eure Namen und könnt in ToLobby schreiben." />
         <Point icon="shield" title="Du bestimmst" text="Profil jederzeit pausieren oder löschen, Karten melden oder blockieren." />
       </View>
       <Btn title="Gamer-Profil einrichten" icon="pad" onPress={onStart} style={{ alignSelf: 'stretch', marginTop: 22 }} />

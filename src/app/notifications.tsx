@@ -13,7 +13,7 @@ import { C } from '@/lib/theme';
 const KIND: Record<string, [string, IconName, string]> = {
   mention: ['hat dich erwähnt', 'at', C.warn], reply: ['hat dir geantwortet', 'reply', C.accent], friend_request: ['möchte mit dir befreundet sein', 'userPlus', C.accent2],
   friend_accept: ['hat deine Anfrage angenommen', 'check', C.ok], call: ['hat dich angerufen', 'phone', C.ok], follow: ['folgt dir jetzt', 'user', C.info], like: ['gefällt dein Beitrag', 'heart', C.accent2], comment: ['hat deinen Beitrag kommentiert', 'comment', C.info],
-  // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „Asoo“ davor)
+  // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „ToLobby“ davor)
   match: ['und du passt zusammen – ihr könnt euch jetzt schreiben', 'pad', C.accent], match_like: ['– jemand mag dein Mitspieler-Profil', 'pad', C.accent2],
 };
 
@@ -60,7 +60,7 @@ export default function Notifications() {
                     <View style={[s.kind, { backgroundColor: color }]}><Icon name={icon} size={11} color="#fff" stroke={2.6} /></View>
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <T style={s.title}><T style={{ fontWeight: '800' }}>{n.actor?.display || 'Asoo'}</T> {label}</T>
+                    <T style={s.title}><T style={{ fontWeight: '800' }}>{n.actor?.display || 'ToLobby'}</T> {label}</T>
                     {n.text ? <T style={s.text} numberOfLines={2}>{n.text}</T> : null}
                     <T style={s.time}>{timeLabel(n.created)}</T>
                   </View>

@@ -80,7 +80,7 @@ const Tag = ({ icon, label, soft }: { icon?: IconName; label: string; soft?: boo
 );
 const Label = ({ children, right }: { children: string; right?: ReactNode }) => <View style={s.labelRow}><T style={s.label}>{children}</T>{right}</View>;
 
-/** Profilbild der Karte (mit Rahmen aus dem Asoo-Profil); ohne Bild: Gamepad statt Buchstaben – es gibt ja noch keinen Namen. */
+/** Profilbild der Karte (mit Rahmen aus dem ToLobby-Profil); ohne Bild: Gamepad statt Buchstaben – es gibt ja noch keinen Namen. */
 export function CardAvatar({ c, size }: { c: MatchCard; size: number }) {
   return (
     <View style={{ width: size, height: size }}>
@@ -208,7 +208,7 @@ export function CardMenu({ pid, onClose, done, say }: { pid: string | null; onCl
           <Btn title="Abbrechen" kind="ghost" onPress={close} style={{ marginTop: 6 }} />
         </> : <>
           <T style={s.sheetTitle}>Karte melden</T>
-          <T style={s.sheetText}>Deine Meldung geht vertraulich an das Asoo-Team. Die gemeldete Person erfährt nicht, wer gemeldet hat.</T>
+          <T style={s.sheetText}>Deine Meldung geht vertraulich an das ToLobby-Team. Die gemeldete Person erfährt nicht, wer gemeldet hat.</T>
           <ScrollView style={{ maxHeight: 330, marginTop: 10 }}>
             {REASONS.map(([k, label]) => (
               <Pressable key={k} accessibilityRole="radio" accessibilityState={{ selected: reason === k }} onPress={() => { tap(); setReason(k); }} style={s.reason}>

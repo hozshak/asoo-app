@@ -7,7 +7,7 @@ import { channelInfo, getState } from './store';
 import { openWeb } from './web';
 type Router = ReturnType<typeof useRouter>;
 
-const HOSTS = ['zuno-app.altraex.workers.dev', 'asoo.app', 'www.asoo.app'];
+const HOSTS = ['tolobby.com', 'www.tolobby.com', 'zuno-app.altraex.workers.dev'];
 const own = (u: URL) => HOSTS.includes(u.host) || (!!BASE && u.origin === new URL(BASE).origin);
 
 /** Einladungs-Codes aus einem Text (Links der Form …/i/<Code> auf Asoo), höchstens drei. */

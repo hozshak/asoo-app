@@ -5,7 +5,7 @@
 module.exports = {
   type: 'broadcast-upload',
   name: 'AsooBroadcast',
-  displayName: 'Asoo',
+  displayName: 'ToLobby',
   bundleIdentifier: '.broadcast',
   deploymentTarget: '15.1',
   frameworks: ['ReplayKit'],

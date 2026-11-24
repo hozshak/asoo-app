@@ -69,7 +69,7 @@ async function pickRaw({ title = 'Bild wählen', crop }: Opts): Promise<PickedIm
   if (src === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Kamera nicht erlaubt', 'Erlaube Asoo die Kamera in den iPhone-Einstellungen (Einstellungen → Asoo → Kamera).');
+      Alert.alert('Kamera nicht erlaubt', 'Erlaube ToLobby die Kamera in den iPhone-Einstellungen (Einstellungen → ToLobby → Kamera).');
       return null;
     }
     const r = await ImagePicker.launchCameraAsync(common);

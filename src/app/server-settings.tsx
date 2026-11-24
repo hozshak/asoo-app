@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import { pickImage as chooseImage } from '@/lib/pick';
-import { api, BASE, errText, mediaSource, upload } from '@/lib/api';
+import { api, SITE, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, loadMembers, putUsers, RANK, serverOf, useStore, type Channel, type Role, type User } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
 import { Avatar, Btn, Card, Empty, Glass, Glow, MenuRow, Section, Seg, Sheet, SheetHead, T, TopBar } from '@/components/ui';
@@ -416,7 +416,7 @@ function Invites({ sid, say }: P) {
   const [list, setList] = useState<any[] | null>(null);
   const load = () => api<any>('GET', `/api/servers/${sid}/invites`).then((d) => setList(d.invites || [])).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { load(); }, []);
-  const url = (code: string) => `${BASE || 'https://zuno-app.altraex.workers.dev'}/i/${code}`;
+  const url = (code: string) => `${SITE}/i/${code}`;
   const [busy, setBusy] = useState(false);
   // neue Einladung: 7 Tage gültig, beliebig oft – Link gleich in die Zwischenablage
   const create = async () => {

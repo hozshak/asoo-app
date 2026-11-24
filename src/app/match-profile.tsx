@@ -160,7 +160,7 @@ export default function MatchProfileScreen() {
   const previewBtn = (
     <Pressable accessibilityRole="button" onPress={() => { tap(); setPreview(true); }} style={({ pressed }) => [s.previewBtn, pressed && { opacity: 0.8 }]}>
       <Icon name="user" size={18} color={C.accent} />
-      <View style={{ flex: 1 }}><T style={{ fontWeight: '800' }}>So sehen dich andere</T><T style={s.hint}>Profilbild, Banner und Rahmen kommen aus deinem Asoo-Profil. Dein Name bleibt bis zum Match verborgen.</T></View>
+      <View style={{ flex: 1 }}><T style={{ fontWeight: '800' }}>So sehen dich andere</T><T style={s.hint}>Profilbild, Banner und Rahmen kommen aus deinem ToLobby-Profil. Dein Name bleibt bis zum Match verborgen.</T></View>
       <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={15} color={C.muted} stroke={2.4} /></View>
     </Pressable>
   );

@@ -3,13 +3,12 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { api, BASE, errText } from '@/lib/api';
+import { api, SITE, errText } from '@/lib/api';
 import { serverOf, useStore } from '@/lib/store';
 import { Avatar, Btn, Card, Glow, Seg, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { C } from '@/lib/theme';
 
-const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
 type Exp = '168' | '24' | '720' | '0';
 
 export default function ServerInvite() {
@@ -25,9 +24,9 @@ export default function ServerInvite() {
   const [sent, setSent] = useState<Record<string, 'busy' | 'ok'>>({});
   useEffect(() => {
     setLink(''); setErr('');
-    api<any>('POST', `/api/servers/${sid}/invites`, { expires_hours: Number(exp) }).then((d) => setLink(`${ORIGIN}/i/${d.code}`)).catch((e) => setErr(errText(e)));
+    api<any>('POST', `/api/servers/${sid}/invites`, { expires_hours: Number(exp) }).then((d) => setLink(`${SITE}/i/${d.code}`)).catch((e) => setErr(errText(e)));
   }, [sid, exp]);
-  const text = `Komm auf meinen Server „${server?.name || 'Asoo'}“! ${link}`;
+  const text = `Komm auf meinen Server „${server?.name || 'ToLobby'}“! ${link}`;
   const sendTo = async (uid: string) => {
     if (!link) return;
     setSent((x) => ({ ...x, [uid]: 'busy' }));

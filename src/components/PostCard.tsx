@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { api, BASE, errText, mediaSource } from '@/lib/api';
+import { api, SITE, errText, mediaSource } from '@/lib/api';
 import { getState, userOf, useStore } from '@/lib/store';
 import { RichText, timeLabel } from '@/lib/text';
 import { openLink } from '@/lib/links';
@@ -18,7 +18,7 @@ import { C } from '@/lib/theme';
 export type Post = { id: string; author_id: string; content?: string | null; image?: string | null; created: number; like_count: number; comment_count: number; liked?: boolean | number };
 
 export const REPORT_REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['other', 'Etwas anderes']];
-export const postLink = (id: string) => `${BASE || 'https://zuno-app.altraex.workers.dev'}/post/${id}`;
+export const postLink = (id: string) => `${SITE}/post/${id}`;
 
 export function PostCard({ post, onChange, onRemove, onOpen, onNote }: { post: Post; onChange?: (p: Post) => void; onRemove?: () => void; onOpen?: () => void; onNote?: (t: string) => void }) {
   const router = useRouter();

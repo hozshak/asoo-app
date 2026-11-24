@@ -26,9 +26,9 @@ function hexToHsv(hex: string): [number, number, number] {
 /** dunkler Haken auf hellen Farben, heller auf dunklen */
 const onColor = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 160 ? '#11121c' : '#ffffff'; };
 
-/** Paletten: Asoo-Farben, kräftig, pastell, dunkel/edel */
+/** Paletten: ToLobby-Farben, kräftig, pastell, dunkel/edel */
 export const PALETTE: [string, string[]][] = [
-  ['Asoo', ['#8468ff', '#b260ff', '#ff5c9a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#ff4d5e']],
+  ['ToLobby', ['#8468ff', '#b260ff', '#ff5c9a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#ff4d5e']],
   ['Kräftig', ['#5865f2', '#00c2a8', '#e04dff', '#ff3d3d', '#ffd400', '#1fd655', '#0096ff', '#ff7ab6']],
   ['Pastell', ['#b8a6ff', '#ffb3d1', '#a8e0ff', '#a8f0d0', '#ffe2a8', '#ffc2b0', '#d9c2ff', '#c8f0ff']],
   ['Edel', ['#d4af37', '#c0c5ce', '#b76e79', '#0f7a47', '#1b3a6b', '#5a1a2b', '#2b2d42', '#f5f0e6']],

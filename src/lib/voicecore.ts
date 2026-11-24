@@ -315,7 +315,7 @@ export function createVoice(deps: Deps) {
     },
     toggleMute() {
       if (st.smute || st.sdeaf) { emit({ error: 'Ein Moderator hat dich stummgeschaltet.' }); return; }
-      if (!mic && st.room) { emit({ error: 'Asoo darf dein Mikrofon nicht benutzen. Erlaube es in den Einstellungen deines Handys bei Asoo.' }); return; }
+      if (!mic && st.room) { emit({ error: 'ToLobby darf dein Mikrofon nicht benutzen. Erlaube es in den Einstellungen deines Handys bei ToLobby.' }); return; }
       // wie bei Discord: wer bei „Ton aus“ das Mikro anschaltet, hört auch wieder
       st = { ...st, deaf: st.muted ? false : st.deaf, muted: !st.muted };
       applyMic(); applyDeaf(); pushState(); deps.tone?.(st.muted ? 'mute' : 'unmute'); emit();

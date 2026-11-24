@@ -5,6 +5,9 @@ import * as SecureStore from 'expo-secure-store';
 
 /** Server-Adresse. Im Browser beim Entwickeln: dieselbe Adresse wie die App (scripts/dev-proxy.mjs leitet /api weiter). */
 export const BASE = process.env.EXPO_PUBLIC_API ?? (Platform.OS === 'web' && __DEV__ ? '' : 'https://zuno-app.altraex.workers.dev');
+/** Öffentliche Adresse für Links, die andere öffnen (Einladungen, Beiträge). Die App selbst spricht weiter mit BASE.
+ *  Auf 'https://tolobby.com' umstellen, sobald die Domain bei Cloudflare läuft (24.11.2026 noch nicht registriert). */
+export const SITE = 'https://zuno-app.altraex.workers.dev';
 export const WS_BASE = BASE ? BASE.replace(/^http/, 'ws') : (typeof location !== 'undefined' ? location.origin.replace(/^http/, 'ws') : '');
 
 const KEY = 'asoo.token';
@@ -93,7 +96,7 @@ const MSG: Record<string, string> = {
   bad_code: 'Der Code stimmt nicht oder ist abgelaufen.',
   mail_off: 'E-Mails sind gerade nicht eingerichtet.',
   mail_failed: 'Die E-Mail konnte nicht verschickt werden. Bitte versuch es gleich noch einmal.',
-  age_required: 'Asoo ist ab 16 Jahren.',
+  age_required: 'ToLobby ist ab 16 Jahren.',
   terms_required: 'Bitte stimme den Regeln und der Datenschutzerklärung zu.',
   rate_limited: 'Zu viele Versuche. Warte kurz und versuch es nochmal.',
   not_friends: 'Ihr müsst erst befreundet sein, um euch zu schreiben.',

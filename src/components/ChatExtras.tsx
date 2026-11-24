@@ -164,7 +164,7 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
     let alive = true, timer: any;
     (async () => {
       const p = await requestRecordingPermissionsAsync();
-      if (!p.granted) { Alert.alert('Mikrofon', 'Erlaube Asoo das Mikrofon in den iPhone-Einstellungen (Einstellungen → Asoo → Mikrofon).'); onCancel(); return; }
+      if (!p.granted) { Alert.alert('Mikrofon', 'Erlaube ToLobby das Mikrofon in den iPhone-Einstellungen (Einstellungen → ToLobby → Mikrofon).'); onCancel(); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await rec.prepareToRecordAsync();
       if (!alive) return;

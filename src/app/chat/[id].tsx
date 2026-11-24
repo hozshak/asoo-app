@@ -288,7 +288,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
     <Pressable onLongPress={onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
       {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || 'Bild'}</T></View> : null}
       <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} frame={false} /></Pressable> : null}</View>
+        <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
           {head ? <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
             <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} />

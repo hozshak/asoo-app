@@ -106,7 +106,7 @@ export default function Login() {
           <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
             <Animated.View entering={FadeInDown.duration(600)} style={{ alignItems: 'center', marginBottom: 18 }}>
               <View style={s.logoGlow}><Logo size={72} /></View>
-              <T style={s.brand}>Asoo</T>
+              <T style={s.brand}>ToLobby</T>
               <T style={s.tag}>Chatten, reden und in 3D-Räumen abhängen.</T>
             </Animated.View>
             <Animated.View entering={FadeIn.delay(150).duration(500)}>

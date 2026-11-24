@@ -66,7 +66,7 @@ export function LookSection({ patch, say }: { patch: Patch; say: (t: string) => 
 
 const deviceName = (ua = '') => {
   const os = /iphone|ipad|asoo-app|darwin/i.test(ua) ? 'iPhone/iPad' : /android/i.test(ua) ? 'Android' : /windows/i.test(ua) ? 'Windows' : /mac os/i.test(ua) ? 'Mac' : /linux/i.test(ua) ? 'Linux' : 'Unbekanntes Gerät';
-  const br = /zunodesktop/i.test(ua) ? 'Asoo-App' : /edg\//i.test(ua) ? 'Edge' : /firefox/i.test(ua) ? 'Firefox' : /chrome|crios/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : /asoo-app|okhttp|cfnetwork|expo/i.test(ua) ? 'Asoo-App' : '';
+  const br = /zunodesktop/i.test(ua) ? 'ToLobby-App' : /edg\//i.test(ua) ? 'Edge' : /firefox/i.test(ua) ? 'Firefox' : /chrome|crios/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : /asoo-app|okhttp|cfnetwork|expo/i.test(ua) ? 'ToLobby-App' : '';
   return br ? `${os} · ${br}` : os;
 };
 

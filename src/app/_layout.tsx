@@ -67,6 +67,7 @@ export default function Root() {
           {/* Einstellungen kommen wie bei Discord von unten; die Unterseiten (?page=…) schieben sich normal von rechts herein */}
           <Stack.Screen name="settings" options={({ route }) => ({ headerShown: false, animation: (route.params as any)?.page ? 'default' : 'slide_from_bottom' })} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
+          <Stack.Screen name="members" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="me" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />

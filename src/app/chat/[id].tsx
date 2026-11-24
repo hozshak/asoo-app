@@ -82,6 +82,9 @@ export default function Chat() {
 
   const data = useMemo(() => [...(box?.list || [])].reverse(), [box]);
   const isMod = sid ? can(sid, 'mod') : false;
+  // „Wer darf schreiben?“ (post_role) – wer darunter liegt, sieht statt des Eingabefelds einen Hinweis
+  const need = info?.channel.post_role || 'member';
+  const readOnly = !!sid && need !== 'member' && !can(sid, need);
 
   const sendMsg = async () => {
     const raw = text.trim();
@@ -160,9 +163,9 @@ export default function Chat() {
 
   const typers = Object.entries(typing || {}).filter(([uid, until]) => until > Date.now() && uid !== me?.id).map(([uid]) => userOf(uid).display);
   const menuItems: SheetItem[] = menu ? [
-    { label: 'Antworten', icon: 'reply', onPress: () => { setReply(menu); setEditing(null); } },
+    !readOnly ? { label: 'Antworten', icon: 'reply', onPress: () => { setReply(menu); setEditing(null); } } : null,
     menu.content ? { label: 'Text kopieren', icon: 'copy', onPress: () => Clipboard.setStringAsync(plainText(menu.content, sid)) } : null,
-    menu.author_id === me?.id && menu.kind === 'default' && menu.content ? { label: 'Bearbeiten', icon: 'edit', onPress: () => { setEditing(menu); setReply(null); setText(plainText(menu.content, sid)); } } : null,
+    menu.author_id === me?.id && menu.kind === 'default' && menu.content && !readOnly ? { label: 'Bearbeiten', icon: 'edit', onPress: () => { setEditing(menu); setReply(null); setText(plainText(menu.content, sid)); } } : null,
     { label: 'Profil ansehen', icon: 'user', onPress: () => router.push({ pathname: '/user/[id]', params: { id: menu.author_id } }) },
     menu.author_id !== me?.id ? { label: 'Melden', icon: 'flag', danger: true, onPress: () => setReportFor(menu) } : null,
     menu.author_id === me?.id || isMod ? { label: 'Löschen', icon: 'trash', danger: true, onPress: () => del(menu) } : null,
@@ -187,6 +190,7 @@ export default function Chat() {
         right={<>
           <TopIcon icon="pin" label="Angeheftete Nachrichten" onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
           <TopIcon icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
+          {sid ? <TopIcon icon="users" label="Mitglieder" onPress={() => router.push({ pathname: '/members', params: { sid } })} /> : null}
           {dm ? <TopIcon icon="phone" label="Anrufen" color={C.accent} onPress={() => setAsk('voice')} /> : null}
           {dm ? <TopIcon icon="video" label="Videoanruf" color={C.accent} onPress={() => setAsk('video')} /> : null}
         </>}
@@ -233,7 +237,9 @@ export default function Chat() {
           />}
         {typers.length ? <Animated.View entering={FadeIn} style={s.typingRow}><View style={s.typingDots}><View style={s.td} /><View style={[s.td, { opacity: 0.7 }]} /><View style={[s.td, { opacity: 0.4 }]} /></View><T style={s.typing}>{typers.slice(0, 3).join(', ')} {typers.length === 1 ? 'tippt …' : 'tippen …'}</T></Animated.View> : null}
         {err ? <Pressable onPress={() => setErr('')}><T style={s.err}>{err}</T></Pressable> : null}
-        <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
+        {readOnly ? <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
+          <View style={s.locked}><Icon name="lock" size={15} color={C.muted} /><T style={s.lockedText}>{need === 'admin' ? 'Nur Admins können hier schreiben.' : 'Nur Moderatoren können hier schreiben.'}</T></View>
+        </Glass> : <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
           {reply || editing ? <Animated.View entering={FadeInDown.duration(180)} style={s.bar}>
             <Icon name={editing ? 'edit' : 'reply'} size={14} color={C.accent} />
             <T style={s.barText} numberOfLines={1}>{editing ? 'Nachricht bearbeiten' : `Antwort an ${userOf(reply!.author_id).display}`}</T>
@@ -253,7 +259,7 @@ export default function Chat() {
             </Press>}
             </>}
           </View>
-        </Glass>
+        </Glass>}
       </KeyboardAvoidingView>
       <Sheet open={!!menu} onClose={() => setMenu(null)} items={menuItems} header={menu ? (
         <View style={s.quick}>{QUICK.map((e) => <Press key={e} label={`Reaktion ${e}`} onPress={() => { const m = menu; setMenu(null); react(m, e); }} style={s.quickBtn} scale={0.85}><T style={{ fontSize: 26, lineHeight: 34 }}>{e}</T></Press>)}</View>
@@ -278,9 +284,28 @@ export default function Chat() {
 
 function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink, onPoll }: { onPoll: (id: string, p: Poll) => void; m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
   const u = userOf(m.author_id);
-  if (m.kind !== 'default' && m.kind !== 'poll') return (
-    <View style={s.sys}><View style={s.sysIcon}><Icon name="userPlus" size={13} color={C.ok} /></View><T style={s.sysText}><T style={{ color: C.text, fontWeight: '700' }}>{u.display}</T> ist gerade gelandet. 👋</T></View>
-  );
+  if (m.kind === 'automod') {
+    // Meldung des AutoMod im Team-Kanal: wer, warum, wo, und der blockierte Text
+    let d: any = {};
+    try { d = JSON.parse(m.content || '{}') || {}; } catch {}
+    const why: Record<string, string> = { words: 'Verbotenes Wort', links: 'Link nicht erlaubt', invites: 'Fremde Einladung', mentions: 'Zu viele Erwähnungen', spam: 'Spam' };
+    return (
+      <View style={s.sys}>
+        <View style={[s.sysIcon, { backgroundColor: 'rgba(255,92,138,0.14)' }]}><Icon name="shield" size={13} color={C.danger} /></View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <T style={s.sysText}>AutoMod hat eine Nachricht von <T style={{ color: C.text, fontWeight: '700' }} onPress={() => onUser(m.author_id)}>{u.display}</T> blockiert.</T>
+          <T style={[s.sysText, { fontSize: 12.5 }]}>{[why[d.r] || '', d.w ? `„${d.w}“` : '', d.c ? `#${d.c}` : ''].filter(Boolean).join(' · ')}</T>
+          {d.x ? <T style={s.amText}>{String(d.x)}</T> : null}
+        </View>
+      </View>
+    );
+  }
+  if (m.kind !== 'default' && m.kind !== 'poll') {
+    const txt = m.kind === 'group_create' ? ' hat die Gruppe erstellt.' : m.kind === 'group_join' ? ' wurde zur Gruppe hinzugefügt.' : m.kind === 'group_leave' ? ' hat die Gruppe verlassen.' : ' ist gerade gelandet. 👋';
+    return (
+      <View style={s.sys}><View style={s.sysIcon}><Icon name={m.kind === 'group_leave' ? 'logout' : 'userPlus'} size={13} color={C.ok} /></View><T style={s.sysText}><T style={{ color: C.text, fontWeight: '700' }}>{u.display}</T>{txt}</T></View>
+    );
+  }
   const me = getState().me;
   const mentioned = mentionsMe(m.content, sid) || (m.reply && m.reply.author_id === me?.id && m.author_id !== me?.id);
   const color = roleColor(sid, m.author_id);
@@ -337,6 +362,9 @@ const s = StyleSheet.create({
   sys: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingVertical: 7 },
   sysIcon: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(61,220,151,0.12)', alignItems: 'center', justifyContent: 'center' },
   sysText: { color: C.muted, fontSize: 14 },
+  amText: { color: C.text2, fontSize: 13, marginTop: 4, paddingLeft: 8, borderLeftWidth: 3, borderLeftColor: C.danger },
+  locked: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, paddingHorizontal: 16 },
+  lockedText: { color: C.muted, fontSize: 14, fontWeight: '600' },
   day: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, marginVertical: 14 },
   dayLine: { flex: 1, height: 1, backgroundColor: C.line },
   dayText: { color: C.faint, fontSize: 12, fontWeight: '700' },

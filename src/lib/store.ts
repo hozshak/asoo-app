@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { api } from './api';
 
 export type User = { id: string; username: string; display: string; avatar?: string | null; banner?: string | null; banner_color?: string | null; accent?: string; status?: string; custom_status?: string; pronouns?: string; bio?: string; deleted?: boolean; badges?: string[]; created?: number };
-export type Channel = { id: string; server_id: string; name: string; type: 'text' | 'voice' | 'voice3d' | 'game'; topic?: string | null; position: number; created: number; parent?: string | null; view_role?: string; user_limit?: number; theme?: string };
+export type Channel = { id: string; server_id: string; name: string; type: 'text' | 'voice' | 'voice3d' | 'game'; topic?: string | null; position: number; created: number; parent?: string | null; view_role?: string; post_role?: string; user_limit?: number; theme?: string };
 export type Category = { id: string; server_id: string; name: string; position: number; created: number };
 export type Role = { id: string; server_id: string; name: string; color?: string | null; rank?: string; hoist?: number; position: number; mentionable?: number };
 export type Server = { id: string; name: string; icon?: string | null; icon_emoji?: string | null; color?: string | null; banner?: string | null; description?: string; owner_id: string; role: string; member_count?: number; channels: Channel[]; categories?: Category[]; roles?: Role[]; my_roles?: string[] };

@@ -112,5 +112,10 @@ const MSG: Record<string, string> = {
   not_found: 'Nicht gefunden.',
   banned: 'Dein Konto ist gesperrt.',
   empty: 'Bitte schreib etwas.',
+  read_only: 'In diesem Kanal kannst du nur lesen.',
+  automod: 'Deine Nachricht wurde vom AutoMod dieses Servers blockiert.',
+  verify_email: 'Bestätige zuerst deine E-Mail-Adresse in den Einstellungen, um hier zu schreiben.',
+  verify_wait: 'Neue Mitglieder dürfen hier noch nicht schreiben. Bitte warte kurz.',
+  invites_paused: 'Dieser Server nimmt gerade keine neuen Mitglieder auf.',
 };
 export const errText = (e: unknown) => (e instanceof ApiError ? MSG[e.code] || 'Da ist etwas schiefgelaufen. Bitte versuch es nochmal.' : 'Da ist etwas schiefgelaufen. Bitte versuch es nochmal.');

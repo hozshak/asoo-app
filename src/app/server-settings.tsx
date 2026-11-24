@@ -10,6 +10,7 @@ import { api, BASE, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, loadMembers, putUsers, RANK, serverOf, useStore, type Channel, type Role, type User } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
 import { Avatar, Btn, Card, Empty, Glass, Glow, MenuRow, Section, Seg, Sheet, SheetHead, T, TopBar } from '@/components/ui';
+import { ColorRow } from '@/components/ColorPicker';
 import { Icon, type IconName } from '@/components/Icon';
 import { C, F, R } from '@/lib/theme';
 
@@ -132,7 +133,7 @@ function Overview({ sid, say }: P) {
         {d.banner ? <T style={s.link} onPress={() => setD({ ...d, banner: null })}>Banner entfernen</T> : null}
       </View> : null}
       <T style={s.label}>Farbe</T>
-      <View style={s.colors}>{SERVER_COLORS.map((c) => <Pressable key={c} accessibilityRole="radio" accessibilityState={{ checked: d.color === c }} onPress={() => setD({ ...d, color: c })} style={[s.dot, { backgroundColor: c }, d.color === c && s.dotOn]} />)}</View>
+      <ColorRow title="Server-Farbe" value={d.color} presets={SERVER_COLORS} onChange={(c) => setD({ ...d, color: c })} />
       <T style={s.label}>Server-Name</T>
       <TextInput value={d.name} onChangeText={(v) => setD({ ...d, name: v })} maxLength={50} style={s.input} placeholderTextColor={C.faint} />
       <T style={s.label}>Emoji als Icon (wenn kein Bild)</T>
@@ -305,9 +306,8 @@ function RoleEdit({ sid, r, editable, rankOk, members, say, onChanged, onGone }:
       <T style={s.label}>Name</T>
       <TextInput value={d.name} onChangeText={(v) => setD({ ...d, name: v })} maxLength={32} editable={editable} style={s.input} />
       <T style={s.label}>Farbe</T>
-      <View style={s.colors}>
-        <Pressable disabled={!editable} accessibilityRole="radio" accessibilityLabel="Keine Farbe" onPress={() => setD({ ...d, color: null })} style={[s.dot, s.noColor, !d.color && s.dotOn]}><T style={{ color: C.muted }}>∅</T></Pressable>
-        {ROLE_COLORS.map((c) => <Pressable key={c} disabled={!editable} accessibilityRole="radio" onPress={() => setD({ ...d, color: c })} style={[s.dot, { backgroundColor: c }, d.color === c && s.dotOn]} />)}
+      <View pointerEvents={editable ? 'auto' : 'none'} style={!editable && { opacity: 0.5 }}>
+        <ColorRow title="Rollenfarbe" value={d.color} presets={ROLE_COLORS} onChange={(c) => setD({ ...d, color: c })} none={{ label: 'Keine Farbe', on: !d.color, onPick: () => setD({ ...d, color: null }), text: '∅' }} />
       </View>
       <T style={s.label}>Rechte</T>
       <View style={s.chips}>{(['member', 'mod', 'admin'] as const).map((k) => <Pressable key={k} disabled={!editable || !rankOk(k)} onPress={() => setD({ ...d, rank: k })} style={[s.chip, d.rank === k && s.chipOn, (!editable || !rankOk(k)) && { opacity: 0.4 }]}>

@@ -11,10 +11,11 @@ import { disconnect } from '@/lib/live';
 import { unregisterPush } from '@/lib/push';
 import { Avatar, Btn, Card, Glass, Glow, MenuRow, Section, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
-import { FRAMES } from '@/lib/frames';
-import { NameText, NAME_STYLES } from '@/components/NameText';
-import { EFFECTS, ProfileFx } from '@/components/ProfileFx';
-import { LookSection, PrivacySection, PushSection } from '@/components/SettingsMore';
+import { frameOf } from '@/lib/frames';
+import { NAME_STYLES } from '@/components/NameText';
+import { EFFECTS } from '@/components/ProfileFx';
+import { Studio } from '@/components/Studio';
+import { PrivacySection, PushSection } from '@/components/SettingsMore';
 import { signOut } from '@/lib/session';
 import { setWebCalls, useCalls } from '@/lib/calls';
 import { C, F, HOME, R } from '@/lib/theme';
@@ -35,9 +36,11 @@ export default function Settings() {
     try { const d = await api<any>('PATCH', '/api/me', body); setState((s) => ({ me: { ...s.me!, ...d.user } })); setMsg(ok); } catch (e) { setMsg(errText(e)); }
   };
   const open = (p: Page) => router.push({ pathname: '/settings', params: { page: p } });
-  const frameName = me.deco && me.deco !== 'none' ? FRAMES[me.deco]?.name : null;
+  const frameName = frameOf(me.deco)?.name || null;
   const p = page && TITLES[page] ? page : null;
   if (!p) return <SettingsHome me={me} open={open} frameName={frameName} />;
+  // Aussehen (Bild & Farben, Rahmen, Namens-Stil, Effekt): eine gemeinsame Seite mit Live-Vorschau
+  if (p === 'look' || p === 'frame' || p === 'name' || p === 'effect') return <><Stack.Screen options={{ headerShown: false }} /><Studio tab={p} /></>;
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -45,10 +48,6 @@ export default function Settings() {
       <TopBar title={TITLES[p]} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {p === 'profile' ? <ProfilePage me={me} patch={patch} />
-          : p === 'look' ? <LookSection patch={patch} say={setMsg} />
-          : p === 'frame' ? <FramePage me={me} patch={patch} />
-          : p === 'name' ? <NamePage me={me} patch={patch} />
-          : p === 'effect' ? <EffectPage me={me} patch={patch} />
           : p === 'privacy' ? <PrivacySection patch={patch} say={setMsg} />
           : p === 'push' ? <PushSection say={setMsg} />
           : p === 'voice' ? <VoicePage />
@@ -81,13 +80,14 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
     ]],
     ['Aussehen', [
       { icon: 'cube', label: '3D-Avatar', sub: 'Figur und Farben', keys: 'figur 3d', onPress: () => router.push('/avatar3d') },
-      { icon: 'image', label: 'Bild, Banner & Farben', keys: 'profilbild hintergrund farbe', onPress: () => open('look') },
+      { icon: 'image', label: 'Bild, Banner & Farben', sub: 'Profilbild, Banner, eigene Farben', keys: 'profilbild hintergrund farbe farbwähler akzent', onPress: () => open('look') },
       { icon: 'sparkle', label: 'Profilrahmen', sub: frameName || 'Keiner', keys: 'rahmen deko', onPress: () => open('frame') },
-      { icon: 'edit', label: 'Namens-Stil', keys: 'schrift name farbe', onPress: () => open('name') },
-      { icon: 'moon', label: 'Profil-Effekt', keys: 'effekt schnee herzen', onPress: () => open('effect') },
+      { icon: 'edit', label: 'Namens-Stil', sub: NAME_STYLES.find((x) => x[0] === (me.name_style || 'default'))?.[1] || 'Standard', keys: 'schrift name farbe gold chrom', onPress: () => open('name') },
+      { icon: 'moon', label: 'Profil-Effekt', sub: EFFECTS.find((x) => x[0] === me.effect)?.[1] || 'Keiner', keys: 'effekt schnee herzen goldstaub', onPress: () => open('effect') },
     ]],
     ['Mehr', [
       { icon: 'user', label: 'So sehen dich andere', keys: 'profil ansehen', onPress: () => router.push({ pathname: '/user/[id]', params: { id: me.id } }) },
+      { icon: 'pad', label: 'Mitspieler finden', sub: 'Leute zum Zocken finden und matchen', keys: 'gamer match duo team spieler suchen', onPress: () => router.push('/match') },
       { icon: 'sparkle', label: 'Feed', keys: 'beiträge posts', onPress: () => router.push('/feed') },
       { icon: 'compass', label: 'Server entdecken', keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
       ...(me.is_admin ? [{ icon: 'shield' as IconName, label: 'Admin-Bereich', keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),
@@ -176,51 +176,6 @@ function ProfilePage({ me, patch }: PP) {
   );
 }
 
-function FramePage({ me, patch }: PP) {
-  return (
-    <View style={s.grid}>
-      {[['none', 'Keiner'], ...Object.entries(FRAMES).map(([k, f]) => [k, f.name])].map(([k, name]) => {
-        const on = (me.deco || 'none') === k;
-        return (
-          <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ deco: k }, 'Rahmen gesetzt ✓')} style={[s.frame, on && s.on]}>
-            <View style={{ height: 62, alignItems: 'center', justifyContent: 'center' }}><Avatar user={{ ...me, deco: k }} force size={k === 'none' ? 38 : Math.min(38, 70 / Math.max(FRAMES[k].w, FRAMES[k].h))} /></View>
-            <T style={s.cap} numberOfLines={1}>{name}</T>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-function NamePage({ me, patch }: PP) {
-  return (
-    <View style={s.grid}>
-      {NAME_STYLES.map(([k, l]) => {
-        const on = (me.name_style || 'default') === k;
-        return (
-          <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ name_style: k }, 'Namens-Stil gesetzt ✓')} style={[s.style, on && s.on]}>
-            <NameText name={me.display} styleId={k} style={s.styleName} />
-            <T style={s.cap} numberOfLines={1}>{l}</T>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-function EffectPage({ me, patch }: PP) {
-  return (
-    <View style={s.grid}>
-      {[['none', 'Kein Effekt'] as [string, string], ...EFFECTS.map(([k, l]) => [k, l] as [string, string])].map(([k, l]) => {
-        const on = (me.effect || 'none') === k;
-        return (
-          <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => patch({ effect: k }, 'Effekt gesetzt ✓')} style={[s.fx, on && s.on]}>
-            <View style={s.fxDemo}><ProfileFx id={k} dense={0.6} /></View>
-            <T style={s.cap} numberOfLines={1}>{l}</T>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
 function PasswordPage({ say }: { say: (t: string) => void }) {
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');

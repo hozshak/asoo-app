@@ -18,6 +18,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { StatusSheet } from '@/components/MeBar';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
+import { matchNew } from '@/lib/match';
 
 export default function Me() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function Me() {
   const me = useStore((s) => s.me) as any;
   const friends = useStore((s) => s.friends.friends.length);
   const requests = useStore((s) => s.friends.incoming.length);
+  const match = useStore((s) => s.match);
   const [msg, setMsg] = useState('');
   const [sheet, setSheet] = useState(false);
   const [amp, setAmp] = useState(true);
@@ -80,6 +82,7 @@ export default function Me() {
               </View>
             </View> : null}
 
+            <RowCard label="Mitspieler finden" icon="pad" sub={match.has ? 'Leute zum Zocken – Likes, Matches, dein Gamer-Profil' : 'Finde Leute zum Zocken – erst anonym, bei einem Match mit Namen'} badge={matchNew(match)} onPress={() => router.push('/match')} />
             <RowCard label="Freunde" sub={friends ? `${friends} ${friends === 1 ? 'Freund' : 'Freunde'}` : undefined} badge={requests} onPress={() => router.push('/friends')} />
             <RowCard label="So sehen dich andere" icon="user" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
           </View>

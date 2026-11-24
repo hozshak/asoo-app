@@ -3,6 +3,7 @@
 import { AppState, Platform } from 'react-native';
 import { WS_BASE, api, getToken } from './api';
 import { bootstrap, getState, putUsers, setState, mentionsMe, channelInfo, type Msg } from './store';
+import { setBadge, showParty } from './match';
 
 type Fn = (m: any) => void;
 const listeners = new Set<Fn>();
@@ -133,6 +134,9 @@ function apply(m: any) {
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
+    // „Mitspieler finden“: Zähler der Einstiege; bei einem Match die Feier zeigen (ab jetzt mit Namen)
+    case 'match_badge': case 'match_like': setBadge(m.badge); return;
+    case 'match': setBadge(m.badge); if (m.user && m.dm) showParty({ user: m.user, dm: m.dm }); return;
     case 'voice': {
       const missing = (m.members || []).map((x: any) => x.uid).filter((uid: string) => !s.users[uid]);
       setState((st) => { const voice = { ...st.voice }; if (m.members?.length) voice[m.room] = m.members; else delete voice[m.room]; return { voice }; });

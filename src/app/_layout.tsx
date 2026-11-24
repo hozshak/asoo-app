@@ -16,6 +16,7 @@ import { prewarmWeb } from '@/lib/webhost';
 import { loadCallMode } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
 import { CallBar, IncomingCall } from '@/components/CallBar';
+import { MatchParty } from '@/components/MatchBits';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -48,7 +49,11 @@ export default function Root() {
   useEffect(() => { if (me) registerPush(); }, [me?.id]);
   // Web-Fenster nach dem Anmelden im Hintergrund vorladen: erste 3D-/Web-Seite ist dann sofort da, Anrufe kommen an
   useEffect(() => { if (!me) return; const t = setTimeout(prewarmWeb, 1500); return () => clearTimeout(t); }, [me?.id]);
-  useEffect(() => onPushTap((url) => { const ch = chatFromUrl(url); if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } }); }), []);
+  useEffect(() => onPushTap((url) => {
+    const ch = chatFromUrl(url);
+    if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
+    else if (/^\/match\b/.test(url || '')) router.push(/tab=/.test(url || '') ? '/match-likes' : '/match'); // „Jemand mag dein Mitspieler-Profil“
+  }), []);
   if (!booted || !fonts) return <View style={{ flex: 1, backgroundColor: C.bg0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.accent} /></View>;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg0 }}>
@@ -79,11 +84,16 @@ export default function Root() {
           <Stack.Screen name="room" options={{ headerShown: false, animation: 'none' }} />
           {/* Anruf/Sprachraum in der App: kommt von unten; zurück = verkleinern (der Anruf läuft weiter) */}
           <Stack.Screen name="call" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+          {/* „Mitspieler finden“: Karten-Stapel (kein Wischen zum Zurückgehen – dort wischt man die Karten), Listen, Gamer-Profil */}
+          <Stack.Screen name="match" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="match-likes" options={{ headerShown: false }} />
+          <Stack.Screen name="match-profile" options={{ headerShown: false }} />
         </Stack>
         {/* dauerhaftes Web-Fenster (3D, Anrufe, Feed …), darüber Anruf-Leiste und eingehende Anrufe */}
         {me ? <WebHost /> : null}
         {me ? <CallBar /> : null}
         {me ? <IncomingCall /> : null}
+        {me ? <MatchParty /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

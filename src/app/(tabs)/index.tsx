@@ -17,6 +17,7 @@ import { api, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
 import { joinCall, leaveForWeb, nativeRoom } from '@/lib/calls';
+import { matchNew } from '@/lib/match';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
 
 export default function Home() {
@@ -140,8 +141,10 @@ function DmPanel() {
   const unread = useStore((s) => s.unread);
   const requests = useStore((s) => s.friends.incoming.length); // offene Freundschaftsanfragen (früher in der Tab-Leiste)
   useStore((s) => s.users); // Namen in der Vorschau nachzeichnen
+  const match = useStore((s) => s.match);
+  const matchCount = matchNew(match);
   const router = useRouter();
-  const preview = (d: (typeof dms)[number]) => {
+  const preview =(d: (typeof dms)[number]) => {
     const l = d.last;
     if (!l) return d.kind === 'group' ? `${d.members.length} Mitglieder` : '';
     const who = l.a === me?.id ? 'Du: ' : d.kind === 'group' ? (userOf(l.a)?.display || '') + ': ' : '';
@@ -170,6 +173,16 @@ function DmPanel() {
           <View><Icon name="plus" size={22} color="#fff" stroke={2.4} /></View>
         </Pressable>
       </View>
+      {/* „Mitspieler finden“ (Gamer-Matching): gut sichtbar über den Gesprächen, mit Zähler für neue Likes und Matches */}
+      <Pressable accessibilityRole="button" accessibilityLabel="Mitspieler finden" onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.matchCard, pressed && { opacity: 0.85 }]}>
+        <LinearGradient colors={['rgba(132,104,255,0.22)', 'rgba(255,92,154,0.10)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        <View style={s.matchIc}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="pad" size={22} color="#fff" stroke={2.2} /></View></View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <T style={{ fontWeight: '800', fontSize: 15.5 }} numberOfLines={1}>Mitspieler finden</T>
+          <T style={{ color: C.text2, fontSize: 12.5, marginTop: -2 }} numberOfLines={1}>{matchCount ? `${matchCount} neu · Likes & Matches` : match.has ? 'Karten ansehen, Likes und Matches' : 'Finde Leute zum Zocken'}</T>
+        </View>
+        {matchCount ? <Badge n={matchCount} /> : <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View>}
+      </Pressable>
       {!dms.length ? <Empty icon="comment" title="Noch keine Gespräche" text="Unter „Freunde hinzufügen“ findest du Leute und kannst ihnen schreiben." /> : null}
       {dms.map((d, i) => {
         const other = d.kind === 'dm' ? d.members.find((u) => u.id !== me?.id) : null;
@@ -304,6 +317,8 @@ const s = StyleSheet.create({
   dmRow: { paddingVertical: 9 },
   when: { color: C.faint, fontSize: 12 },
   dmTools: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10 },
+  matchCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 14, marginBottom: 10, paddingHorizontal: 12, height: 60, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(132,104,255,0.38)', backgroundColor: HOME.raised },
+  matchIc: { width: 40, height: 40, borderRadius: 13, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   toolRound: { width: 44, height: 44, borderRadius: 22, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center' },
   toolWide: { flex: 1, height: 44, borderRadius: 22, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   toolPlus: { width: 44, height: 44, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

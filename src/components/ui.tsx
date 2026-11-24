@@ -11,11 +11,9 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, GRAD, GRAD_POS, R, F, fontFor, statusColor } from '@/lib/theme';
 import { mediaSource } from '@/lib/api';
-import { frameOf, frameMin } from '@/lib/frames';
+import { frameOf, frameMin, frameAnim } from '@/lib/frames';
 import type { Server, User } from '@/lib/store';
 import { Icon, type IconName } from './Icon';
-
-import { HAS_LOTTIE, LottieFrame } from './LottieFrame';
 
 /** Text in der Schrift der Web-App. fontWeight wird auf den passenden Cairo-Schnitt abgebildet. */
 export function T({ style, ...p }: TextProps) {
@@ -107,7 +105,9 @@ export function Avatar({ user, size = 40, status = false, frame = true, live = f
       {showFrame ? (() => {
         const w = f!.w * size, h = f!.h * size, left = size / 2 - f!.x * size, top = size / 2 - f!.y * size;
         return <View pointerEvents="none" style={{ position: 'absolute', left, top, width: w, height: h }}>
-          {live && HAS_LOTTIE && f!.json ? <LottieFrame source={f!.json} width={w} height={h} /> : <Image source={f!.still} style={{ width: w, height: h }} contentFit="contain" />}
+          {/* groß zu sehen (live): bewegtes Bild vom Server, bis es da ist das Standbild; in Listen nur das Standbild */}
+          {live ? <Image source={frameAnim(f!)} placeholder={f!.still} placeholderContentFit="contain" style={{ width: w, height: h }} contentFit="contain" cachePolicy="disk" transition={0} />
+            : <Image source={f!.still} style={{ width: w, height: h }} contentFit="contain" />}
         </View>;
       })() : null}
       {status ? <View style={{ position: 'absolute', right: -1, bottom: -1, width: dot, height: dot, borderRadius: dot, backgroundColor: statusColor(user?.status), borderWidth: Math.max(2, size * 0.06), borderColor: C.bg1 }} /> : null}

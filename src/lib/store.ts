@@ -30,10 +30,14 @@ export type State = {
   online: boolean;
   /** Wer gerade in welchem Sprach-/3D-Raum oder Anruf ist (Raum → Personen), wie S.voice der Web-App. */
   voice: Record<string, VoiceMember[]>;
+  /** „Mitspieler finden“: Zähler für die Einstiege (neue Likes, Besucher, Matches); has = Gamer-Profil vorhanden */
+  match: MatchBadge;
 };
+export type MatchBadge = { has: boolean; likes: number; views: number; matches: number };
+const NO_MATCH: MatchBadge = { has: false, likes: 0, views: 0, matches: 0 };
 export type VoiceMember = { uid: string; cid?: string; muted?: boolean; deaf?: boolean; video?: boolean; screen?: boolean; smute?: boolean; sdeaf?: boolean };
 
-let state: State = { ready: false, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], notifUnread: 0, messages: {}, typing: {}, online: true, voice: {} };
+let state: State = { ready: false, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], notifUnread: 0, messages: {}, typing: {}, online: true, voice: {}, match: NO_MATCH };
 const subs = new Set<() => void>();
 export const getState = () => state;
 export function setState(fn: (s: State) => Partial<State> | void) {
@@ -69,12 +73,12 @@ export async function bootstrap() {
   users[d.user.id] = d.user;
   setState(() => ({
     ready: true, me: d.user, servers: d.servers.map(sortServer), dms: d.dms, users, unread: d.unread || {}, mentions: d.mentions || {},
-    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], notifUnread: d.notif_unread || 0, voice: d.voice || {},
+    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], notifUnread: d.notif_unread || 0, voice: d.voice || {}, match: d.match || NO_MATCH,
   }));
   return d.user;
 }
 export function clearState() {
-  setState(() => ({ ready: true, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, messages: {}, typing: {}, notifUnread: 0, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], voice: {} }));
+  setState(() => ({ ready: true, me: null, servers: [], dms: [], users: {}, unread: {}, mentions: {}, messages: {}, typing: {}, notifUnread: 0, friends: { friends: [], incoming: [], outgoing: [] }, blocks: [], voice: {}, match: NO_MATCH }));
 }
 
 // ---------- Nachrichten ----------

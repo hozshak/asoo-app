@@ -12,6 +12,7 @@ import { setState, useStore } from '@/lib/store';
 import { openWeb } from '@/lib/web';
 import { Btn, Card, Glow, Section, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { ColorRow, isHex } from '@/components/ColorPicker';
 import { C } from '@/lib/theme';
 
 type Model = { id: string; name: string; cat: 'anime' | 'real'; bottom?: boolean; fixed?: boolean };
@@ -28,7 +29,10 @@ const HAIR = [null, '#17131a', '#4a2e1f', '#8a5a34', '#d9b36a', '#f1ece2', '#b83
 const EYES = [null, '#3a2a20', '#6b4a2b', '#3f7fd8', '#35b58a', '#8a8f9a', '#8f5cff', '#e0537a', '#e0a23a', '#d8413a'];
 const SKIN = [null, '#f3d3bd', '#e2b594', '#c8946c', '#9a6644', '#6b432c'];
 const CLOTH = [null, '#f4f4f6', '#1b1b22', '#6b7280', '#e5484d', '#f08c2e', '#f2c94c', '#3dbb7a', '#2e8bff', '#7c5cff', '#ff7ab6', '#7a4a2b'];
-type Cfg = { v: 2; m: string; hair: number; eyes: number; skin: number; top: number; bottom: number; shoes: number };
+type Part = 'hair' | 'eyes' | 'skin' | 'top' | 'bottom' | 'shoes';
+// hairC, eyesC … = frei gewählte Farbe (Farbwähler); hat Vorrang vor der Palette (wie in der Web-App)
+type Cfg = { v: 2; m: string; hair: number; eyes: number; skin: number; top: number; bottom: number; shoes: number; hairC?: string; eyesC?: string; skinC?: string; topC?: string; bottomC?: string; shoesC?: string };
+const PARTS: Part[] = ['hair', 'eyes', 'skin', 'top', 'bottom', 'shoes'];
 const thumb = (id: string) => ({ uri: (BASE || 'https://zuno-app.altraex.workers.dev') + '/avatars/thumbs/' + id + '.webp' });
 const int = (v: any, n: number) => (Number.isInteger(v) && v >= 0 && v < n ? v : 0);
 
@@ -38,7 +42,9 @@ export default function Avatar3D() {
   const me = useStore((s) => s.me) as any;
   const start = useMemo<Cfg>(() => {
     const c = me?.avatar3d || {};
-    return { v: 2, m: MODELS.some((x) => x.id === c.m) ? c.m : 'shibu', hair: int(c.hair, HAIR.length), eyes: int(c.eyes, EYES.length), skin: int(c.skin, SKIN.length), top: int(c.top, CLOTH.length), bottom: int(c.bottom, CLOTH.length), shoes: int(c.shoes, CLOTH.length) };
+    const out: Cfg = { v: 2, m: MODELS.some((x) => x.id === c.m) ? c.m : 'shibu', hair: int(c.hair, HAIR.length), eyes: int(c.eyes, EYES.length), skin: int(c.skin, SKIN.length), top: int(c.top, CLOTH.length), bottom: int(c.bottom, CLOTH.length), shoes: int(c.shoes, CLOTH.length) };
+    for (const k of PARTS) if (isHex(c[k + 'C'])) (out as any)[k + 'C'] = String(c[k + 'C']).toLowerCase();
+    return out;
   }, []);
   const [cfg, setCfg] = useState<Cfg>(start);
   const [saved, setSaved] = useState(JSON.stringify(start));
@@ -57,16 +63,17 @@ export default function Avatar3D() {
       setSaved(JSON.stringify(cfg)); setMsg('Avatar gespeichert ✓');
     } catch (e) { setMsg(errText(e)); } finally { setBusy(false); }
   };
-  const swatches = (list: (string | null)[], val: number, pick: (i: number) => void) => (
-    <View style={s.sw}>
-      {list.map((c, i) => (
-        <Pressable key={i} accessibilityRole="button" accessibilityLabel={c || 'Original'} accessibilityState={{ selected: val === i }} onPress={() => pick(i)}
-          style={[s.dot, val === i && s.dotOn]}>
-          {c ? <View style={[s.fill, { backgroundColor: c }]} /> : <View style={[s.fill, s.orig]}><T style={s.origT}>A</T></View>}
-        </Pressable>
-      ))}
-    </View>
-  );
+  // eine Farb-Zeile je Körperteil: „A“ = Originalfarbe, fertige Farben, dazu jede eigene Farbe über den Farbwähler
+  const part = (key: Part, list: (string | null)[], title: string) => {
+    const own = (cfg as any)[key + 'C'] as string | undefined, idx = cfg[key];
+    return (
+      <View style={s.card}>
+        <ColorRow title={title} value={own || list[idx] || null} presets={list.slice(1) as string[]}
+          onChange={(c) => { const i = list.indexOf(c); set(i > 0 ? { [key]: i, [key + 'C']: undefined } as any : { [key + 'C']: c } as any); }}
+          none={{ label: 'Originalfarbe', on: !own && idx === 0, onPick: () => set({ [key]: 0, [key + 'C']: undefined } as any), text: 'A' }} />
+      </View>
+    );
+  };
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -102,13 +109,13 @@ export default function Avatar3D() {
         </View>
 
         {model.fixed ? <Card style={{ padding: 14 }}><T style={{ color: C.muted }}>Diese Figur ist fertig gestaltet – Farben lassen sich hier nicht ändern.</T></Card> : <>
-          <Section>Haare</Section>{swatches(HAIR, cfg.hair, (i) => set({ hair: i }))}
-          <Section>Augen</Section>{swatches(EYES, cfg.eyes, (i) => set({ eyes: i }))}
-          <Section>Haut</Section>{swatches(SKIN, cfg.skin, (i) => set({ skin: i }))}
-          <Section>{model.bottom ? 'Oberteil' : 'Outfit'}</Section>{swatches(CLOTH, cfg.top, (i) => set({ top: i }))}
-          {model.bottom ? <><Section>Hose / Rock</Section>{swatches(CLOTH, cfg.bottom, (i) => set({ bottom: i }))}</> : null}
-          <Section>Schuhe</Section>{swatches(CLOTH, cfg.shoes, (i) => set({ shoes: i }))}
-          <T style={{ color: C.faint, fontSize: 12.5 }}>„A“ = Originalfarbe der Figur. Die Farben siehst du in 3D über „In 3D ansehen“ (nach dem Speichern).</T>
+          <Section>Haare</Section>{part('hair', HAIR, 'Haarfarbe')}
+          <Section>Augen</Section>{part('eyes', EYES, 'Augenfarbe')}
+          <Section>Haut</Section>{part('skin', SKIN, 'Hautfarbe')}
+          <Section>{model.bottom ? 'Oberteil' : 'Outfit'}</Section>{part('top', CLOTH, model.bottom ? 'Farbe des Oberteils' : 'Farbe des Outfits')}
+          {model.bottom ? <><Section>Hose / Rock</Section>{part('bottom', CLOTH, 'Farbe von Hose / Rock')}</> : null}
+          <Section>Schuhe</Section>{part('shoes', CLOTH, 'Farbe der Schuhe')}
+          <T style={{ color: C.faint, fontSize: 12.5 }}>„A“ = Originalfarbe der Figur. Über den bunten Kreis wählst du jede beliebige Farbe. In 3D siehst du sie über „In 3D ansehen“ (nach dem Speichern).</T>
         </>}
       </ScrollView>
       <View style={[s.bar, { paddingBottom: ins.bottom + 10 }]}>
@@ -134,6 +141,7 @@ const s = StyleSheet.create({
   tileOn: { borderColor: C.accent },
   tileImg: { width: '100%', aspectRatio: 1, backgroundColor: C.bg3 },
   tileT: { textAlign: 'center', fontWeight: '700', fontSize: 13, paddingVertical: 6 },
+  card: { borderRadius: 18, backgroundColor: C.bg2, borderWidth: 1, borderColor: C.line, padding: 10 },
   sw: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   dot: { width: 38, height: 38, borderRadius: 19, padding: 3, borderWidth: 2, borderColor: 'transparent' },
   dotOn: { borderColor: C.accent },

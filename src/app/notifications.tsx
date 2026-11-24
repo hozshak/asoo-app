@@ -13,6 +13,8 @@ import { C } from '@/lib/theme';
 const KIND: Record<string, [string, IconName, string]> = {
   mention: ['hat dich erwähnt', 'at', C.warn], reply: ['hat dir geantwortet', 'reply', C.accent], friend_request: ['möchte mit dir befreundet sein', 'userPlus', C.accent2],
   friend_accept: ['hat deine Anfrage angenommen', 'check', C.ok], call: ['hat dich angerufen', 'phone', C.ok], follow: ['folgt dir jetzt', 'user', C.info], like: ['gefällt dein Beitrag', 'heart', C.accent2], comment: ['hat deinen Beitrag kommentiert', 'comment', C.info],
+  // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „Asoo“ davor)
+  match: ['und du passt zusammen – ihr könnt euch jetzt schreiben', 'pad', C.accent], match_like: ['– jemand mag dein Mitspieler-Profil', 'pad', C.accent2],
 };
 
 export default function Notifications() {
@@ -34,6 +36,7 @@ export default function Notifications() {
     if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
     else if (/^\/post\/[\w-]+/.test(n.url || '')) router.push({ pathname: '/post/[id]', params: { id: n.url!.split('/')[2].split('?')[0] } });
     else if (/^\/feed/.test(n.url || '')) router.push('/feed');
+    else if (/^\/match\b/.test(n.url || '')) router.push(/tab=/.test(n.url || '') ? '/match-likes' : '/match');
     else if (n.actor) router.push({ pathname: '/user/[id]', params: { id: n.actor.id } });
   };
   return (

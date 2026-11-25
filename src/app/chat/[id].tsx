@@ -224,10 +224,10 @@ export default function Chat() {
               const prev = data[index + 1];
               const head = !prev || prev.author_id !== item.author_id || item.created - prev.created > 7 * 60000 || !!item.reply || (item.kind !== 'default' && item.kind !== 'poll') || (prev.kind !== 'default' && prev.kind !== 'poll');
               const day = !prev || new Date(prev.created).toDateString() !== new Date(item.created).toDateString();
-              return <>
+              return <View>
                 {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
                 <MessageRow onPoll={setPoll} m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
-              </>;
+              </View>;
             }}
             ListFooterComponent={box.hasMore ? <ActivityIndicator color={C.faint} style={{ margin: 12 }} /> : (
               <View style={s.start}>

@@ -13,8 +13,9 @@ import { NameText } from './NameText';
 import { isVerified } from './Verified';
 import { Icon } from './Icon';
 import { C, statusColor } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
-const STATUS_TEXT: Record<string, string> = { online: 'Online', idle: 'Abwesend', dnd: 'Bitte nicht stören', invisible: 'Unsichtbar', offline: 'Offline' };
+const STATUS_TEXT: Record<string, string> = { online: t("Online"), idle: t("Abwesend"), dnd: t("Bitte nicht stören"), invisible: t("Unsichtbar"), offline: t("Offline") };
 const AV = 92;       // Profilbild
 const BANNER = 150;  // Banner-Höhe unterhalb der Statusleiste
 
@@ -40,10 +41,10 @@ export function ProfileHead({ u, status, topLeft, topRight, bannerRight, onAvata
       </View>
       <Animated.View entering={FadeInDown.duration(320)} style={s.head}>
         <View style={s.avRow}>
-          {onAvatar ? <Pressable accessibilityLabel="Profilbild ändern" onPress={onAvatar}>{av}</Pressable> : av}
+          {onAvatar ? <Pressable accessibilityLabel={t("Profilbild ändern")} onPress={onAvatar}>{av}</Pressable> : av}
         </View>
         {/* eigenes Profil: Name mit Pfeil, antippen = Status ändern (wie bei Discord) */}
-        {onName ? <Pressable accessibilityRole="button" accessibilityLabel="Status ändern" onPress={onName} style={s.nameRow}>
+        {onName ? <Pressable accessibilityRole="button" accessibilityLabel={t("Status ändern")} onPress={onName} style={s.nameRow}>
             <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} verified={isVerified(u)} />
             <View style={{ marginTop: 12 }}><Icon name="chevron" size={18} color={C.text2} stroke={2.4} /></View>
           </Pressable>
@@ -51,7 +52,7 @@ export function ProfileHead({ u, status, topLeft, topRight, bannerRight, onAvata
         <T style={s.handle} numberOfLines={1}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
         <View style={s.statusLine}>
           <View style={[s.dot, { backgroundColor: st === 'invisible' ? C.faint : statusColor(st) }]} />
-          <T style={s.statusText}>{STATUS_TEXT[st] || 'Offline'}</T>
+          <T style={s.statusText}>{STATUS_TEXT[st] || t("Offline")}</T>
         </View>
         {u.custom_status ? <View style={s.bubble}><T style={{ color: C.text2, fontSize: 14 }} numberOfLines={3}>{u.custom_status}</T></View> : null}
         {children}

@@ -9,6 +9,7 @@ import { bootstrap, putUsers, useStore, type User } from '@/lib/store';
 import { Avatar, Empty, Glass, Glow, Press, Section, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { C, F, GRAD, GRAD_POS, R, statusColor } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export async function openDm(router: ReturnType<typeof useRouter>, uid: string) {
   const d = await api<any>('POST', '/api/dms', { user_id: uid });
@@ -21,7 +22,7 @@ export async function setFriend(uid: string, on: boolean) {
 function IconBtn({ name, onPress, label, color = C.text2 }: { name: IconName; onPress: () => void; label: string; color?: string }) {
   return <Press label={label} onPress={onPress} style={s.icon} scale={0.88}><Icon name={name} size={19} color={color} /></Press>;
 }
-const STATUS_LABEL: Record<string, string> = { online: 'Online', idle: 'Abwesend', dnd: 'Bitte nicht stören', offline: 'Offline' };
+const STATUS_LABEL: Record<string, string> = { online: t("Online"), idle: t("Abwesend"), dnd: t("Bitte nicht stören"), offline: t("Offline") };
 
 export default function Friends() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function Friends() {
   const search = async () => {
     setMsg('');
     if (q.trim().length < 2) return;
-    try { const d = await api<any>('GET', `/api/users?q=${encodeURIComponent(q.trim())}`); putUsers(d.users); setFound(d.users); if (!d.users.length) setMsg('Niemand mit genau diesem Namen gefunden.'); }
+    try { const d = await api<any>('GET', `/api/users?q=${encodeURIComponent(q.trim())}`); putUsers(d.users); setFound(d.users); if (!d.users.length) setMsg(t("Niemand mit genau diesem Namen gefunden.")); }
     catch (e) { setMsg(errText(e)); }
   };
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); } catch (e) { setMsg(errText(e)); } };
@@ -58,16 +59,16 @@ export default function Friends() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <TopBar title="Freunde" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("Freunde")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <View style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
           <Glass style={s.search} intensity={20} tint="rgba(19,20,32,0.8)">
             <Icon name="search" size={18} color={C.faint} />
-            <TextInput style={s.input} value={q} onChangeText={setQ} onSubmitEditing={search} placeholder="Genauen Namen eingeben, z. B. @lena" placeholderTextColor={C.faint} autoCapitalize="none" autoCorrect={false} returnKeyType="search" />
-            <Press label="Suchen" onPress={search} style={s.searchBtn} scale={0.9}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} style={StyleSheet.absoluteFill} /><View><Icon name="userPlus" size={18} color="#fff" /></View></Press>
+            <TextInput style={s.input} value={q} onChangeText={setQ} onSubmitEditing={search} placeholder={t("Genauen Namen eingeben, z. B. @lena")} placeholderTextColor={C.faint} autoCapitalize="none" autoCorrect={false} returnKeyType="search" />
+            <Press label={t("Suchen")} onPress={search} style={s.searchBtn} scale={0.9}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} style={StyleSheet.absoluteFill} /><View><Icon name="userPlus" size={18} color="#fff" /></View></Press>
           </Glass>
           {msg ? <T style={s.msg}>{msg}</T> : null}
-          {found?.map((u, i) => row(u, <IconBtn name="userPlus" color={C.accent} label="Freund hinzufügen" onPress={() => act(() => setFriend(u.id, true).then(() => setMsg('Anfrage geschickt ✓')))} />, i))}
+          {found?.map((u, i) => row(u, <IconBtn name="userPlus" color={C.accent} label={t("Freund hinzufügen")} onPress={() => act(() => setFriend(u.id, true).then(() => setMsg(t("Anfrage geschickt ✓"))))} />, i))}
           <View style={s.tabs}>
             {tabs.map(([k, l, n]) => (
               <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)} style={[s.tab, tab === k && s.tabOn]}>
@@ -77,15 +78,15 @@ export default function Friends() {
             ))}
           </View>
           {tab === 'requests' ? <>
-            {f.incoming.length ? <Section style={s.sec}>Eingegangen – {f.incoming.length}</Section> : null}
-            {f.incoming.map((u, i) => row(u, <><IconBtn name="check" color={C.ok} label="Annehmen" onPress={() => act(() => setFriend(u.id, true))} /><IconBtn name="x" color={C.danger} label="Ablehnen" onPress={() => act(() => setFriend(u.id, false))} /></>, i))}
-            {f.outgoing.length ? <Section style={s.sec}>Gesendet – {f.outgoing.length}</Section> : null}
-            {f.outgoing.map((u, i) => row(u, <IconBtn name="x" label="Anfrage zurückziehen" onPress={() => act(() => setFriend(u.id, false))} />, i))}
-            {!f.incoming.length && !f.outgoing.length ? <Empty icon="userPlus" title="Keine offenen Anfragen" text="Such oben nach dem genauen Namen, um jemanden hinzuzufügen." /> : null}
+            {f.incoming.length ? <Section style={s.sec}>{t("Eingegangen –")}{' '}{f.incoming.length}</Section> : null}
+            {f.incoming.map((u, i) => row(u, <><IconBtn name="check" color={C.ok} label={t("Annehmen")} onPress={() => act(() => setFriend(u.id, true))} /><IconBtn name="x" color={C.danger} label={t("Ablehnen")} onPress={() => act(() => setFriend(u.id, false))} /></>, i))}
+            {f.outgoing.length ? <Section style={s.sec}>{t("Gesendet –")}{' '}{f.outgoing.length}</Section> : null}
+            {f.outgoing.map((u, i) => row(u, <IconBtn name="x" label={t("Anfrage zurückziehen")} onPress={() => act(() => setFriend(u.id, false))} />, i))}
+            {!f.incoming.length && !f.outgoing.length ? <Empty icon="userPlus" title={t("Keine offenen Anfragen")} text={t("Such oben nach dem genauen Namen, um jemanden hinzuzufügen.")} /> : null}
           </> : <>
-            <Section style={s.sec}>{tab === 'online' ? 'Online' : 'Alle Freunde'} – {list.length}</Section>
-            {!list.length ? <Empty icon="users" title={tab === 'online' ? 'Gerade niemand online' : 'Noch keine Freunde'} text={tab === 'online' ? 'Schau später nochmal vorbei.' : 'Such oben nach dem genauen Namen und schick eine Anfrage.'} /> : null}
-            {list.map((u, i) => row(u, <IconBtn name="comment" label="Nachricht" onPress={() => act(() => openDm(router, u.id))} />, i))}
+            <Section style={s.sec}>{tab === 'online' ? t("Online") : t("Alle Freunde")} – {list.length}</Section>
+            {!list.length ? <Empty icon="users" title={tab === 'online' ? t("Gerade niemand online") : t("Noch keine Freunde")} text={tab === 'online' ? t("Schau später nochmal vorbei.") : t("Such oben nach dem genauen Namen und schick eine Anfrage.")} /> : null}
+            {list.map((u, i) => row(u, <IconBtn name="comment" label={t("Nachricht")} onPress={() => act(() => openDm(router, u.id))} />, i))}
           </>}
         </ScrollView>
       </View>

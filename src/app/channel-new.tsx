@@ -9,18 +9,19 @@ import { Btn, Glow, Seg, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { Icon, type IconName } from '@/components/Icon';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Kind = 'text' | 'voice' | 'voice3d' | 'game';
 const KINDS: [Kind, IconName, string, string][] = [
-  ['text', 'hash', 'Text', 'Nachrichten, Bilder, GIFs und Umfragen'],
-  ['voice', 'volume', 'Sprachraum', 'Reden, Kamera, Bildschirm teilen'],
-  ['voice3d', 'cube', '3D-Raum', 'Als Avatar herumlaufen und reden'],
-  ['game', 'target', 'Spiel', 'Schattenduell mit euren Avataren – und dabei reden'],
+  ['text', 'hash', t("Text"), t("Nachrichten, Bilder, GIFs und Umfragen")],
+  ['voice', 'volume', t("Sprachraum"), t("Reden, Kamera, Bildschirm teilen")],
+  ['voice3d', 'cube', t("3D-Raum"), t("Als Avatar herumlaufen und reden")],
+  ['game', 'target', t("Spiel"), t("Schattenduell mit euren Avataren – und dabei reden")],
 ];
 const ROOMS: [string, string, any][] = [
-  ['lounge', 'Skylounge', require('../../assets/rooms/lounge.webp')], ['beach', 'Strand', require('../../assets/rooms/beach.webp')],
-  ['theater', 'Kino', require('../../assets/rooms/theater.webp')], ['wedding', 'Dawet (Hochzeit)', require('../../assets/rooms/wedding.webp')],
-  ['orbit', 'Raumstation', require('../../assets/rooms/orbit.webp')], ['gaming', 'Gaming-Arena', require('../../assets/rooms/gaming.webp')],
+  ['lounge', t("Skylounge"), require('../../assets/rooms/lounge.webp')], ['beach', t("Strand"), require('../../assets/rooms/beach.webp')],
+  ['theater', t("Kino"), require('../../assets/rooms/theater.webp')], ['wedding', t("Dawet (Hochzeit)"), require('../../assets/rooms/wedding.webp')],
+  ['orbit', t("Raumstation"), require('../../assets/rooms/orbit.webp')], ['gaming', t("Gaming-Arena"), require('../../assets/rooms/gaming.webp')],
 ];
 
 export default function ChannelNew() {
@@ -46,11 +47,11 @@ export default function ChannelNew() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title={isCat ? 'Kategorie erstellen' : 'Kanal erstellen'} onClose={() => router.back()} />
+      <SheetHead title={isCat ? t("Kategorie erstellen") : t("Kanal erstellen")} onClose={() => router.back()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {!isCat ? <>
-            <T style={s.label}>Kanal-Art</T>
+            <T style={s.label}>{t("Kanal-Art")}</T>
             <View style={s.kinds}>{KINDS.map(([k, ic, l, d], i) => (
               <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: kind === k }} onPress={() => setKind(k)} style={({ pressed }) => [s.kind, i < KINDS.length - 1 && s.kindLine, pressed && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                 <Icon name={ic} size={22} color={kind === k ? C.text : C.muted} />
@@ -62,9 +63,9 @@ export default function ChannelNew() {
               </Pressable>
             ))}</View>
           </> : null}
-          <Field label={isCat ? 'Name der Kategorie' : 'Name'} value={name} onChangeText={setName} placeholder={isCat ? 'z. B. 🎮 Gaming' : kind === 'text' ? 'z. B. allgemein' : 'z. B. Chillecke'} maxLength={isCat ? 40 : 50} autoFocus />
+          <Field label={isCat ? t("Name der Kategorie") : t("Name")} value={name} onChangeText={setName} placeholder={isCat ? t("z. B. 🎮 Gaming") : kind === 'text' ? t("z. B. allgemein") : t("z. B. Chillecke")} maxLength={isCat ? 40 : 50} autoFocus />
           {!isCat && kind === 'voice3d' ? <>
-            <T style={s.label}>Raum</T>
+            <T style={s.label}>{t("Raum")}</T>
             <View style={s.grid}>{ROOMS.map(([k, l, img]) => (
               <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: theme === k }} onPress={() => setTheme(k)} style={[s.room, theme === k && s.roomOn]}>
                 <Image source={img} style={s.roomImg} contentFit="cover" />
@@ -73,7 +74,7 @@ export default function ChannelNew() {
             ))}</View>
           </> : null}
           {!isCat && server?.categories?.length ? <>
-            <T style={s.label}>Kategorie</T>
+            <T style={s.label}>{t("Kategorie")}</T>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
               {[{ id: null as string | null, name: 'Ohne' }, ...server.categories].map((c) => (
                 <Pressable key={c.id || 'ohne'} onPress={() => setParent(c.id)} style={[s.chip, parent === c.id && s.chipOn]}>
@@ -84,7 +85,7 @@ export default function ChannelNew() {
             </ScrollView>
           </> : null}
           {err ? <T style={{ color: C.danger }}>{err}</T> : null}
-          <Btn title="Erstellen" icon="plus" busy={busy} disabled={!name.trim()} onPress={save} />
+          <Btn title={t("Erstellen")} icon="plus" busy={busy} disabled={!name.trim()} onPress={save} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

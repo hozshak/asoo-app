@@ -14,6 +14,7 @@ import { Btn, Glass, T } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { C, F, R } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
 const ROOMS = [require('../../assets/rooms/lounge.webp'), require('../../assets/rooms/beach.webp'), require('../../assets/rooms/wedding.webp'), require('../../assets/rooms/orbit.webp'), require('../../assets/rooms/theater.webp'), require('../../assets/rooms/gaming.webp')];
@@ -71,7 +72,7 @@ export default function Login() {
         ? await api<{ dev_code?: string }>('POST', '/api/auth/forgot', { login: username.trim() })
         : await api<{ dev_code?: string }>('POST', '/api/auth/email-code', { email: email.trim(), lang: 'de' });
       setCodeSent(true);
-      setInfo(mode === 'forgot' ? 'Wenn zu diesem Konto eine bestätigte E-Mail gehört, ist der Code jetzt unterwegs. Er gilt 15 Minuten.' : 'Wir haben dir einen 6-stelligen Code geschickt. Schau auch im Spam-Ordner nach.');
+      setInfo(mode === 'forgot' ? t("Wenn zu diesem Konto eine bestätigte E-Mail gehört, ist der Code jetzt unterwegs. Er gilt 15 Minuten.") : t("Wir haben dir einen 6-stelligen Code geschickt. Schau auch im Spam-Ordner nach."));
       if (r.dev_code) setCode(r.dev_code);
     } catch (e) { setErr(errText(e)); } finally { setSending(false); }
   };
@@ -106,64 +107,64 @@ export default function Login() {
           <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
             <Animated.View entering={FadeInDown.duration(600)} style={{ alignItems: 'center', marginBottom: 18 }}>
               <View style={s.logoGlow}><Logo size={72} /></View>
-              <T style={s.brand}>ToLobby</T>
-              <T style={s.tag}>Chatten, reden und in 3D-Räumen abhängen.</T>
+              <T style={s.brand}>{t("ToLobby")}</T>
+              <T style={s.tag}>{t("Chatten, reden und in 3D-Räumen abhängen.")}</T>
             </Animated.View>
             <Animated.View entering={FadeIn.delay(150).duration(500)}>
               <Glass style={s.card} intensity={40} tint="rgba(19,20,32,0.78)">
                 {mode === 'forgot' ? (
                   <View style={{ marginBottom: 4 }}>
-                    <T style={{ fontSize: 20, fontWeight: '800' }}>Passwort vergessen?</T>
-                    <T style={{ color: C.text2, marginTop: 4 }}>Wir schicken dir einen Code an die E-Mail deines Kontos.</T>
+                    <T style={{ fontSize: 20, fontWeight: '800' }}>{t("Passwort vergessen?")}</T>
+                    <T style={{ color: C.text2, marginTop: 4 }}>{t("Wir schicken dir einen Code an die E-Mail deines Kontos.")}</T>
                   </View>
                 ) : (
                   <View style={s.tabs}>
                     {(['login', 'register'] as const).map((m) => (
                       <Pressable key={m} accessibilityRole="tab" accessibilityState={{ selected: mode === m }} onPress={() => switchMode(m)} style={[s.tab, mode === m && s.tabOn]}>
-                        <T style={[s.tabText, mode === m && { color: C.text }]}>{m === 'login' ? 'Anmelden' : 'Registrieren'}</T>
+                        <T style={[s.tabText, mode === m && { color: C.text }]}>{m === 'login' ? t("Anmelden") : t("Registrieren")}</T>
                       </Pressable>
                     ))}
                   </View>
                 )}
-                <T style={s.label}>{mode === 'forgot' ? 'Benutzername oder E-Mail' : 'Benutzername'}</T>
-                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: mode === 'forgot' ? 'dein.name oder name@mail.de' : 'dein.name', editable: !(mode === 'forgot' && codeSent) })}
+                <T style={s.label}>{mode === 'forgot' ? t("Benutzername oder E-Mail") : t("Benutzername")}</T>
+                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: mode === 'forgot' ? t("dein.name oder name@mail.de") : 'dein.name', editable: !(mode === 'forgot' && codeSent) })}
                 {mode === 'register' ? <>
-                  <T style={s.label}>Anzeigename</T>
-                  {field('d', { value: display, onChangeText: setDisplay, placeholder: 'So sehen dich andere', maxLength: 32 })}
+                  <T style={s.label}>{t("Anzeigename")}</T>
+                  {field('d', { value: display, onChangeText: setDisplay, placeholder: t("So sehen dich andere"), maxLength: 32 })}
                 </> : null}
                 {needMail ? <>
-                  <T style={s.label}>E-Mail</T>
+                  <T style={s.label}>{t("E-Mail")}</T>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>{field('e', { value: email, onChangeText: setEmail, autoCapitalize: 'none', autoCorrect: false, keyboardType: 'email-address', textContentType: 'emailAddress', autoComplete: 'email', placeholder: 'name@mail.de' })}</View>
-                    <Btn title={codeSent ? 'Neu senden' : 'Code senden'} kind="secondary" onPress={sendCode} busy={sending} disabled={!email.includes('@')} style={{ height: 50 }} />
+                    <View style={{ flex: 1 }}>{field('e', { value: email, onChangeText: setEmail, autoCapitalize: 'none', autoCorrect: false, keyboardType: 'email-address', textContentType: 'emailAddress', autoComplete: 'email', placeholder: t("name@mail.de") })}</View>
+                    <Btn title={codeSent ? t("Neu senden") : t("Code senden")} kind="secondary" onPress={sendCode} busy={sending} disabled={!email.includes('@')} style={{ height: 50 }} />
                   </View>
                 </> : null}
-                {mode === 'forgot' && !codeSent ? <Btn title="Code senden" onPress={sendCode} busy={sending} disabled={!username.trim()} style={{ marginTop: 18 }} /> : null}
+                {mode === 'forgot' && !codeSent ? <Btn title={t("Code senden")} onPress={sendCode} busy={sending} disabled={!username.trim()} style={{ marginTop: 18 }} /> : null}
                 {info ? <T style={{ color: C.text2, marginTop: 12, lineHeight: 20 }}>{info}</T> : null}
                 {(needMail && codeSent) || (mode === 'forgot' && codeSent) ? <>
-                  <T style={s.label}>Code aus der Mail</T>
+                  <T style={s.label}>{t("Code aus der Mail")}</T>
                   {field('c', { value: code, onChangeText: (v: string) => setCode(v.replace(/\D/g, '').slice(0, 6)), keyboardType: 'number-pad', textContentType: 'oneTimeCode', autoComplete: 'one-time-code', placeholder: '123456', maxLength: 6 })}
                 </> : null}
                 {mode !== 'forgot' || codeSent ? <>
-                  <T style={s.label}>{mode === 'forgot' ? 'Neues Passwort' : 'Passwort'}</T>
-                  {field('p', { value: password, onChangeText: setPassword, secureTextEntry: true, textContentType: mode === 'login' ? 'password' : 'newPassword', autoComplete: mode === 'login' ? 'password' : 'new-password', placeholder: mode === 'login' ? '••••••••' : 'mindestens 8 Zeichen', onSubmitEditing: submit })}
+                  <T style={s.label}>{mode === 'forgot' ? t("Neues Passwort") : t("Passwort")}</T>
+                  {field('p', { value: password, onChangeText: setPassword, secureTextEntry: true, textContentType: mode === 'login' ? 'password' : 'newPassword', autoComplete: mode === 'login' ? 'password' : 'new-password', placeholder: mode === 'login' ? '••••••••' : t("mindestens 8 Zeichen"), onSubmitEditing: submit })}
                 </> : null}
-                {mode === 'login' ? <T style={s.forgot} onPress={() => switchMode('forgot')}>Passwort vergessen?</T> : null}
+                {mode === 'login' ? <T style={s.forgot} onPress={() => switchMode('forgot')}>{t("Passwort vergessen?")}</T> : null}
                 {mode === 'register' ? <>
-                  <Check on={age} set={setAge}>Ich bin mindestens 16 Jahre alt.</Check>
-                  <Check on={accept} set={setAccept}>Ich stimme den <T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('regeln'))}>Regeln</T> und der <T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('datenschutz'))}>Datenschutzerklärung</T> zu.</Check>
+                  <Check on={age} set={setAge}>{t("Ich bin mindestens 16 Jahre alt.")}</Check>
+                  <Check on={accept} set={setAccept}>{t("Ich stimme den")}{' '}<T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('regeln'))}>{t("Regeln")}</T> {' '}{t("und der")}{' '}<T style={s.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL('datenschutz'))}>{t("Datenschutzerklärung")}</T> {' '}{t("zu.")}</Check>
                 </> : null}
                 {err ? <View style={s.err}><Icon name="ban" size={16} color={C.danger} /><T style={{ color: C.danger, flex: 1 }}>{err}</T></View> : null}
                 {mode !== 'forgot' || codeSent
-                  ? <Btn title={mode === 'login' ? 'Anmelden' : mode === 'forgot' ? 'Passwort speichern' : 'Konto erstellen'} onPress={submit} busy={busy} disabled={!username || !password || (mode === 'register' && (!age || !accept)) || (mode === 'forgot' && code.length < 6)} style={{ marginTop: 20 }} />
+                  ? <Btn title={mode === 'login' ? t("Anmelden") : mode === 'forgot' ? t("Passwort speichern") : t("Konto erstellen")} onPress={submit} busy={busy} disabled={!username || !password || (mode === 'register' && (!age || !accept)) || (mode === 'forgot' && code.length < 6)} style={{ marginTop: 20 }} />
                   : null}
-                {mode === 'forgot' ? <T style={[s.forgot, { alignSelf: 'center' }]} onPress={() => switchMode('login')}>Zurück zur Anmeldung</T> : null}
+                {mode === 'forgot' ? <T style={[s.forgot, { alignSelf: 'center' }]} onPress={() => switchMode('login')}>{t("Zurück zur Anmeldung")}</T> : null}
               </Glass>
             </Animated.View>
             <View style={s.legal}>
-              <T style={s.legalLink} onPress={() => WebBrowser.openBrowserAsync(LEGAL('impressum'))}>Impressum</T>
+              <T style={s.legalLink} onPress={() => WebBrowser.openBrowserAsync(LEGAL('impressum'))}>{t("Impressum")}</T>
               <T style={s.legalDot}>·</T>
-              <T style={s.legalLink} onPress={() => WebBrowser.openBrowserAsync(LEGAL('datenschutz'))}>Datenschutz</T>
+              <T style={s.legalLink} onPress={() => WebBrowser.openBrowserAsync(LEGAL('datenschutz'))}>{t("Datenschutz")}</T>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

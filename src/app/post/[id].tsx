@@ -15,6 +15,7 @@ import { isVerified } from '@/components/Verified';
 import { PostCard, REPORT_REASONS, type Post } from '@/components/PostCard';
 import { C, F } from '@/lib/theme';
 import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
+import { t } from '@/lib/i18n';
 
 type Comment = { id: string; post_id?: string; author_id: string; content: string; created: number };
 
@@ -61,16 +62,16 @@ export default function PostView() {
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <Glow />
-      <TopBar title={'Beitrag'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("Beitrag")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
-        {err ? <Empty icon="sparkle" title="Beitrag nicht gefunden" text={err} /> : !post ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> : (
+        {err ? <Empty icon="sparkle" title={t("Beitrag nicht gefunden")} text={err} /> : !post ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> : (
           <FlatList
             data={comments || []}
             keyExtractor={(c) => c.id}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingTop: 12, paddingBottom: 20 }}
             ListHeaderComponent={<PostCard post={post} onChange={setPost} onRemove={() => router.back()} onNote={say} />}
-            ListEmptyComponent={comments ? <T style={s.none}>Noch keine Kommentare.</T> : <ActivityIndicator color={C.accent} />}
+            ListEmptyComponent={comments ? <T style={s.none}>{t("Noch keine Kommentare.")}</T> : <ActivityIndicator color={C.accent} />}
             renderItem={({ item: c }) => {
               const u = userOf(c.author_id);
               return (
@@ -83,8 +84,8 @@ export default function PostView() {
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 8, paddingTop: 3 }}>
                       <T style={s.meta}>{timeLabel(c.created)}</T>
-                      {canDel(c) ? <T style={s.meta} onPress={() => del(c)}>Löschen</T> : null}
-                      {c.author_id !== me?.id ? <T style={s.meta} onPress={() => setReport(c)}>Melden</T> : null}
+                      {canDel(c) ? <T style={s.meta} onPress={() => del(c)}>{t("Löschen")}</T> : null}
+                      {c.author_id !== me?.id ? <T style={s.meta} onPress={() => setReport(c)}>{t("Melden")}</T> : null}
                     </View>
                   </View>
                 </Pressable>
@@ -94,20 +95,20 @@ export default function PostView() {
         )}
         {post ? (
           <View style={[s.bar, { paddingBottom: composerPad }]}>
-            <TextInput value={text} onChangeText={setText} placeholder="Kommentieren …" placeholderTextColor={C.faint} maxLength={1000} multiline style={s.input} />
-            <Pressable accessibilityRole="button" accessibilityLabel="Senden" onPress={send} disabled={!text.trim() || busy} style={[s.send, (!text.trim() || busy) && { opacity: 0.5 }]}>
+            <TextInput value={text} onChangeText={setText} placeholder={t("Kommentieren …")} placeholderTextColor={C.faint} maxLength={1000} multiline style={s.input} />
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Senden")} onPress={send} disabled={!text.trim() || busy} style={[s.send, (!text.trim() || busy) && { opacity: 0.5 }]}>
               <Icon name="send" size={18} color="#fff" />
             </Pressable>
           </View>
         ) : null}
       </KeyboardAvoidingView>
       <Sheet open={!!menu} onClose={() => setMenu(null)} items={menu ? [
-        canDel(menu) ? { label: 'Löschen', icon: 'trash', danger: true, onPress: () => del(menu) } : null,
-        menu.author_id !== me?.id ? { label: 'Melden', icon: 'flag', danger: true, onPress: () => setReport(menu) } : null,
+        canDel(menu) ? { label: t("Löschen"), icon: 'trash', danger: true, onPress: () => del(menu) } : null,
+        menu.author_id !== me?.id ? { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setReport(menu) } : null,
       ] : []} />
-      <Sheet open={!!report} onClose={() => setReport(null)} title="Warum meldest du diesen Kommentar?" items={REPORT_REASONS.map(([k, l]) => ({ label: l, onPress: async () => {
+      <Sheet open={!!report} onClose={() => setReport(null)} title={t("Warum meldest du diesen Kommentar?")} items={REPORT_REASONS.map(([k, l]) => ({ label: l, onPress: async () => {
         const c = report; if (!c) return;
-        try { await api('POST', '/api/reports', { type: 'comment', id: c.id, reason: k }); say('Danke – wir sehen uns die Meldung an.'); } catch (e) { say(errText(e)); }
+        try { await api('POST', '/api/reports', { type: 'comment', id: c.id, reason: k }); say(t("Danke – wir sehen uns die Meldung an.")); } catch (e) { say(errText(e)); }
       } }))} />
       {note ? <View style={s.note} pointerEvents="none"><T style={{ fontWeight: '700' }}>{note}</T></View> : null}
     </View>

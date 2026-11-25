@@ -15,6 +15,7 @@ import { Art, CardMenu, GameChip, MatchCardView } from '@/components/MatchBits';
 import { Badge, Btn, Glow, Sheet, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const buzz = (strong = false) => { if (Platform.OS !== 'web') (strong ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium) : Haptics.selectionAsync()).catch(() => {}); };
 
@@ -47,8 +48,8 @@ const SwipeCard = forwardRef<SwipeRef, { card: MatchCard; onSwipe: (dir: 1 | -1)
         <ScrollView style={s.cardScroll} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
           <MatchCardView c={card} onMore={onMore} style={{ flexGrow: 1 }} />
         </ScrollView>
-        <Animated.View pointerEvents="none" style={[s.stamp, s.stampYes, yes]}><T style={[s.stampText, { color: C.ok }]}>Passt!</T></Animated.View>
-        <Animated.View pointerEvents="none" style={[s.stamp, s.stampNo, no]}><T style={[s.stampText, { color: C.danger }]}>Weiter</T></Animated.View>
+        <Animated.View pointerEvents="none" style={[s.stamp, s.stampYes, yes]}><T style={[s.stampText, { color: C.ok }]}>{t("Passt!")}</T></Animated.View>
+        <Animated.View pointerEvents="none" style={[s.stamp, s.stampNo, no]}><T style={[s.stampText, { color: C.danger }]}>{t("Weiter")}</T></Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -143,19 +144,19 @@ export default function Match() {
   const doBoost = async () => {
     if (!self) return;
     buzz(true);
-    if (self.boost.until > Date.now()) return say(`Dein Profil steht gerade ganz vorn – noch ${mins(self.boost.until - Date.now())}.`);
-    if (self.boost.next > Date.now()) return say(`Boost wieder möglich in ${mins(self.boost.next - Date.now())}.`);
-    try { const d = await boost(); setSelf(d); say(`Dein Profil steht jetzt ${d.boost.minutes} Minuten ganz vorn.`); } catch (e) { say(matchErr(e)); }
+    if (self.boost.until > Date.now()) return say(t("Dein Profil steht gerade ganz vorn – noch {0}.", { 0: mins(self.boost.until - Date.now()) }));
+    if (self.boost.next > Date.now()) return say(t("Boost wieder möglich in {0}.", { 0: mins(self.boost.next - Date.now()) }));
+    try { const d = await boost(); setSelf(d); say(t("Dein Profil steht jetzt {0} Minuten ganz vorn.", { 0: d.boost.minutes })); } catch (e) { say(matchErr(e)); }
   };
 
   const likesBtn = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Likes und Matches" hitSlop={6} onPress={() => router.push('/match-likes')} style={({ pressed }) => [s.topBtn, pressed && { backgroundColor: C.accentSoft }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t("Likes und Matches")} hitSlop={6} onPress={() => router.push('/match-likes')} style={({ pressed }) => [s.topBtn, pressed && { backgroundColor: C.accentSoft }]}>
       <Icon name="heart" size={18} color={C.text2} stroke={2.2} />
       {matchNew(badge) || badge.views ? <Badge n={matchNew(badge) || badge.views} style={s.topBadge} /> : null}
     </Pressable>
   );
   const profileBtn = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Mein Gamer-Profil" hitSlop={6} onPress={() => router.push('/match-profile')} style={({ pressed }) => [s.topBtn, pressed && { backgroundColor: C.accentSoft }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t("Mein Gamer-Profil")} hitSlop={6} onPress={() => router.push('/match-profile')} style={({ pressed }) => [s.topBtn, pressed && { backgroundColor: C.accentSoft }]}>
       <Icon name="edit" size={17} color={C.text2} stroke={2.2} />
     </Pressable>
   );
@@ -165,7 +166,7 @@ export default function Match() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <TopBar onBack={back} title={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Icon name="pad" size={20} color={C.accent} /><T style={{ fontSize: 17, fontWeight: '800' }} numberOfLines={1}>Mitspieler-Match</T></View>}
+      <TopBar onBack={back} title={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Icon name="pad" size={20} color={C.accent} /><T style={{ fontSize: 17, fontWeight: '800' }} numberOfLines={1}>{t("Mitspieler-Match")}</T></View>}
         right={self?.profile ? <>{likesBtn}{profileBtn}</> : undefined} />
       {!self ? <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />
         : !self.profile ? <Intro onStart={() => router.push('/match-profile')} bottom={ins.bottom} online={self.online_now || 0} />
@@ -175,24 +176,24 @@ export default function Match() {
               {/* „Jetzt online“: Leute, mit denen man sofort loszocken kann – die stehen ohnehin weiter vorn */}
               <Pressable accessibilityRole="button" accessibilityState={{ selected: !!filter.online }} onPress={() => { buzz(); pickFilter({ ...filter, online: !filter.online }); }} style={[s.chip, !!filter.online && s.chipOn]}>
                 <View style={s.liveDot} />
-                <T style={[s.chipText, !!filter.online && { color: '#c9bcff' }]}>Jetzt online{info.online ? ` · ${info.online}` : ''}</T>
+                <T style={[s.chipText, !!filter.online && { color: '#c9bcff' }]}>{t("Jetzt online")}{info.online ? ` · ${info.online}` : ''}</T>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Nach Spiel filtern" onPress={() => { buzz(); setGames(true); }} style={[s.chip, !!filter.game && s.chipOn]}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Nach Spiel filtern")} onPress={() => { buzz(); setGames(true); }} style={[s.chip, !!filter.game && s.chipOn]}>
                 <Icon name="filter" size={14} color={filter.game ? C.accent : C.text2} />
-                <T style={[s.chipText, !!filter.game && { color: '#c9bcff' }]} numberOfLines={1}>{filter.game || 'Alle Spiele'}</T>
+                <T style={[s.chipText, !!filter.game && { color: '#c9bcff' }]} numberOfLines={1}>{filter.game || t("Alle Spiele")}</T>
                 <Icon name="chevron" size={12} color={C.muted} stroke={2.6} />
               </Pressable>
               {['', ...self.catalog.platforms].map((p) => (
                 <Pressable key={p || 'all'} accessibilityRole="button" accessibilityState={{ selected: filter.platform === p }} onPress={() => { buzz(); pickFilter({ ...filter, platform: p }); }} style={[s.chip, filter.platform === p && s.chipOn]}>
-                  <T style={[s.chipText, filter.platform === p && { color: '#c9bcff' }]}>{p ? PLATFORM[p] : 'Alle'}</T>
+                  <T style={[s.chipText, filter.platform === p && { color: '#c9bcff' }]}>{p ? PLATFORM[p] : t("Alle")}</T>
                 </Pressable>
               ))}
             </ScrollView>
             {!self.profile.visible ? (
-              <Pressable accessibilityRole="button" onPress={async () => { try { setSelf(await setVisible(true)); say('Dein Profil ist wieder sichtbar.'); } catch (e) { say(matchErr(e)); } }} style={s.paused}>
+              <Pressable accessibilityRole="button" onPress={async () => { try { setSelf(await setVisible(true)); say(t("Dein Profil ist wieder sichtbar.")); } catch (e) { say(matchErr(e)); } }} style={s.paused}>
                 <Icon name="moon" size={16} color={C.warn} />
-                <T style={{ flex: 1, color: C.text2, fontSize: 13.5 }}>Dein Profil ist pausiert – niemand sieht deine Karte.</T>
-                <T style={{ color: C.warn, fontWeight: '800', fontSize: 13.5 }}>Einschalten</T>
+                <T style={{ flex: 1, color: C.text2, fontSize: 13.5 }}>{t("Dein Profil ist pausiert – niemand sieht deine Karte.")}</T>
+                <T style={{ color: C.warn, fontWeight: '800', fontSize: 13.5 }}>{t("Einschalten")}</T>
               </Pressable>
             ) : null}
 
@@ -203,32 +204,32 @@ export default function Match() {
                 : (
                   <Animated.View entering={FadeInDown.duration(240)} style={s.empty}>
                     <Art size={70} />
-                    <T style={s.emptyTitle}>{info.filtered ? 'Mit diesem Filter ist gerade niemand da' : 'Du hast alle gesehen'}</T>
-                    <T style={s.emptyText}>{info.filtered ? 'Lockere den Filter, dann findest du mehr Leute.' : 'Schau später wieder vorbei – übersprungene Karten kommen nach zwei Wochen zurück. Ein Boost bringt dich nach vorn, und mehr Spiele im Profil bringen mehr Treffer.'}</T>
-                    {info.filtered ? <Btn title="Filter zurücksetzen" onPress={() => pickFilter({ game: '', platform: '' })} style={{ alignSelf: 'stretch', marginTop: 16 }} />
-                      : <Btn title="Profil bearbeiten" kind="secondary" icon="edit" onPress={() => router.push('/match-profile')} style={{ alignSelf: 'stretch', marginTop: 16 }} />}
-                    {canUndo ? <Btn title="Letzte Karte zurückholen" kind="ghost" icon="back" onPress={undo} style={{ alignSelf: 'stretch', marginTop: 6 }} /> : null}
+                    <T style={s.emptyTitle}>{info.filtered ? t("Mit diesem Filter ist gerade niemand da") : t("Du hast alle gesehen")}</T>
+                    <T style={s.emptyText}>{info.filtered ? t("Lockere den Filter, dann findest du mehr Leute.") : t("Schau später wieder vorbei – übersprungene Karten kommen nach zwei Wochen zurück. Ein Boost bringt dich nach vorn, und mehr Spiele im Profil bringen mehr Treffer.")}</T>
+                    {info.filtered ? <Btn title={t("Filter zurücksetzen")} onPress={() => pickFilter({ game: '', platform: '' })} style={{ alignSelf: 'stretch', marginTop: 16 }} />
+                      : <Btn title={t("Profil bearbeiten")} kind="secondary" icon="edit" onPress={() => router.push('/match-profile')} style={{ alignSelf: 'stretch', marginTop: 16 }} />}
+                    {canUndo ? <Btn title={t("Letzte Karte zurückholen")} kind="ghost" icon="back" onPress={undo} style={{ alignSelf: 'stretch', marginTop: 6 }} /> : null}
                   </Animated.View>
                 )}
             </View>
 
             <View style={[s.actions, { paddingBottom: Math.max(ins.bottom, 10) + 4 }]}>
               <View style={s.actionRow}>
-                <Round icon="back" label="Letzte Karte zurückholen" size={46} disabled={!canUndo} onPress={undo} />
-                <Round icon="x" label="Überspringen" kind="no" size={62} disabled={!card} onPress={() => { buzz(); top.current?.fling(-1); }} />
-                <Round icon="heart" label="Liken" kind="yes" size={72} disabled={!card} onPress={() => top.current?.fling(1)} />
-                <Round icon="bolt" label="Profil pushen" kind={boosting ? 'boostOn' : 'boost'} size={46} onPress={doBoost} />
+                <Round icon="back" label={t("Letzte Karte zurückholen")} size={46} disabled={!canUndo} onPress={undo} />
+                <Round icon="x" label={t("Überspringen")} kind="no" size={62} disabled={!card} onPress={() => { buzz(); top.current?.fling(-1); }} />
+                <Round icon="heart" label={t("Liken")} kind="yes" size={72} disabled={!card} onPress={() => top.current?.fling(1)} />
+                <Round icon="bolt" label={t("Profil pushen")} kind={boosting ? 'boostOn' : 'boost'} size={46} onPress={doBoost} />
               </View>
-              <T style={s.hint} numberOfLines={1}>{boosting ? `Boost läuft · noch ${mins(self.boost.until - now)}` : `Noch ${self.likes_left} Likes heute`}</T>
+              <T style={s.hint} numberOfLines={1}>{boosting ? t("Boost läuft · noch {0}", { 0: mins(self.boost.until - now) }) : t("Noch {0} Likes heute", { 0: self.likes_left })}</T>
             </View>
           </View>}
 
       {note ? <Animated.View entering={FadeInDown.duration(160)} style={[s.note, { bottom: ins.bottom + 150 }]} pointerEvents="none"><T style={{ fontWeight: '700', textAlign: 'center' }}>{note}</T></Animated.View> : null}
       <CardMenu pid={menu} onClose={() => setMenu(null)} say={say} done={() => setDeck((l) => l.slice(1))} />
       {self?.profile ? (
-        <Sheet open={games} onClose={() => setGames(false)} title="Nach Spiel filtern" header={
+        <Sheet open={games} onClose={() => setGames(false)} title={t("Nach Spiel filtern")} header={
           <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={s.gameSheet}>
-            <GameFilter label="Alle Spiele" on={!filter.game} onPress={() => { setGames(false); pickFilter({ ...filter, game: '' }); }} />
+            <GameFilter label={t("Alle Spiele")} on={!filter.game} onPress={() => { setGames(false); pickFilter({ ...filter, game: '' }); }} />
             {[...new Set([...self.profile.games, ...self.catalog.games])].map((g) => (
               <GameChip key={g} name={g} on={filter.game === g} onPress={() => { setGames(false); pickFilter({ ...filter, game: g }); }} />
             ))}
@@ -254,16 +255,16 @@ function Intro({ onStart, bottom, online = 0 }: { onStart: () => void; bottom: n
     <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: bottom + 30, alignItems: 'center' }}>
       <Animated.View entering={FadeInDown.duration(280)} style={{ alignItems: 'center', marginTop: 18 }}>
         <Art />
-        <T style={s.introTitle}>Finde Leute zum Zocken</T>
-        <T style={s.introText}>Sag, was du spielst und wann du Zeit hast – wir zeigen dir Leute, die dazu passen.</T>
-        {online ? <View style={s.liveRow}><View style={s.liveDot} /><T style={{ fontWeight: '800', color: C.text2 }}>{online} Gamer sind gerade online</T></View> : null}
+        <T style={s.introTitle}>{t("Finde Leute zum Zocken")}</T>
+        <T style={s.introText}>{t("Sag, was du spielst und wann du Zeit hast – wir zeigen dir Leute, die dazu passen.")}</T>
+        {online ? <View style={s.liveRow}><View style={s.liveDot} /><T style={{ fontWeight: '800', color: C.text2 }}>{online} {' '}{t("Gamer sind gerade online")}</T></View> : null}
       </Animated.View>
       <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 22 }}>
-        <Point icon="user" title="Erst einmal anonym" text="Andere sehen dein Profilbild, Banner und deine Spiele – aber nicht deinen Namen." />
-        <Point icon="heart" title="Gegenseitiges Like = Match" text="Erst wenn ihr euch beide likt, seht ihr eure Namen und könnt in ToLobby schreiben." />
-        <Point icon="shield" title="Du bestimmst" text="Profil jederzeit pausieren oder löschen, Karten melden oder blockieren." />
+        <Point icon="user" title={t("Erst einmal anonym")} text={t("Andere sehen dein Profilbild, Banner und deine Spiele – aber nicht deinen Namen.")} />
+        <Point icon="heart" title={t("Gegenseitiges Like = Match")} text={t("Erst wenn ihr euch beide likt, seht ihr eure Namen und könnt in ToLobby schreiben.")} />
+        <Point icon="shield" title={t("Du bestimmst")} text={t("Profil jederzeit pausieren oder löschen, Karten melden oder blockieren.")} />
       </View>
-      <Btn title="Gamer-Profil einrichten" icon="pad" onPress={onStart} style={{ alignSelf: 'stretch', marginTop: 22 }} />
+      <Btn title={t("Gamer-Profil einrichten")} icon="pad" onPress={onStart} style={{ alignSelf: 'stretch', marginTop: 22 }} />
     </ScrollView>
   );
 }

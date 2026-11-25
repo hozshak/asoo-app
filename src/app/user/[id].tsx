@@ -19,9 +19,10 @@ import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { Icon, type IconName } from '@/components/Icon';
 import { openDm, setFriend } from '../friends';
 import { C, statusColor } from '@/lib/theme';
+import { t, LOCALE } from '@/lib/i18n';
 
-const REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['minor_safety', 'Gefahr für Minderjährige'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];
-const STATUS_TEXT: Record<string, string> = { online: 'Online', idle: 'Abwesend', dnd: 'Bitte nicht stören', offline: 'Offline' };
+const REASONS: [string, string][] = [['spam', t("Spam")], ['harassment', t("Belästigung oder Mobbing")], ['hate', t("Hass oder Hetze")], ['violence', t("Gewalt oder Drohung")], ['sexual', t("Sexuelle Inhalte")], ['minor_safety', t("Gefahr für Minderjährige")], ['impersonation', t("Gibt sich als jemand anderes aus")], ['other', t("Etwas anderes")]];
+const STATUS_TEXT: Record<string, string> = { online: t("Online"), idle: t("Abwesend"), dnd: t("Bitte nicht stören"), offline: t("Offline") };
 
 function Action({ icon, label, onPress, color = C.accent }: { icon: IconName; label: string; onPress: () => void; color?: string }) {
   return (
@@ -64,30 +65,30 @@ export default function Profile() {
       <Glow />
       <ScrollView contentContainerStyle={{ paddingBottom: ins.bottom + 30 }} bounces>
         <ProfileHead u={u}
-          topLeft={<Pressable accessibilityLabel="Schließen" hitSlop={8} onPress={() => router.back()} style={s.round}><Icon name="x" size={17} color="#fff" stroke={2.4} /></Pressable>}
-          topRight={!me && !u.deleted ? <Pressable accessibilityLabel="Mehr" hitSlop={8} onPress={() => setMore(true)} style={s.round}><Icon name="more" size={18} color="#fff" /></Pressable> : undefined} />
+          topLeft={<Pressable accessibilityLabel={t("Schließen")} hitSlop={8} onPress={() => router.back()} style={s.round}><Icon name="x" size={17} color="#fff" stroke={2.4} /></Pressable>}
+          topRight={!me && !u.deleted ? <Pressable accessibilityLabel={t("Mehr")} hitSlop={8} onPress={() => setMore(true)} style={s.round}><Icon name="more" size={18} color="#fff" /></Pressable> : undefined} />
         <View style={s.grab} />
 
         {!me && !u.deleted && !d.blocked ? <View style={s.actions}>
           {d.friend === 'friends' ? <>
-            <Action icon="comment" label="Nachricht" onPress={() => openDm(router, u.id).catch((e) => setMsg(errText(e)))} />
-            <Action icon="phone" label="Anrufen" color={C.ok} onPress={() => setAsk('voice')} />
+            <Action icon="comment" label={t("Nachricht")} onPress={() => openDm(router, u.id).catch((e) => setMsg(errText(e)))} />
+            <Action icon="phone" label={t("Anrufen")} color={C.ok} onPress={() => setAsk('voice')} />
           </> : null}
-          {d.friend === 'none' ? <Action icon="userPlus" label="Hinzufügen" onPress={() => act(() => setFriend(u.id, true), 'Anfrage geschickt ✓')} /> : null}
-          {d.friend === 'in' ? <Action icon="check" label="Annehmen" color={C.ok} onPress={() => act(() => setFriend(u.id, true))} /> : null}
-          {d.friend === 'out' ? <Action icon="clock" label="Angefragt" color={C.muted} onPress={() => act(() => setFriend(u.id, false), 'Anfrage zurückgezogen')} /> : null}
-          <Action icon="more" label="Mehr" color={C.text2} onPress={() => setMore(true)} />
+          {d.friend === 'none' ? <Action icon="userPlus" label={t("Hinzufügen")} onPress={() => act(() => setFriend(u.id, true), 'Anfrage geschickt ✓')} /> : null}
+          {d.friend === 'in' ? <Action icon="check" label={t("Annehmen")} color={C.ok} onPress={() => act(() => setFriend(u.id, true))} /> : null}
+          {d.friend === 'out' ? <Action icon="clock" label={t("Angefragt")} color={C.muted} onPress={() => act(() => setFriend(u.id, false), 'Anfrage zurückgezogen')} /> : null}
+          <Action icon="more" label={t("Mehr")} color={C.text2} onPress={() => setMore(true)} />
         </View> : null}
-        {d.blocked ? <View style={{ paddingHorizontal: 16, marginTop: 16 }}><Btn title="Blockierung aufheben" icon="ban" kind="secondary" onPress={() => act(() => api('POST', `/api/users/${u.id}/block`, { on: false }).then(bootstrap))} /></View> : null}
+        {d.blocked ? <View style={{ paddingHorizontal: 16, marginTop: 16 }}><Btn title={t("Blockierung aufheben")} icon="ban" kind="secondary" onPress={() => act(() => api('POST', `/api/users/${u.id}/block`, { on: false }).then(bootstrap))} /></View> : null}
         {msg ? <T style={s.msg}>{msg}</T> : null}
 
         <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 16 }}>
-          {u.bio ? <Card style={s.card}><Section>Über mich</Section><T style={s.bio}>{u.bio}</T></Card> : null}
+          {u.bio ? <Card style={s.card}><Section>{t("Über mich")}</Section><T style={s.bio}>{u.bio}</T></Card> : null}
           <Card style={s.card}>
-            <Section>Dabei seit</Section>
-            <T style={s.bio}>{new Date(u.created).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</T>
+            <Section>{t("Dabei seit")}</Section>
+            <T style={s.bio}>{new Date(u.created).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })}</T>
             {d.mutual_servers?.length && !me ? <>
-              <Section style={{ marginTop: 14 }}>{d.mutual_servers.length === 1 ? '1 gemeinsamer Server' : `${d.mutual_servers.length} gemeinsame Server`}</Section>
+              <Section style={{ marginTop: 14 }}>{d.mutual_servers.length === 1 ? t("1 gemeinsamer Server") : t("{0} gemeinsame Server", { 0: d.mutual_servers.length })}</Section>
               <View style={s.servers}>{d.mutual_servers.slice(0, 12).map((sv: any) => (
                 <Pressable key={sv.id} accessibilityLabel={sv.name} onPress={() => openServer(router, sv.id)} style={s.server}>
                   <ServerIcon server={sv} size={34} />
@@ -100,11 +101,11 @@ export default function Profile() {
       </ScrollView>
       <ProfileFx id={u.effect} />
       <Sheet open={more} onClose={() => setMore(false)} items={[
-        d.friend === 'friends' ? { label: 'Freundschaft beenden', icon: 'minusCircle', onPress: () => act(() => setFriend(u.id, false)) } : null,
-        !d.blocked ? { label: 'Blockieren', icon: 'ban', danger: true, onPress: () => act(() => api('POST', `/api/users/${u.id}/block`, { on: true }).then(bootstrap), 'Blockiert. Ihr seht keine Nachrichten mehr voneinander.') } : null,
-        { label: 'Melden', icon: 'flag', danger: true, onPress: () => setReport(true) },
+        d.friend === 'friends' ? { label: t("Freundschaft beenden"), icon: 'minusCircle', onPress: () => act(() => setFriend(u.id, false)) } : null,
+        !d.blocked ? { label: t("Blockieren"), icon: 'ban', danger: true, onPress: () => act(() => api('POST', `/api/users/${u.id}/block`, { on: true }).then(bootstrap), 'Blockiert. Ihr seht keine Nachrichten mehr voneinander.') } : null,
+        { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setReport(true) },
       ]} />
-      <Sheet open={report} onClose={() => setReport(false)} title="Warum meldest du diese Person?" items={REASONS.map(([k, l]) => ({ label: l, onPress: () => act(() => api('POST', '/api/reports', { type: 'user', id: u.id, reason: k }), 'Danke – wir sehen uns die Meldung an.') }))} />
+      <Sheet open={report} onClose={() => setReport(false)} title={t("Warum meldest du diese Person?")} items={REASONS.map(([k, l]) => ({ label: l, onPress: () => act(() => api('POST', '/api/reports', { type: 'user', id: u.id, reason: k }), 'Danke – wir sehen uns die Meldung an.') }))} />
     </View>
   );
 }

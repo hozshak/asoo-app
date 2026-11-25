@@ -19,6 +19,7 @@ import { Logo } from '@/components/Logo';
 import { StatusSheet } from '@/components/MeBar';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
 import { matchNew } from '@/lib/match';
+import { t, LOCALE } from '@/lib/i18n';
 
 export default function Me() {
   const router = useRouter();
@@ -35,10 +36,10 @@ export default function Me() {
     try { const d = await api<any>('PATCH', '/api/me', body); setState((s) => ({ me: { ...s.me!, ...d.user } })); } catch (e) { setMsg(errText(e)); }
   };
   const pickAvatar = async () => {
-    const r = await chooseImage({ title: 'Profilbild ändern', crop: [1, 1], maxSide: 768, onWork: () => setMsg('Bild wird vorbereitet …') });
+    const r = await chooseImage({ title: t("Profilbild ändern"), crop: [1, 1], maxSide: 768, onWork: () => setMsg(t("Bild wird vorbereitet …")) });
     if (!r) return;
-    setMsg('Profilbild wird hochgeladen …');
-    try { const up = await upload('avatar', r.uri, r.mime); await patch({ avatar: up.key }); setMsg('Profilbild gespeichert ✓'); } catch (e) { setMsg(errText(e)); }
+    setMsg(t("Profilbild wird hochgeladen …"));
+    try { const up = await upload('avatar', r.uri, r.mime); await patch({ avatar: up.key }); setMsg(t("Profilbild gespeichert ✓")); } catch (e) { setMsg(errText(e)); }
   };
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const page = (p: string) => router.push({ pathname: '/settings', params: { page: p } });
@@ -49,11 +50,11 @@ export default function Me() {
       <View style={[s.sheet, { marginTop: ins.top + 4 }]}>
         <ScrollView contentContainerStyle={{ paddingBottom: 120 + ins.bottom }} showsVerticalScrollIndicator={false}>
           <ProfileHead u={me} status={raw} onAvatar={pickAvatar} onName={() => setSheet(true)} ring={HOME.panel}
-            topLeft={<Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={6} onPress={close} style={s.close}><Icon name="x" size={22} color="#fff" stroke={2.4} /></Pressable>}
-            bannerRight={<Pressable accessibilityRole="button" accessibilityLabel="Einstellungen" hitSlop={8} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.gear, pressed && { opacity: 0.7 }]}><Icon name="gear" size={21} color={C.text} stroke={2.2} /></Pressable>} />
+            topLeft={<Pressable accessibilityRole="button" accessibilityLabel={t("Schließen")} hitSlop={6} onPress={close} style={s.close}><Icon name="x" size={22} color="#fff" stroke={2.4} /></Pressable>}
+            bannerRight={<Pressable accessibilityRole="button" accessibilityLabel={t("Einstellungen")} hitSlop={8} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.gear, pressed && { opacity: 0.7 }]}><Icon name="gear" size={21} color={C.text} stroke={2.2} /></Pressable>} />
 
           <View style={{ paddingHorizontal: 16, marginTop: 16, gap: 12 }}>
-            <Btn title="Profil bearbeiten" icon="edit" onPress={() => page('profile')} />
+            <Btn title={t("Profil bearbeiten")} icon="edit" onPress={() => page('profile')} />
             {msg ? <T style={s.msg}>{msg}</T> : null}
 
             {/* wie „Amp up your profile“: farbiger Rand, zwei Knöpfe, wegklickbar */}
@@ -61,39 +62,39 @@ export default function Me() {
               <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ampEdge}>
                 <View style={s.amp}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <T style={s.ampTitle}>Peppe dein Profil auf</T>
-                    <Pressable accessibilityRole="button" accessibilityLabel="Ausblenden" hitSlop={8} onPress={() => setAmp(false)}><Icon name="x" size={20} color={C.muted} /></Pressable>
+                    <T style={s.ampTitle}>{t("Peppe dein Profil auf")}</T>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t("Ausblenden")} hitSlop={8} onPress={() => setAmp(false)}><Icon name="x" size={20} color={C.muted} /></Pressable>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <AmpBtn icon="sparkle" label="Profilrahmen" onPress={() => page('frame')} />
-                    <AmpBtn icon="moon" label="Profil-Effekt" onPress={() => page('effect')} />
+                    <AmpBtn icon="sparkle" label={t("Profilrahmen")} onPress={() => page('frame')} />
+                    <AmpBtn icon="moon" label={t("Profil-Effekt")} onPress={() => page('effect')} />
                   </View>
                 </View>
               </LinearGradient>
             ) : null}
 
-            {me.bio ? <View style={s.card}><T style={s.label}>Über mich</T><T style={s.bio}>{me.bio}</T></View> : null}
+            {me.bio ? <View style={s.card}><T style={s.label}>{t("Über mich")}</T><T style={s.bio}>{me.bio}</T></View> : null}
 
             {me.created ? <View style={{ gap: 6, paddingHorizontal: 2, marginTop: 4 }}>
-              <T style={s.label}>Mitglied seit</T>
+              <T style={s.label}>{t("Mitglied seit")}</T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Logo size={22} />
-                <T style={s.since}>{new Date(me.created).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</T>
+                <T style={s.since}>{new Date(me.created).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })}</T>
               </View>
             </View> : null}
 
-            <RowCard label="Mitspieler-Match" icon="pad" sub={match.has ? 'Leute zum Zocken – Likes, Matches, dein Gamer-Profil' : 'Finde Leute zum Zocken – erst anonym, bei einem Match mit Namen'} badge={matchNew(match)} onPress={() => router.push('/match')} />
-            <RowCard label="Freunde" sub={friends ? `${friends} ${friends === 1 ? 'Freund' : 'Freunde'}` : undefined} badge={requests} onPress={() => router.push('/friends')} />
-            <RowCard label="So sehen dich andere" icon="user" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
+            <RowCard label={t("Mitspieler-Match")} icon="pad" sub={match.has ? t("Leute zum Zocken – Likes, Matches, dein Gamer-Profil") : t("Finde Leute zum Zocken – erst anonym, bei einem Match mit Namen")} badge={matchNew(match)} onPress={() => router.push('/match')} />
+            <RowCard label={t("Freunde")} sub={friends ? `${friends} ${friends === 1 ? 'Freund' : 'Freunde'}` : undefined} badge={requests} onPress={() => router.push('/friends')} />
+            <RowCard label={t("So sehen dich andere")} icon="user" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
           </View>
         </ScrollView>
 
         {/* schwebende Leiste unten wie bei Discord (Quests, Shop, Nitro, Einstellungen) – hier die Asoo-Gegenstücke */}
         <View style={[s.dock, { bottom: Math.max(ins.bottom - 4, 12) }]}>
-          <DockBtn icon="cube" label="3D-Avatar" onPress={() => router.push('/avatar3d')} />
-          <DockBtn icon="sparkle" label="Rahmen" onPress={() => page('frame')} />
-          <DockBtn icon="compass" label="Entdecken" onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} />
-          <DockBtn icon="gear" label="Einstellungen" onPress={() => router.push('/settings')} />
+          <DockBtn icon="cube" label={t("3D-Avatar")} onPress={() => router.push('/avatar3d')} />
+          <DockBtn icon="sparkle" label={t("Rahmen")} onPress={() => page('frame')} />
+          <DockBtn icon="compass" label={t("Entdecken")} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} />
+          <DockBtn icon="gear" label={t("Einstellungen")} onPress={() => router.push('/settings')} />
         </View>
       </View>
       <StatusSheet open={sheet} onClose={() => setSheet(false)} />

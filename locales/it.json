@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "ToLobby",
+  "NSMicrophoneUsageDescription": "Così gli altri ti sentono nelle stanze vocali, nelle stanze 3D e nelle chiamate, e puoi registrare messaggi vocali.",
+  "NSCameraUsageDescription": "Così puoi scattare foto per il tuo profilo e condividere la fotocamera nelle chiamate.",
+  "NSPhotoLibraryUsageDescription": "Così puoi inviare immagini nelle chat e scegliere una foto profilo."
+}

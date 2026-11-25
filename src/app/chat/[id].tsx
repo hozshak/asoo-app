@@ -29,10 +29,11 @@ import { joinCall, leaveForWeb, nativeCalls, useVoice } from '@/lib/calls';
 import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifSrc, gifUrl, type Poll } from '@/components/ChatExtras';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
+import { t, LOCALE } from '@/lib/i18n';
 
 const NO_CALLERS: { uid: string }[] = []; // feste leere Liste (eine neue bei jedem Zeichnen ließe den Zustand endlos neu laden)
 const QUICK = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-const REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['minor_safety', 'Gefahr für Minderjährige'], ['self_harm', 'Selbstverletzung'], ['illegal', 'Illegale Inhalte'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];
+const REASONS: [string, string][] = [['spam', t("Spam")], ['harassment', t("Belästigung oder Mobbing")], ['hate', t("Hass oder Hetze")], ['violence', t("Gewalt oder Drohung")], ['sexual', t("Sexuelle Inhalte")], ['minor_safety', t("Gefahr für Minderjährige")], ['self_harm', t("Selbstverletzung")], ['illegal', t("Illegale Inhalte")], ['impersonation', t("Gibt sich als jemand anderes aus")], ['other', t("Etwas anderes")]];
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -108,7 +109,7 @@ export default function Chat() {
     } catch (e) { markFailed(id, nonce); setErr(errText(e)); }
   };
   const sendImage = async () => {
-    const r = await chooseImage({ title: 'Bild senden', quality: 0.8, maxSide: 1600 });
+    const r = await chooseImage({ title: t("Bild senden"), quality: 0.8, maxSide: 1600 });
     if (!r) return;
     const a = r;
     const nonce = 'n' + Date.now().toString(36);
@@ -133,7 +134,7 @@ export default function Chat() {
     const d = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
     if (d.canceled || !d.assets?.[0]) return;
     const a = d.assets[0];
-    if (a.size && a.size > 10 * 1024 * 1024) { setErr(`„${a.name}“ ist zu groß (höchstens 10 MB).`); return; }
+    if (a.size && a.size > 10 * 1024 * 1024) { setErr(t("„{0}“ ist zu groß (höchstens 10 MB).", { 0: a.name })); return; }
     sendAttachment(a.uri, a.mimeType || 'application/octet-stream', { name: a.name || 'datei', size: a.size });
   };
   const sendGif = async (url: string) => {
@@ -160,17 +161,17 @@ export default function Chat() {
   };
   const del = async (m: Msg) => { try { await api('DELETE', `/api/messages/${m.id}`); } catch (e) { setErr(errText(e)); } };
   const report = async (m: Msg, reason: string) => {
-    try { await api('POST', '/api/reports', { type: 'message', id: m.id, reason }); setErr('Danke – wir sehen uns die Meldung an.'); } catch (e) { setErr(errText(e)); }
+    try { await api('POST', '/api/reports', { type: 'message', id: m.id, reason }); setErr(t("Danke – wir sehen uns die Meldung an.")); } catch (e) { setErr(errText(e)); }
   };
 
   const typers = Object.entries(typing || {}).filter(([uid, until]) => until > Date.now() && uid !== me?.id).map(([uid]) => userOf(uid).display);
   const menuItems: SheetItem[] = menu ? [
-    !readOnly ? { label: 'Antworten', icon: 'reply', onPress: () => { setReply(menu); setEditing(null); } } : null,
-    menu.content ? { label: 'Text kopieren', icon: 'copy', onPress: () => Clipboard.setStringAsync(plainText(menu.content, sid)) } : null,
-    menu.author_id === me?.id && menu.kind === 'default' && menu.content && !readOnly ? { label: 'Bearbeiten', icon: 'edit', onPress: () => { setEditing(menu); setReply(null); setText(plainText(menu.content, sid)); } } : null,
-    { label: 'Profil ansehen', icon: 'user', onPress: () => router.push({ pathname: '/user/[id]', params: { id: menu.author_id } }) },
-    menu.author_id !== me?.id ? { label: 'Melden', icon: 'flag', danger: true, onPress: () => setReportFor(menu) } : null,
-    menu.author_id === me?.id || isMod ? { label: 'Löschen', icon: 'trash', danger: true, onPress: () => del(menu) } : null,
+    !readOnly ? { label: t("Antworten"), icon: 'reply', onPress: () => { setReply(menu); setEditing(null); } } : null,
+    menu.content ? { label: t("Text kopieren"), icon: 'copy', onPress: () => Clipboard.setStringAsync(plainText(menu.content, sid)) } : null,
+    menu.author_id === me?.id && menu.kind === 'default' && menu.content && !readOnly ? { label: t("Bearbeiten"), icon: 'edit', onPress: () => { setEditing(menu); setReply(null); setText(plainText(menu.content, sid)); } } : null,
+    { label: t("Profil ansehen"), icon: 'user', onPress: () => router.push({ pathname: '/user/[id]', params: { id: menu.author_id } }) },
+    menu.author_id !== me?.id ? { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setReportFor(menu) } : null,
+    menu.author_id === me?.id || isMod ? { label: t("Löschen"), icon: 'trash', danger: true, onPress: () => del(menu) } : null,
   ] : [];
   const canSend = !!text.trim();
   const headerOffset = useHeaderOffset();
@@ -190,26 +191,26 @@ export default function Chat() {
           </Pressable>
         }
         right={<>
-          <TopIcon icon="pin" label="Angeheftete Nachrichten" onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
-          <TopIcon icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
-          {sid ? <TopIcon icon="users" label="Mitglieder" onPress={() => router.push({ pathname: '/members', params: { sid } })} /> : null}
-          {dm ? <TopIcon icon="phone" label="Anrufen" color={C.accent} onPress={() => setAsk('voice')} /> : null}
-          {dm ? <TopIcon icon="video" label="Videoanruf" color={C.accent} onPress={() => setAsk('video')} /> : null}
+          <TopIcon icon="pin" label={t("Angeheftete Nachrichten")} onPress={() => router.push({ pathname: '/search', params: { ch: id, mode: 'pins', ...(sid ? { sid } : {}) } })} />
+          <TopIcon icon="search" label={t("Suchen")} onPress={() => router.push({ pathname: '/search', params: { ch: id, ...(sid ? { sid } : {}) } })} />
+          {sid ? <TopIcon icon="users" label={t("Mitglieder")} onPress={() => router.push({ pathname: '/members', params: { sid } })} /> : null}
+          {dm ? <TopIcon icon="phone" label={t("Anrufen")} color={C.accent} onPress={() => setAsk('voice')} /> : null}
+          {dm ? <TopIcon icon="video" label={t("Videoanruf")} color={C.accent} onPress={() => setAsk('video')} /> : null}
         </>}
       />
       {callOn ? (
         <Pressable accessibilityRole="button" onPress={() => startCall(false)} style={s.callOn}>
           <View style={s.callDot} />
           <Icon name="phone" size={17} color="#062b1b" stroke={2.4} />
-          <T style={{ flex: 1, color: '#062b1b', fontWeight: '800' }} numberOfLines={1}>{callers.length === 1 ? `${userOf(callers[0].uid).display} ruft an` : 'Anruf läuft'}</T>
-          <T style={{ color: '#062b1b', fontWeight: '900' }}>Beitreten</T>
+          <T style={{ flex: 1, color: '#062b1b', fontWeight: '800' }} numberOfLines={1}>{callers.length === 1 ? t("{0} ruft an", { 0: userOf(callers[0].uid).display }) : t("Anruf läuft")}</T>
+          <T style={{ color: '#062b1b', fontWeight: '900' }}>{t("Beitreten")}</T>
         </Pressable>
       ) : null}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         {info && info.channel.type !== 'text' ? (
           <Pressable accessibilityRole="button" onPress={() => { if (info.channel.type === 'voice' && nativeCalls()) joinCall(info.channel.id); else { leaveForWeb(); openWeb(router, `/channels/${info.server.id}/${info.channel.id}`); } }} style={s.voiceNote}>
             <Icon name={info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={16} color={C.accent} />
-            <T style={s.voiceText}>{info.channel.type === 'voice' ? 'Das ist der Chat dieses Sprachraums. Tippe hier, um dem Raum beizutreten.' : info.channel.type === 'game' ? 'Das ist der Chat dieses Spiels. Tippe hier, um mitzuspielen.' : 'Das ist der Chat dieses 3D-Raums. Tippe hier, um den Raum zu betreten.'}</T>
+            <T style={s.voiceText}>{info.channel.type === 'voice' ? t("Das ist der Chat dieses Sprachraums. Tippe hier, um dem Raum beizutreten.") : info.channel.type === 'game' ? t("Das ist der Chat dieses Spiels. Tippe hier, um mitzuspielen.") : t("Das ist der Chat dieses 3D-Raums. Tippe hier, um den Raum zu betreten.")}</T>
           </Pressable>
         ) : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
@@ -225,37 +226,37 @@ export default function Chat() {
               const head = !prev || prev.author_id !== item.author_id || item.created - prev.created > 7 * 60000 || !!item.reply || (item.kind !== 'default' && item.kind !== 'poll') || (prev.kind !== 'default' && prev.kind !== 'poll');
               const day = !prev || new Date(prev.created).toDateString() !== new Date(item.created).toDateString();
               return <View>
-                {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
+                {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
                 <MessageRow onPoll={setPoll} m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
               </View>;
             }}
             ListFooterComponent={box.hasMore ? <ActivityIndicator color={C.faint} style={{ margin: 12 }} /> : (
               <View style={s.start}>
                 <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} style={s.startIcon}><Icon name={info ? 'hash' : 'comment'} size={30} color="#fff" /></LinearGradient>
-                <T style={s.startTitle}>{info ? `Willkommen in #${title}!` : title}</T>
-                <T style={s.startText}>{info ? 'Das ist der Anfang dieses Kanals.' : 'Das ist der Anfang eures Gesprächs.'}</T>
+                <T style={s.startTitle}>{info ? t("Willkommen in #{0}!", { 0: title }) : title}</T>
+                <T style={s.startText}>{info ? t("Das ist der Anfang dieses Kanals.") : t("Das ist der Anfang eures Gesprächs.")}</T>
               </View>
             )}
           />}
-        {typers.length ? <Animated.View entering={FadeIn} style={s.typingRow}><View style={s.typingDots}><View style={s.td} /><View style={[s.td, { opacity: 0.7 }]} /><View style={[s.td, { opacity: 0.4 }]} /></View><T style={s.typing}>{typers.slice(0, 3).join(', ')} {typers.length === 1 ? 'tippt …' : 'tippen …'}</T></Animated.View> : null}
+        {typers.length ? <Animated.View entering={FadeIn} style={s.typingRow}><View style={s.typingDots}><View style={s.td} /><View style={[s.td, { opacity: 0.7 }]} /><View style={[s.td, { opacity: 0.4 }]} /></View><T style={s.typing}>{typers.slice(0, 3).join(', ')} {typers.length === 1 ? t("tippt …") : t("tippen …")}</T></Animated.View> : null}
         {err ? <Pressable onPress={() => setErr('')}><T style={s.err}>{err}</T></Pressable> : null}
         {readOnly ? <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
-          <View style={s.locked}><Icon name="lock" size={15} color={C.muted} /><T style={s.lockedText}>{need === 'admin' ? 'Nur Admins können hier schreiben.' : 'Nur Moderatoren können hier schreiben.'}</T></View>
+          <View style={s.locked}><Icon name="lock" size={15} color={C.muted} /><T style={s.lockedText}>{need === 'admin' ? t("Nur Admins können hier schreiben.") : t("Nur Moderatoren können hier schreiben.")}</T></View>
         </Glass> : <Glass style={[s.composerWrap, { paddingBottom: composerPad }]} intensity={40} tint="rgba(14,15,24,0.86)">
           {reply || editing ? <Animated.View entering={FadeInDown.duration(180)} style={s.bar}>
             <Icon name={editing ? 'edit' : 'reply'} size={14} color={C.accent} />
-            <T style={s.barText} numberOfLines={1}>{editing ? 'Nachricht bearbeiten' : `Antwort an ${userOf(reply!.author_id).display}`}</T>
-            <Pressable accessibilityLabel="Abbrechen" onPress={() => { setReply(null); if (editing) { setEditing(null); setText(''); } }}><Icon name="x" size={18} color={C.muted} /></Pressable>
+            <T style={s.barText} numberOfLines={1}>{editing ? t("Nachricht bearbeiten") : t("Antwort an {0}", { 0: userOf(reply!.author_id).display })}</T>
+            <Pressable accessibilityLabel={t("Abbrechen")} onPress={() => { setReply(null); if (editing) { setEditing(null); setText(''); } }}><Icon name="x" size={18} color={C.muted} /></Pressable>
           </Animated.View> : null}
           <View style={s.composer}>
             {recording ? <View style={{ flex: 1 }}><VoiceRecorder onCancel={() => setRecording(false)} onDone={(uri, dur) => { setRecording(false); sendAttachment(uri, 'audio/mp4', { name: 'sprachnachricht.m4a', voice: true, dur }); }} /></View> : <>
-            <Press label="Bild, Datei oder Umfrage" onPress={() => setPlus(true)} style={s.plus}><Icon name="plus" size={22} color={C.text2} /></Press>
-            <TextInput {...(Platform.OS === 'web' ? ({ rows: 1 } as any) : {})} style={s.input} value={text} onChangeText={onType} placeholder={`Nachricht an ${info ? '#' : ''}${title}`} placeholderTextColor={C.faint} multiline maxLength={4000} />
+            <Press label={t("Bild, Datei oder Umfrage")} onPress={() => setPlus(true)} style={s.plus}><Icon name="plus" size={22} color={C.text2} /></Press>
+            <TextInput {...(Platform.OS === 'web' ? ({ rows: 1 } as any) : {})} style={s.input} value={text} onChangeText={onType} placeholder={t("Nachricht an {0}{1}", { 0: info ? '#' : '', 1: title })} placeholderTextColor={C.faint} multiline maxLength={4000} />
             {/* wie bei Discord: ohne Text stehen GIF und Sprachnachricht direkt neben dem Feld, mit Text der Senden-Knopf */}
             {!text.trim() && !editing ? <>
-              <Press label="GIF" onPress={() => setGifOpen(true)} style={s.side}><T style={s.gifTxt}>GIF</T></Press>
-              <Press label="Sprachnachricht aufnehmen" onPress={() => setRecording(true)} style={s.side}><Icon name="mic" size={21} color={C.text2} /></Press>
-            </> : <Press label="Senden" onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
+              <Press label={t("GIF")} onPress={() => setGifOpen(true)} style={s.side}><T style={s.gifTxt}>{t("GIF")}</T></Press>
+              <Press label={t("Sprachnachricht aufnehmen")} onPress={() => setRecording(true)} style={s.side}><Icon name="mic" size={21} color={C.text2} /></Press>
+            </> : <Press label={t("Senden")} onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
               <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <View><Icon name="send" size={19} color="#fff" /></View>
             </Press>}
@@ -264,18 +265,18 @@ export default function Chat() {
         </Glass>}
       </KeyboardAvoidingView>
       <Sheet open={!!menu} onClose={() => setMenu(null)} items={menuItems} header={menu ? (
-        <View style={s.quick}>{QUICK.map((e) => <Press key={e} label={`Reaktion ${e}`} onPress={() => { const m = menu; setMenu(null); react(m, e); }} style={s.quickBtn} scale={0.85}><T style={{ fontSize: 26, lineHeight: 34 }}>{e}</T></Press>)}</View>
+        <View style={s.quick}>{QUICK.map((e) => <Press key={e} label={t("Reaktion {0}", { 0: e })} onPress={() => { const m = menu; setMenu(null); react(m, e); }} style={s.quickBtn} scale={0.85}><T style={{ fontSize: 26, lineHeight: 34 }}>{e}</T></Press>)}</View>
       ) : null} />
-      <Sheet open={plus} onClose={() => setPlus(false)} title="Senden" items={[
-        { label: 'Foto oder Bild', icon: 'image', onPress: sendImage },
-        { label: 'Datei', icon: 'folder', onPress: sendFile },
-        { label: 'GIF', icon: 'smile', onPress: () => setGifOpen(true) },
-        { label: 'Sprachnachricht', icon: 'mic', onPress: () => setRecording(true) },
-        { label: 'Umfrage', icon: 'check', onPress: () => setPollOpen(true) },
+      <Sheet open={plus} onClose={() => setPlus(false)} title={t("Senden")} items={[
+        { label: t("Foto oder Bild"), icon: 'image', onPress: sendImage },
+        { label: t("Datei"), icon: 'folder', onPress: sendFile },
+        { label: t("GIF"), icon: 'smile', onPress: () => setGifOpen(true) },
+        { label: t("Sprachnachricht"), icon: 'mic', onPress: () => setRecording(true) },
+        { label: t("Umfrage"), icon: 'check', onPress: () => setPollOpen(true) },
       ]} />
       <PollComposer open={pollOpen} onClose={() => setPollOpen(false)} onSend={sendPoll} />
       <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
-      <Sheet open={!!reportFor} onClose={() => setReportFor(null)} title="Warum meldest du das?" items={REASONS.map(([k, l]) => ({ label: l, onPress: () => report(reportFor!, k) }))} />
+      <Sheet open={!!reportFor} onClose={() => setReportFor(null)} title={t("Warum meldest du das?")} items={REASONS.map(([k, l]) => ({ label: l, onPress: () => report(reportFor!, k) }))} />
       <ImageViewer src={big} onClose={() => setBig(null)} />
     </View>
   );
@@ -293,7 +294,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
       <View style={s.sys}>
         <View style={[s.sysIcon, { backgroundColor: 'rgba(255,92,138,0.14)' }]}><Icon name="shield" size={13} color={C.danger} /></View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <T style={s.sysText}>AutoMod hat eine Nachricht von <T style={{ color: C.text, fontWeight: '700' }} onPress={() => onUser(m.author_id)}>{u.display}</T> blockiert.</T>
+          <T style={s.sysText}>{t("AutoMod hat eine Nachricht von")}{' '}<T style={{ color: C.text, fontWeight: '700' }} onPress={() => onUser(m.author_id)}>{u.display}</T> {' '}{t("blockiert.")}</T>
           <T style={[s.sysText, { fontSize: 12.5 }]}>{[why[d.r] || '', d.w ? `„${d.w}“` : '', d.c ? `#${d.c}` : ''].filter(Boolean).join(' · ')}</T>
           {d.x ? <T style={s.amText}>{String(d.x)}</T> : null}
         </View>
@@ -311,7 +312,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
   const color = roleColor(sid, m.author_id);
   return (
     <Pressable onLongPress={onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-      {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || 'Bild'}</T></View> : null}
+      {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || t("Bild")}</T></View> : null}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -323,7 +324,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
             : gifUrl(m.content) ? <Pressable onPress={() => onImage(gifSrc(gifUrl(m.content)))}><Image source={{ uri: gifSrc(gifUrl(m.content)) }} style={{ width: 220, height: 180, borderRadius: 14, marginTop: 6 }} contentFit="cover" autoplay /></Pressable>
             : m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
           {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
-          {m.edited ? <T style={s.edited}>(bearbeitet)</T> : null}
+          {m.edited ? <T style={s.edited}>{t("(bearbeitet)")}</T> : null}
           {m.attachments?.map((a, i) => {
             const kind = attKind(a);
             if (kind === 'voice') return <VoiceMsg key={i} a={a} dim={m.pending} />;
@@ -332,7 +333,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
             const w = Math.min(260, a.w || 260), h = a.w && a.h ? Math.min(320, (w / a.w) * a.h) : 200;
             return src ? <Pressable key={i} onPress={() => a.key && onImage(a.key)}><Image source={src} style={{ width: w, height: h, borderRadius: 14, marginTop: 6, opacity: m.pending ? 0.6 : 1, borderWidth: 1, borderColor: C.line }} contentFit="cover" transition={200} /></Pressable> : null;
           })}
-          {m.failed ? <T style={s.failed}>Nicht gesendet</T> : null}
+          {m.failed ? <T style={s.failed}>{t("Nicht gesendet")}</T> : null}
           {m.reactions?.length ? <View style={s.reacts}>{m.reactions.map((r) => (
             <Press key={r.emoji} label={`${r.emoji} ${r.count}`} onPress={() => onReact(r.emoji)} style={[s.react, r.me && s.reactMe]} scale={0.9}><T style={{ fontSize: 15, lineHeight: 20 }}>{r.emoji}</T><T style={[s.reactN, r.me && { color: C.text }]}>{r.count}</T></Press>
           ))}</View> : null}

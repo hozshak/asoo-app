@@ -8,6 +8,7 @@ import { serverOf, useStore } from '@/lib/store';
 import { Avatar, Btn, Card, Glow, Seg, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Exp = '168' | '24' | '720' | '0';
 
@@ -40,21 +41,21 @@ export default function ServerInvite() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title="Freunde einladen" onClose={() => router.back()} />
-      {server ? <T style={{ color: C.muted, textAlign: 'center', marginTop: -6, marginBottom: 6, paddingHorizontal: 20 }} numberOfLines={1}>zu „{server.name}“</T> : null}
+      <SheetHead title={t("Freunde einladen")} onClose={() => router.back()} />
+      {server ? <T style={{ color: C.muted, textAlign: 'center', marginTop: -6, marginBottom: 6, paddingHorizontal: 20 }} numberOfLines={1}>{t("zu „")}{server.name}“</T> : null}
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Card style={{ padding: 14, gap: 12 }}>
-          <T style={s.label}>Einladungslink</T>
-          <View style={s.linkBox}><T style={s.link} numberOfLines={1} selectable>{link || (err ? err : 'Wird erstellt …')}</T></View>
+          <T style={s.label}>{t("Einladungslink")}</T>
+          <View style={s.linkBox}><T style={s.link} numberOfLines={1} selectable>{link || (err ? err : t("Wird erstellt …"))}</T></View>
           <Seg<Exp> items={[['24', '1 Tag'], ['168', '7 Tage'], ['720', '30 Tage'], ['0', 'Nie']]} value={exp} onChange={setExp} />
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Btn title={copied ? 'Kopiert ✓' : 'Kopieren'} icon="copy" kind="secondary" disabled={!link} onPress={async () => { await Clipboard.setStringAsync(link); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ flex: 1 }} />
-            <Btn title="Teilen" icon="link" disabled={!link} onPress={() => Share.share({ message: text }).catch(() => {})} style={{ flex: 1 }} />
+            <Btn title={copied ? t("Kopiert ✓") : t("Kopieren")} icon="copy" kind="secondary" disabled={!link} onPress={async () => { await Clipboard.setStringAsync(link); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ flex: 1 }} />
+            <Btn title={t("Teilen")} icon="link" disabled={!link} onPress={() => Share.share({ message: text }).catch(() => {})} style={{ flex: 1 }} />
           </View>
         </Card>
-        <T style={s.label}>Freunde einladen</T>
-        {friends.length > 6 ? <Field value={q} onChangeText={setQ} placeholder="Freunde durchsuchen" /> : null}
-        {!friends.length ? <T style={s.hint}>Du hast noch keine Freunde hinzugefügt – teile einfach den Link.</T> : null}
+        <T style={s.label}>{t("Freunde einladen")}</T>
+        {friends.length > 6 ? <Field value={q} onChangeText={setQ} placeholder={t("Freunde durchsuchen")} /> : null}
+        {!friends.length ? <T style={s.hint}>{t("Du hast noch keine Freunde hinzugefügt – teile einfach den Link.")}</T> : null}
         <Card>
           {shown.map((f, i) => (
             <View key={f.id} style={[s.friend, i < shown.length - 1 && s.line]}>
@@ -63,7 +64,7 @@ export default function ServerInvite() {
                 <T style={{ fontWeight: '700' }} numberOfLines={1}>{f.display}</T>
                 <T style={s.hint} numberOfLines={1}>@{f.username}</T>
               </View>
-              <Btn small title={sent[f.id] === 'ok' ? 'Gesendet ✓' : 'Einladen'} kind={sent[f.id] === 'ok' ? 'secondary' : 'primary'} busy={sent[f.id] === 'busy'} disabled={!link || sent[f.id] === 'ok'} onPress={() => sendTo(f.id)} />
+              <Btn small title={sent[f.id] === 'ok' ? t("Gesendet ✓") : t("Einladen")} kind={sent[f.id] === 'ok' ? 'secondary' : 'primary'} busy={sent[f.id] === 'busy'} disabled={!link || sent[f.id] === 'ok'} onPress={() => sendTo(f.id)} />
             </View>
           ))}
         </Card>

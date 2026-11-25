@@ -12,17 +12,18 @@ import { Btn, Glow, Seg, ServerIcon, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { openServer } from '@/components/InviteCard';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const ROOMS: Record<string, any> = { lounge: require('../../assets/rooms/lounge.webp'), beach: require('../../assets/rooms/beach.webp'), wedding: require('../../assets/rooms/wedding.webp'), orbit: require('../../assets/rooms/orbit.webp'), theater: require('../../assets/rooms/theater.webp'), gaming: require('../../assets/rooms/gaming.webp') };
 // wie SERVER_TPL der Web-App (pages.js); die Kanäle legt der Server an
 const TPL = [
-  { id: 'friends', emoji: '🛋️', color: '#ff5c8a', room: 'lounge', name: 'Freunde & Chillen', text: 'Quatschen, Fotos, Memes – dazu Rooftop-Lounge und Strandbar in 3D.' },
-  { id: 'gaming', emoji: '🎮', color: '#7c5cff', room: 'gaming', name: 'Gaming-Crew', text: 'Ankündigungen, Clips, Mitspieler-Suche, Squads und eine Neon-Arena.' },
-  { id: 'cinema', emoji: '🍿', color: '#ffb02e', room: 'theater', name: 'Kino & Serien', text: 'Zusammen schauen im Kinosaal – mit Film-Tipps und Spoiler-Ecke.' },
-  { id: 'party', emoji: '🪩', color: '#2ec5ff', room: 'beach', name: 'Party & Musik', text: 'Club mit Aussicht, Beach-Party und Dawet.' },
-  { id: 'kurdish', emoji: '☀️', color: '#3ddc97', room: 'wedding', name: 'Civata Kurdî', text: 'Nûçe, axaftin, stran – Dawet & Govend.' },
-  { id: 'study', emoji: '📚', color: '#5865f2', room: 'orbit', name: 'Lernen & Arbeiten', text: 'Aufgaben, Fragen, ein ruhiger Raum und ein Büro in 3D.' },
-  { id: '', emoji: '✨', color: '#9a6bff', room: 'orbit', name: 'Klassisch', text: 'Ein Textkanal, ein Sprachraum und alle 3D-Räume.' },
+  { id: 'friends', emoji: '🛋️', color: '#ff5c8a', room: 'lounge', name: 'Freunde & Chillen', text: t("Quatschen, Fotos, Memes – dazu Rooftop-Lounge und Strandbar in 3D.") },
+  { id: 'gaming', emoji: '🎮', color: '#7c5cff', room: 'gaming', name: 'Gaming-Crew', text: t("Ankündigungen, Clips, Mitspieler-Suche, Squads und eine Neon-Arena.") },
+  { id: 'cinema', emoji: '🍿', color: '#ffb02e', room: 'theater', name: 'Kino & Serien', text: t("Zusammen schauen im Kinosaal – mit Film-Tipps und Spoiler-Ecke.") },
+  { id: 'party', emoji: '🪩', color: '#2ec5ff', room: 'beach', name: 'Party & Musik', text: t("Club mit Aussicht, Beach-Party und Dawet.") },
+  { id: 'kurdish', emoji: '☀️', color: '#3ddc97', room: 'wedding', name: 'Civata Kurdî', text: t("Nûçe, axaftin, stran – Dawet & Govend.") },
+  { id: 'study', emoji: '📚', color: '#5865f2', room: 'orbit', name: 'Lernen & Arbeiten', text: t("Aufgaben, Fragen, ein ruhiger Raum und ein Büro in 3D.") },
+  { id: '', emoji: '✨', color: '#9a6bff', room: 'orbit', name: 'Klassisch', text: t("Ein Textkanal, ein Sprachraum und alle 3D-Räume.") },
 ];
 const EMOJIS = ['🎮', '🎵', '🔥', '⚽', '🎨', '📚', '🍕', '💬', '🌙', '🚀', '🐉', '👾', '🌸', '🏆', '😎', '💜'];
 
@@ -35,7 +36,7 @@ export default function ServerNew() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title="Server hinzufügen" onClose={() => router.back()} />
+      <SheetHead title={t("Server hinzufügen")} onClose={() => router.back()} />
       <Seg<Tab> items={[['create', 'Erstellen'], ['join', 'Beitreten'], ['discover', 'Entdecken']]} value={tab} onChange={setTab} style={{ marginHorizontal: 16, marginBottom: 8 }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {tab === 'create' ? <Create /> : tab === 'join' ? <Join /> : <Discover />}
@@ -54,7 +55,7 @@ function Create() {
   const [err, setErr] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
   const pick = async () => {
-    const r = await chooseImage({ title: 'Server-Bild', crop: [1, 1], quality: 0.75, maxSide: 1024 });
+    const r = await chooseImage({ title: t("Server-Bild"), crop: [1, 1], quality: 0.75, maxSide: 1024 });
     if (!r) return;
     try { setErr(''); const up = await upload('icon', r.uri, r.mime); setIcon(up.key); } catch (e) { setErr(errText(e)); }
   };
@@ -68,7 +69,7 @@ function Create() {
   };
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 6, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-      <T style={s.hint}>Such dir eine Vorlage aus – Kanäle und 3D-Räume sind dann schon fertig. Ändern kannst du alles später.</T>
+      <T style={s.hint}>{t("Such dir eine Vorlage aus – Kanäle und 3D-Räume sind dann schon fertig. Ändern kannst du alles später.")}</T>
       <View style={s.grid}>
         {TPL.map((v) => {
           const on = tpl === v;
@@ -86,17 +87,17 @@ function Create() {
         })}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Server-Bild wählen" onPress={pick}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Server-Bild wählen")} onPress={pick}>
           <ServerIcon server={{ id: 'x', name, icon, icon_emoji: emoji, color: tpl.color, owner_id: '', role: 'owner', channels: [] }} size={56} />
           <View style={s.camBadge}><Icon name="image" size={11} color="#fff" /></View>
         </Pressable>
-        <View style={{ flex: 1 }}><Field label="Server-Name" value={name} onChangeText={setName} maxLength={50} /></View>
+        <View style={{ flex: 1 }}><Field label={t("Server-Name")} value={name} onChangeText={setName} maxLength={50} /></View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-        {EMOJIS.map((e) => <Pressable key={e} accessibilityLabel={`Symbol ${e}`} onPress={() => setEmoji(e)} style={[s.emo, emoji === e && s.emoOn]}><T style={{ fontSize: 20, lineHeight: 28 }}>{e}</T></Pressable>)}
+        {EMOJIS.map((e) => <Pressable key={e} accessibilityLabel={t("Symbol {0}", { 0: e })} onPress={() => setEmoji(e)} style={[s.emo, emoji === e && s.emoOn]}><T style={{ fontSize: 20, lineHeight: 28 }}>{e}</T></Pressable>)}
       </ScrollView>
       {err ? <T style={s.err}>{err}</T> : null}
-      <Btn title="Server erstellen" icon="plus" busy={busy} disabled={name.trim().length < 2} onPress={create} />
+      <Btn title={t("Server erstellen")} icon="plus" busy={busy} disabled={name.trim().length < 2} onPress={create} />
     </ScrollView>
   );
 }
@@ -107,9 +108,9 @@ function Join() {
   const code = (val.trim().match(/([A-Za-z0-9]{6,12})\/?$/) || [])[1];
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 6, gap: 14 }} keyboardShouldPersistTaps="handled">
-      <T style={s.hint}>Gib einen Einladungslink oder -code ein, z. B. https://…/i/AbCd1234</T>
-      <Field label="Einladung" value={val} onChangeText={setVal} autoCapitalize="none" autoCorrect={false} placeholder="Link oder Code" maxLength={200} autoFocus />
-      <Btn title="Weiter" icon="link" disabled={!code} onPress={() => code && router.replace({ pathname: '/invite/[code]', params: { code } })} />
+      <T style={s.hint}>{t("Gib einen Einladungslink oder -code ein, z. B. https://…/i/AbCd1234")}</T>
+      <Field label={t("Einladung")} value={val} onChangeText={setVal} autoCapitalize="none" autoCorrect={false} placeholder={t("Link oder Code")} maxLength={200} autoFocus />
+      <Btn title={t("Weiter")} icon="link" disabled={!code} onPress={() => code && router.replace({ pathname: '/invite/[code]', params: { code } })} />
     </ScrollView>
   );
 }
@@ -131,9 +132,9 @@ function Discover() {
   };
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 6, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-      <Field value={q} onChangeText={setQ} placeholder="Öffentliche Server suchen" autoCapitalize="none" />
+      <Field value={q} onChangeText={setQ} placeholder={t("Öffentliche Server suchen")} autoCapitalize="none" />
       {err ? <T style={s.err}>{err}</T> : null}
-      {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 20 }} /> : !list.length ? <T style={[s.hint, { textAlign: 'center', marginTop: 20 }]}>Nichts gefunden.</T> : list.map((sv) => {
+      {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 20 }} /> : !list.length ? <T style={[s.hint, { textAlign: 'center', marginTop: 20 }]}>{t("Nichts gefunden.")}</T> : list.map((sv) => {
         const banner = mediaSource(sv.banner);
         const member = getState().servers.some((x) => x.id === sv.id);
         return (
@@ -143,9 +144,9 @@ function Discover() {
               <ServerIcon server={{ ...sv, owner_id: '', role: 'member', channels: [] }} size={46} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <T style={{ fontWeight: '800', fontSize: 16 }} numberOfLines={1}>{sv.name}</T>
-                <T style={s.discMeta} numberOfLines={2}>{sv.description || `${sv.member_count || 0} Mitglieder`}</T>
+                <T style={s.discMeta} numberOfLines={2}>{sv.description || t("{0} Mitglieder", { 0: sv.member_count || 0 })}</T>
               </View>
-              <Btn small title={member ? 'Öffnen' : 'Beitreten'} kind={member ? 'secondary' : 'primary'} busy={busy === sv.id} onPress={() => join(sv.id)} />
+              <Btn small title={member ? t("Öffnen") : t("Beitreten")} kind={member ? 'secondary' : 'primary'} busy={busy === sv.id} onPress={() => join(sv.id)} />
             </View>
           </View>
         );

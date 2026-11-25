@@ -11,6 +11,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepe
 import { T } from './ui';
 import { VerifiedMark } from './Verified';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 // die Typen des Pakets passen nicht zu React 19 – zur Laufzeit ist es ein normales Bauteil
 const MaskedView = MaskedViewRaw as unknown as React.ComponentType<any>;
@@ -18,30 +19,30 @@ const MaskedView = MaskedViewRaw as unknown as React.ComponentType<any>;
 type Kind = 'plain' | 'flat' | 'metal' | 'flow' | 'glow' | 'glitch' | 'mono';
 /** [Kennung, Name, Farben, Art] – Reihenfolge wie in der Auswahl (und wie NAME_STYLES in der Web-App) */
 export const NAME_STYLES: [string, string, string[], Kind][] = [
-  ['default', 'Standard', [], 'plain'],
-  ['gold', 'Gold', ['#fff6c2', '#f6cf55', '#b07c1c', '#f8dd80', '#d19a2c'], 'metal'],
-  ['chrome', 'Chrom', ['#ffffff', '#c9d2df', '#6d7889', '#e6ecf5', '#9aa6b8'], 'metal'],
-  ['rosegold', 'Roségold', ['#ffe9df', '#f2a995', '#a8614f', '#f7c4b2', '#c98470'], 'metal'],
-  ['emerald', 'Smaragd', ['#d6ffe9', '#3fd68f', '#0f7a47', '#7df0b7', '#1f9a5c'], 'metal'],
-  ['royal', 'Königlich', ['#8a4dff', '#c86bff', '#ffd86b', '#fff3c2', '#ffd86b', '#c86bff', '#8a4dff'], 'flow'],
-  ['holo', 'Holo', ['#a8fff0', '#a8c8ff', '#e0a8ff', '#ffa8d8', '#fff0a8', '#a8fff0'], 'flow'],
-  ['aurora', 'Polarlicht', ['#3dffb0', '#2ec5ff', '#8f6bff', '#5ef0c8', '#3dffb0'], 'flow'],
-  ['lava', 'Lava', ['#ffdd55', '#ff7a1a', '#d91a1a', '#7a0f0f', '#d91a1a', '#ff7a1a', '#ffdd55'], 'flow'],
-  ['blood', 'Blutmond', ['#ff5a6a', '#c9102a', '#6b0010', '#c9102a', '#ff5a6a'], 'flow'],
-  ['sunset', 'Sonnenuntergang', ['#ff7a45', '#ff3d77'], 'flat'],
-  ['ocean', 'Ozean', ['#2ec5ff', '#3d6bff'], 'flat'],
-  ['neon', 'Neon', ['#39ff14', '#00e5ff'], 'flat'],
-  ['candy', 'Candy', ['#ff8ad8', '#b98bff'], 'flat'],
-  ['toxic', 'Toxic', ['#b6ff00', '#00ff9d'], 'flat'],
-  ['fire', 'Feuer', ['#ffdd00', '#ff6a00', '#ff0040'], 'flat'],
-  ['ice', 'Eis', ['#e0f7ff', '#8fd3ff'], 'flat'],
-  ['mint', 'Minze', ['#c8ffe8', '#5ee6b5', '#2ec5a0'], 'flat'],
-  ['cotton', 'Zuckerwatte', ['#ffc2e2', '#c9b8ff', '#a8e0ff'], 'flat'],
-  ['galaxy', 'Galaxie', ['#7c5cff', '#ff5c8a', '#2ec5ff'], 'flat'],
-  ['rainbow', 'Regenbogen', ['#ff4d5e', '#ffb02e', '#ffe14d', '#3ddc97', '#2ec5ff', '#7c5cff', '#ff4d5e'], 'flow'],
-  ['glow', 'Leuchten', [], 'glow'],
-  ['glitch', 'Glitch', [], 'glitch'],
-  ['mono', 'Code', [], 'mono'],
+  ['default', t("Standard"), [], 'plain'],
+  ['gold', t("Gold"), ['#fff6c2', '#f6cf55', '#b07c1c', '#f8dd80', '#d19a2c'], 'metal'],
+  ['chrome', t("Chrom"), ['#ffffff', '#c9d2df', '#6d7889', '#e6ecf5', '#9aa6b8'], 'metal'],
+  ['rosegold', t("Roségold"), ['#ffe9df', '#f2a995', '#a8614f', '#f7c4b2', '#c98470'], 'metal'],
+  ['emerald', t("Smaragd"), ['#d6ffe9', '#3fd68f', '#0f7a47', '#7df0b7', '#1f9a5c'], 'metal'],
+  ['royal', t("Königlich"), ['#8a4dff', '#c86bff', '#ffd86b', '#fff3c2', '#ffd86b', '#c86bff', '#8a4dff'], 'flow'],
+  ['holo', t("Holo"), ['#a8fff0', '#a8c8ff', '#e0a8ff', '#ffa8d8', '#fff0a8', '#a8fff0'], 'flow'],
+  ['aurora', t("Polarlicht"), ['#3dffb0', '#2ec5ff', '#8f6bff', '#5ef0c8', '#3dffb0'], 'flow'],
+  ['lava', t("Lava"), ['#ffdd55', '#ff7a1a', '#d91a1a', '#7a0f0f', '#d91a1a', '#ff7a1a', '#ffdd55'], 'flow'],
+  ['blood', t("Blutmond"), ['#ff5a6a', '#c9102a', '#6b0010', '#c9102a', '#ff5a6a'], 'flow'],
+  ['sunset', t("Sonnenuntergang"), ['#ff7a45', '#ff3d77'], 'flat'],
+  ['ocean', t("Ozean"), ['#2ec5ff', '#3d6bff'], 'flat'],
+  ['neon', t("Neon"), ['#39ff14', '#00e5ff'], 'flat'],
+  ['candy', t("Candy"), ['#ff8ad8', '#b98bff'], 'flat'],
+  ['toxic', t("Toxic"), ['#b6ff00', '#00ff9d'], 'flat'],
+  ['fire', t("Feuer"), ['#ffdd00', '#ff6a00', '#ff0040'], 'flat'],
+  ['ice', t("Eis"), ['#e0f7ff', '#8fd3ff'], 'flat'],
+  ['mint', t("Minze"), ['#c8ffe8', '#5ee6b5', '#2ec5a0'], 'flat'],
+  ['cotton', t("Zuckerwatte"), ['#ffc2e2', '#c9b8ff', '#a8e0ff'], 'flat'],
+  ['galaxy', t("Galaxie"), ['#7c5cff', '#ff5c8a', '#2ec5ff'], 'flat'],
+  ['rainbow', t("Regenbogen"), ['#ff4d5e', '#ffb02e', '#ffe14d', '#3ddc97', '#2ec5ff', '#7c5cff', '#ff4d5e'], 'flow'],
+  ['glow', t("Leuchten"), [], 'glow'],
+  ['glitch', t("Glitch"), [], 'glitch'],
+  ['mono', t("Code"), [], 'mono'],
 ];
 const METAL_AT = [0, 0.34, 0.53, 0.7, 1] as const;
 const OUTER = ['flex', 'flexShrink', 'flexGrow', 'alignSelf', 'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical', 'maxWidth'];

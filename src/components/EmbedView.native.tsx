@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { BASE, getToken } from '@/lib/api';
 import { C } from '@/lib/theme';
 import { T } from './ui';
+import { t, LANG } from '@/lib/i18n';
 
 const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, '');
 
@@ -30,6 +31,8 @@ export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string;
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <WebView
         source={source}
+        // Sprache der App auch in der eingebetteten Web-App (3D-Räume, Avatar-Editor)
+        injectedJavaScriptBeforeContentLoaded={`window.__asooLang=${JSON.stringify(LANG)};try{localStorage.setItem('zuno.lang',${JSON.stringify(LANG)})}catch(e){};true;`}
         style={{ flex: 1, backgroundColor: C.bg0 }}
         onMessage={onMessage}
         // das Ladebild bleibt, bis die Web-App fertig gezeichnet hat ({ t: 'ready' }) – höchstens 8 s nach dem Laden
@@ -52,7 +55,7 @@ export function EmbedView({ path, onClose, onAuthLost, onOpen }: { path: string;
           return false;
         }}
       />
-      {!ready ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>Wird geladen …</T></View> : null}
+      {!ready ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>{t("Wird geladen …")}</T></View> : null}
     </View>
   );
 }

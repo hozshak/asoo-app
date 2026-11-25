@@ -14,8 +14,9 @@ import { useVoice, voice as appVoice } from '@/lib/calls';
 import { Avatar, Badge, T } from './ui';
 import { Icon } from './Icon';
 import { C, HOME, statusColor } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
-const STATUS: [string, string][] = [['online', 'Online'], ['idle', 'Abwesend'], ['dnd', 'Bitte nicht stören'], ['invisible', 'Unsichtbar']];
+const STATUS: [string, string][] = [['online', t("Online")], ['idle', t("Abwesend")], ['dnd', t("Bitte nicht stören")], ['invisible', t("Unsichtbar")]];
 export const statusLabel = (k?: string) => STATUS.find(([x]) => x === k)?.[1] || 'Online';
 
 /** Statuspunkt wie bei Discord: Mond für abwesend, Strich für „nicht stören“, Ring für unsichtbar. */
@@ -39,11 +40,11 @@ export function StatusSheet({ open, onClose }: { open: boolean; onClose: () => v
   };
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={s.back} onPress={onClose} accessibilityLabel="Schließen" />
+      <Pressable style={s.back} onPress={onClose} accessibilityLabel={t("Schließen")} />
       <View style={[s.sheet, { paddingBottom: ins.bottom + 16 }]}>
         <View style={s.grab} />
-        <T style={s.title}>Online-Status ändern</T>
-        <T style={s.label}>Online-Status</T>
+        <T style={s.title}>{t("Online-Status ändern")}</T>
+        <T style={s.label}>{t("Online-Status")}</T>
         <View style={s.group}>
           {STATUS.map(([k, l], i) => (
             <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: cur === k }} onPress={() => pick(k)} style={({ pressed }) => [s.opt, i > 0 && s.optLine, pressed && { backgroundColor: C.accentSoft }]}>
@@ -55,7 +56,7 @@ export function StatusSheet({ open, onClose }: { open: boolean; onClose: () => v
         </View>
         <Pressable accessibilityRole="button" onPress={() => { onClose(); router.push({ pathname: '/settings', params: { page: 'profile' } }); }} style={({ pressed }) => [s.group, s.opt, { marginTop: 14 }, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="edit" size={18} color={C.text2} />
-          <T style={[s.optText, { color: me?.custom_status ? C.text : C.muted }]} numberOfLines={1}>{me?.custom_status || 'Status-Text festlegen'}</T>
+          <T style={[s.optText, { color: me?.custom_status ? C.text : C.muted }]} numberOfLines={1}>{me?.custom_status || t("Status-Text festlegen")}</T>
           <Icon name="chevron" size={16} color={C.muted} />
         </Pressable>
         {err ? <T style={{ color: C.danger, marginTop: 10, textAlign: 'center' }}>{err}</T> : null}
@@ -87,18 +88,18 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   const voice = (what: 'mute' | 'deaf') => {
     Haptics.selectionAsync().catch(() => {});
     if (appCall) { if (what === 'mute') appVoice.toggleMute(); else appVoice.toggleDeaf(); return; }
-    if (!toggleVoice(what)) onNote?.('Einen Moment – die Sprachverbindung wird noch vorbereitet.');
+    if (!toggleVoice(what)) onNote?.(t("Einen Moment – die Sprachverbindung wird noch vorbereitet."));
   };
   return (
     <>
       {/* Karte wie bei Discord: großes Profilbild mit Rahmen ragt links heraus, Name mit Pfeil, Status darunter, rechts die Glocke */}
       <View style={[s.bar, { bottom: Math.max(ins.bottom - 6, 10) }]}>
         <View style={[StyleSheet.absoluteFill, s.card]} />
-        <Pressable accessibilityRole="button" accessibilityLabel="Mein Profil" onPress={() => router.push('/me')} style={s.av}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Mein Profil")} onPress={() => router.push('/me')} style={s.av}>
           <Avatar user={me} size={AV} force live />
           <View style={s.glyph}><StatusGlyph k={raw} size={16} /></View>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Status ändern" onPress={() => setSheet(true)} style={s.who}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Status ändern")} onPress={() => setSheet(true)} style={s.who}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <T style={s.name} numberOfLines={1}>{me.display}</T>
             <Icon name="chevron" size={15} color={C.text2} stroke={2.4} />
@@ -110,24 +111,24 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
         </Pressable>
         {/* stumm / Ton aus nur während eines Gesprächs – sonst wie bei Discord nur die Glocke */}
         {inCall ? <>
-          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Stummschaltung aufheben' : 'Stummschalten'} hitSlop={4} onPress={() => voice('mute')} style={[s.btn, (muted || deaf) && s.btnOff]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? t("Stummschaltung aufheben") : t("Stummschalten")} hitSlop={4} onPress={() => voice('mute')} style={[s.btn, (muted || deaf) && s.btnOff]}>
             <Icon name={muted || deaf ? 'micOff' : 'mic'} size={20} color={muted || deaf ? C.danger : C.text2} />
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={deaf ? 'Ton wieder an' : 'Ton aus'} hitSlop={4} onPress={() => voice('deaf')} style={[s.btn, deaf && s.btnOff]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={deaf ? t("Ton wieder an") : t("Ton aus")} hitSlop={4} onPress={() => voice('deaf')} style={[s.btn, deaf && s.btnOff]}>
             <Icon name={deaf ? 'headOff' : 'head'} size={20} color={deaf ? C.danger : C.text2} />
           </Pressable>
         </> : null}
         {/* Mitspieler-Match: immer einen Tipp entfernt, mit Zähler für neue Likes und Matches */}
-        <Pressable accessibilityRole="button" accessibilityLabel={matchCount ? `Mitspieler-Match, ${matchCount} neu` : 'Mitspieler-Match'} hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={matchCount ? t("Mitspieler-Match, {0} neu", { 0: matchCount }) : t("Mitspieler-Match")} hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="pad" size={23} color={C.text2} />
           {matchCount ? <Badge n={matchCount} ring={HOME.bar} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={notif ? `Mitteilungen, ${notif} neu` : 'Mitteilungen'} hitSlop={4} onPress={() => router.push('/notifications')} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={notif ? t("Mitteilungen, {0} neu", { 0: notif }) : t("Mitteilungen")} hitSlop={4} onPress={() => router.push('/notifications')} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="bell" size={22} color={C.text2} />
           {notif ? <Badge n={notif} ring={HOME.bar} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
         </Pressable>
         {/* ganz rechts: Einstellungen (wie das Zahnrad bei Discord) */}
-        <Pressable accessibilityRole="button" accessibilityLabel="Einstellungen" hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Einstellungen")} hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="gear" size={22} color={C.text2} />
         </Pressable>
       </View>

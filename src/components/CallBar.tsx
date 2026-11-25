@@ -12,6 +12,7 @@ import { userOf } from '@/lib/store';
 import { Avatar, Glass, T } from './ui';
 import { Icon } from './Icon';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export function CallBar() {
   const web = useHost((s) => s.voice);
@@ -35,15 +36,15 @@ export function CallBar() {
   return (
     <Animated.View entering={FadeInUp.duration(220)} exiting={FadeOutUp.duration(180)} style={[s.wrap, { top: ins.top + 4 }]} pointerEvents="box-none">
       <View style={[s.bar, native && speaking && s.barTalk]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Zurück zum ${label}`} onPress={back} style={s.barMain}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Zurück zum {0}", { 0: label })} onPress={back} style={s.barMain}>
           <Animated.View style={[s.live, dot]} />
           <Icon name={kind === 'voice3d' ? 'cube' : kind === 'game' ? 'target' : kind === 'voice' ? 'volume' : (native ? video : web!.video) ? 'video' : 'phone'} size={15} color="#fff" />
           <View style={{ flex: 1, minWidth: 0 }}>
             <T style={s.title} numberOfLines={1}>{title || label}</T>
-            <T style={s.sub} numberOfLines={1}>{label} läuft · zum Zurückkehren tippen</T>
+            <T style={s.sub} numberOfLines={1}>{label} {' '}{t("läuft · zum Zurückkehren tippen")}</T>
           </View>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Auflegen" hitSlop={8} onPress={hang} style={s.hang}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Auflegen")} hitSlop={8} onPress={hang} style={s.hang}>
           <Icon name="hang" size={16} color="#fff" stroke={2.4} />
         </Pressable>
       </View>
@@ -73,15 +74,15 @@ export function IncomingCall() {
         <Glass style={s.card} intensity={50} tint="rgba(19,20,32,0.9)">
           <Avatar user={u as any} size={96} />
           <T style={s.who} numberOfLines={1}>{ring.name}</T>
-          <T style={s.what}>{ring.title && ring.title !== ring.name ? `ruft dich an · ${ring.title}` : 'ruft dich an …'}</T>
+          <T style={s.what}>{ring.title && ring.title !== ring.name ? t("ruft dich an · {0}", { 0: ring.title }) : t("ruft dich an …")}</T>
           <View style={s.btns}>
             <View style={{ alignItems: 'center', gap: 6 }}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Ablehnen" onPress={decline} style={[s.round, { backgroundColor: C.danger }]}><Icon name="hang" size={26} color="#fff" stroke={2.4} /></Pressable>
-              <T style={s.btnText}>Ablehnen</T>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Ablehnen")} onPress={decline} style={[s.round, { backgroundColor: C.danger }]}><Icon name="hang" size={26} color="#fff" stroke={2.4} /></Pressable>
+              <T style={s.btnText}>{t("Ablehnen")}</T>
             </View>
             <View style={{ alignItems: 'center', gap: 6 }}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Annehmen" onPress={answer} style={[s.round, { backgroundColor: C.ok }]}><Icon name="phone" size={26} color="#062b1b" stroke={2.4} /></Pressable>
-              <T style={s.btnText}>Annehmen</T>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Annehmen")} onPress={answer} style={[s.round, { backgroundColor: C.ok }]}><Icon name="phone" size={26} color="#062b1b" stroke={2.4} /></Pressable>
+              <T style={s.btnText}>{t("Annehmen")}</T>
             </View>
           </View>
         </Glass>

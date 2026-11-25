@@ -12,3 +12,8 @@ android/
 .env*
 npm-debug.*
 .DS_Store
+
+# Übersetzungs-Zwischendateien (scripts/i18n-*.mjs)
+i18n-keys.txt
+i18n-missing/
+i18n-out/

@@ -8,9 +8,10 @@ import { errText } from '@/lib/api';
 import { loadMembers, serverOf, useStore, type User } from '@/lib/store';
 import { Avatar, Empty, Glow, Section, T, TopBar } from '@/components/ui';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Member = User & { role: string; roles?: string[]; nick?: string | null };
-const LABEL: Record<string, string> = { owner: 'Besitzer', admin: 'Admins', mod: 'Moderatoren', online: 'Online', offline: 'Offline' };
+const LABEL: Record<string, string> = { owner: t("Besitzer"), admin: t("Admins"), mod: t("Moderatoren"), online: t("Online"), offline: t("Offline") };
 
 export default function Members() {
   const { sid } = useLocalSearchParams<{ sid: string }>();
@@ -40,11 +41,11 @@ export default function Members() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <TopBar title={server ? `Mitglieder · ${server.name}` : 'Mitglieder'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={server ? t("Mitglieder · {0}", { 0: server.name }) : t("Mitglieder")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       {!list && !err ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
           {err ? <T style={s.err}>{err}</T> : null}
-          {list && !list.length ? <Empty icon="users" title="Noch keine Mitglieder" text="Lade Leute über eine Einladung ein." /> : null}
+          {list && !list.length ? <Empty icon="users" title={t("Noch keine Mitglieder")} text={t("Lade Leute über eine Einladung ein.")} /> : null}
           {groups.filter((g) => g[3].length).map(([k, label, color, ms]) => (
             <View key={k}>
               <Section style={s.sec}>{`${label} – ${ms.length}`}</Section>

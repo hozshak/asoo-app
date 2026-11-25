@@ -10,6 +10,7 @@ import type { CallMeta, VoiceState } from './voicecore';
 import { onLive } from './live';
 import { bootstrap, channelInfo, dmTitle, getState, userOf } from './store';
 import { getHost, leaveCall as leaveWebCall, setIgnoreWebRing, subscribeHost } from './webhost';
+import { t } from './i18n';
 
 export { voice };
 // Entwicklungs-Vorschau im Browser: für automatische Tests von außen erreichbar
@@ -52,7 +53,7 @@ function metaFor(room: string): CallMeta {
   const info = channelInfo(room);
   if (info) return { kind: 'voice', title: info.channel.name, path: `/channels/${info.server.id}/${room}`, sid: info.server.id };
   const s = getState(), dm = s.dms.find((d) => d.id === room);
-  return { kind: 'call', title: dm ? dmTitle(dm, s.me?.id) : 'Anruf', path: `/channels/@me/${room}`, sid: null };
+  return { kind: 'call', title: dm ? dmTitle(dm, s.me?.id) : t("Anruf"), path: `/channels/@me/${room}`, sid: null };
 }
 /** Anruf (Direktnachricht/Gruppe) oder Sprachraum betreten und den Anruf-Bildschirm zeigen. */
 export async function joinCall(room: string, opts: { video?: boolean; open?: boolean } = {}) {

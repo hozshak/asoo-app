@@ -15,6 +15,7 @@ import { Avatar, Btn, Sheet, T } from './ui';
 import { Icon, type IconName } from './Icon';
 import { ProfileFx } from './ProfileFx';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const tap = () => { if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {}); };
 
@@ -108,28 +109,28 @@ export function MatchCardView({ c, onMore, preview, style }: { c: MatchCard; onM
     <View style={[s.card, style]}>
       <Banner c={c} height={148}>
         <View style={s.badges}>
-          {c.boost ? <LinearGradient colors={['#ffb02e', '#ff7a3d']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.pill, { borderWidth: 0 }]}><Icon name="bolt" size={12} color="#2a1500" stroke={2.6} /><T style={[s.pillText, { color: '#2a1500' }]}>Boost</T></LinearGradient> : null}
+          {c.boost ? <LinearGradient colors={['#ffb02e', '#ff7a3d']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.pill, { borderWidth: 0 }]}><Icon name="bolt" size={12} color="#2a1500" stroke={2.6} /><T style={[s.pillText, { color: '#2a1500' }]}>{t("Boost")}</T></LinearGradient> : null}
           {ACTIVE[c.active] ? <Pill>{c.active === 'now' ? <View style={s.liveDot} /> : null}<T style={s.pillText}>{ACTIVE[c.active]}</T></Pill> : null}
         </View>
         <View style={s.topRight}>
-          {typeof c.score === 'number' && c.score >= 25 ? <Pill><T style={[s.pillText, { color: '#d9ceff', fontSize: 13.5 }]}>{c.score} %</T><T style={s.pillText}>passt</T></Pill> : null}
-          {onMore ? <Pressable accessibilityRole="button" accessibilityLabel="Melden oder blockieren" hitSlop={8} onPress={() => { tap(); onMore(); }} style={s.more}><Icon name="more" size={18} color="#fff" /></Pressable> : null}
+          {typeof c.score === 'number' && c.score >= 25 ? <Pill><T style={[s.pillText, { color: '#d9ceff', fontSize: 13.5 }]}>{c.score} %</T><T style={s.pillText}>{t("passt")}</T></Pill> : null}
+          {onMore ? <Pressable accessibilityRole="button" accessibilityLabel={t("Melden oder blockieren")} hitSlop={8} onPress={() => { tap(); onMore(); }} style={s.more}><Icon name="more" size={18} color="#fff" /></Pressable> : null}
         </View>
       </Banner>
       <View style={s.body}>
         <View style={s.who}>
           <View style={s.avRing}><CardAvatar c={c} size={88} /></View>
           <View style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
-            <T style={s.h} numberOfLines={1}>{preview ? 'So sehen dich andere' : 'Mitspieler'}</T>
+            <T style={s.h} numberOfLines={1}>{preview ? t("So sehen dich andere") : t("Mitspieler")}</T>
             <View style={s.tags}>
               <Tag label={STYLE[c.style] || STYLE.both} />
-              <Tag icon={c.mic ? 'mic' : 'micOff'} label={c.mic ? 'Mit Mikro' : 'Ohne Mikro'} />
+              <Tag icon={c.mic ? 'mic' : 'micOff'} label={c.mic ? t("Mit Mikro") : t("Ohne Mikro")} />
             </View>
           </View>
         </View>
         {c.looking?.length ? <View style={[s.tags, { marginBottom: 10 }]}>{c.looking.map((l) => <Tag key={l} soft label={LOOKING[l] || l} />)}</View> : null}
         {c.about ? <T style={s.about}>{c.about}</T> : null}
-        <Label>Spielt</Label>
+        <Label>{t("Spielt")}</Label>
         <View style={s.wrap}>{(c.games || []).map((g) => <GameChip key={g.n} name={g.n} common={g.c} />)}</View>
         {(c.platforms?.length || c.langs?.length) ? (
           <View style={[s.wrap, { marginTop: 12 }]}>
@@ -138,7 +139,7 @@ export function MatchCardView({ c, onMore, preview, style }: { c: MatchCard; onM
           </View>
         ) : null}
         {c.times ? <>
-          <Label right={c.overlap ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: C.ok }} /><T style={{ color: C.ok, fontSize: 12, fontWeight: '700' }}>ihr beide</T></View> : undefined}>Spielzeiten</Label>
+          <Label right={c.overlap ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: C.ok }} /><T style={{ color: C.ok, fontSize: 12, fontWeight: '700' }}>{t("ihr beide")}</T></View> : undefined}>{t("Spielzeiten")}</Label>
           <TimeGrid mask={c.times} overlap={c.overlap} compact />
         </> : null}
       </View>
@@ -151,17 +152,17 @@ export function MatchCardView({ c, onMore, preview, style }: { c: MatchCard; onM
 export function MiniCard({ c, kind, onOpen, onLike }: { c: MatchCard; kind: 'likes' | 'views'; onOpen: () => void; onLike: () => void }) {
   return (
     <View style={[s.miniCard, c.fresh && s.fresh]}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Karte ansehen" onPress={() => { tap(); onOpen(); }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Karte ansehen")} onPress={() => { tap(); onOpen(); }}>
         <Banner c={c} height={70}>
           {typeof c.score === 'number' && c.score >= 25 ? <Pill style={{ position: 'absolute', right: 8, top: 8 }}><T style={[s.pillText, { color: '#d9ceff' }]}>{c.score} %</T></Pill> : null}
         </Banner>
         <View style={{ marginTop: -30, marginLeft: 12, alignItems: 'flex-start' }}><View style={[s.avRing, { padding: 4 }]}><CardAvatar c={c} size={56} /></View></View>
       </Pressable>
       <View style={{ padding: 12, paddingTop: 6, gap: 8, flex: 1 }}>
-        <T style={{ color: C.muted, fontSize: 12.5 }} numberOfLines={1}>{kind === 'likes' ? 'Mag dich' : 'War da'} · {agoShort(c.at)}</T>
-        <View style={{ gap: 5, flex: 1 }}>{(c.games || []).slice(0, 2).map((g) => <GameChip key={g.n} name={g.n} common={g.c} small />)}{(c.games || []).length > 2 ? <T style={{ color: C.muted, fontSize: 12 }}>+{c.games.length - 2} weitere</T> : null}</View>
-        {c.liked ? <View style={s.likedRow}><Icon name="check" size={14} color={C.ok} stroke={2.8} /><T style={{ color: C.ok, fontWeight: '700', fontSize: 13 }}>Gelikt</T></View>
-          : <Btn small title={kind === 'likes' ? 'Zurück-liken' : 'Liken'} icon="heart" onPress={onLike} />}
+        <T style={{ color: C.muted, fontSize: 12.5 }} numberOfLines={1}>{kind === 'likes' ? t("Mag dich") : t("War da")} · {agoShort(c.at)}</T>
+        <View style={{ gap: 5, flex: 1 }}>{(c.games || []).slice(0, 2).map((g) => <GameChip key={g.n} name={g.n} common={g.c} small />)}{(c.games || []).length > 2 ? <T style={{ color: C.muted, fontSize: 12 }}>+{c.games.length - 2} {' '}{t("weitere")}</T> : null}</View>
+        {c.liked ? <View style={s.likedRow}><Icon name="check" size={14} color={C.ok} stroke={2.8} /><T style={{ color: C.ok, fontWeight: '700', fontSize: 13 }}>{t("Gelikt")}</T></View>
+          : <Btn small title={kind === 'likes' ? t("Zurück-liken") : t("Liken")} icon="heart" onPress={onLike} />}
       </View>
     </View>
   );
@@ -182,33 +183,33 @@ export function CardMenu({ pid, onClose, done, say }: { pid: string | null; onCl
     const pid = active;
     if (!pid || !reason) return;
     setBusy(true);
-    try { await reportCard(pid, reason, details); say('Danke! Wir schauen uns das an.'); close(); done(); } catch (e) { say(matchErr(e)); } finally { setBusy(false); }
+    try { await reportCard(pid, reason, details); say(t("Danke! Wir schauen uns das an.")); close(); done(); } catch (e) { say(matchErr(e)); } finally { setBusy(false); }
   };
   const block = async () => {
     const pid = active;
     if (!pid) return;
     setBusy(true);
-    try { await blockCard(pid); say('Blockiert.'); close(); done(); } catch (e) { say(matchErr(e)); } finally { setBusy(false); }
+    try { await blockCard(pid); say(t("Blockiert.")); close(); done(); } catch (e) { say(matchErr(e)); } finally { setBusy(false); }
   };
   if (step === 'menu' || !active) {
-    return <Sheet open={!!pid} onClose={onClose} title="Diese Karte" items={[
-      { label: 'Melden', icon: 'flag', danger: true, onPress: () => setStep('report') },
-      { label: 'Blockieren', icon: 'ban', danger: true, onPress: () => setStep('block') },
+    return <Sheet open={!!pid} onClose={onClose} title={t("Diese Karte")} items={[
+      { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setStep('report') },
+      { label: t("Blockieren"), icon: 'ban', danger: true, onPress: () => setStep('block') },
     ]} />;
   }
   return (
     <Modal visible transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={s.backdrop} onPress={close} accessibilityLabel="Schließen" />
+      <Pressable style={s.backdrop} onPress={close} accessibilityLabel={t("Schließen")} />
       <View style={[s.sheet, { paddingBottom: ins.bottom + 14 }]}>
         <View style={s.grab} />
         {step === 'block' ? <>
-          <T style={s.sheetTitle}>Diese Karte blockieren?</T>
-          <T style={s.sheetText}>Ihr seht euch hier nie wieder und könnt euch auch sonst nicht schreiben. Die Person erfährt davon nichts.</T>
-          <Btn title="Blockieren" kind="danger" icon="ban" busy={busy} onPress={block} style={{ marginTop: 16 }} />
-          <Btn title="Abbrechen" kind="ghost" onPress={close} style={{ marginTop: 6 }} />
+          <T style={s.sheetTitle}>{t("Diese Karte blockieren?")}</T>
+          <T style={s.sheetText}>{t("Ihr seht euch hier nie wieder und könnt euch auch sonst nicht schreiben. Die Person erfährt davon nichts.")}</T>
+          <Btn title={t("Blockieren")} kind="danger" icon="ban" busy={busy} onPress={block} style={{ marginTop: 16 }} />
+          <Btn title={t("Abbrechen")} kind="ghost" onPress={close} style={{ marginTop: 6 }} />
         </> : <>
-          <T style={s.sheetTitle}>Karte melden</T>
-          <T style={s.sheetText}>Deine Meldung geht vertraulich an das ToLobby-Team. Die gemeldete Person erfährt nicht, wer gemeldet hat.</T>
+          <T style={s.sheetTitle}>{t("Karte melden")}</T>
+          <T style={s.sheetText}>{t("Deine Meldung geht vertraulich an das ToLobby-Team. Die gemeldete Person erfährt nicht, wer gemeldet hat.")}</T>
           <ScrollView style={{ maxHeight: 330, marginTop: 10 }}>
             {REASONS.map(([k, label]) => (
               <Pressable key={k} accessibilityRole="radio" accessibilityState={{ selected: reason === k }} onPress={() => { tap(); setReason(k); }} style={s.reason}>
@@ -217,9 +218,9 @@ export function CardMenu({ pid, onClose, done, say }: { pid: string | null; onCl
               </Pressable>
             ))}
           </ScrollView>
-          <TextInput value={details} onChangeText={setDetails} placeholder="Was ist passiert? (freiwillig)" placeholderTextColor={C.faint} maxLength={1000} multiline style={s.details} />
-          <Btn title="Meldung senden" kind="danger" icon="flag" busy={busy} disabled={!reason} onPress={send} style={{ marginTop: 12 }} />
-          <Btn title="Abbrechen" kind="ghost" onPress={close} style={{ marginTop: 6 }} />
+          <TextInput value={details} onChangeText={setDetails} placeholder={t("Was ist passiert? (freiwillig)")} placeholderTextColor={C.faint} maxLength={1000} multiline style={s.details} />
+          <Btn title={t("Meldung senden")} kind="danger" icon="flag" busy={busy} disabled={!reason} onPress={send} style={{ marginTop: 12 }} />
+          <Btn title={t("Abbrechen")} kind="ghost" onPress={close} style={{ marginTop: 6 }} />
         </>}
       </View>
     </Modal>
@@ -250,10 +251,10 @@ export function MatchParty() {
             <Animated.View entering={ZoomIn.delay(160).duration(380)} style={s.partyPad}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="pad" size={26} color="#fff" stroke={2.2} /></View></Animated.View>
             <Animated.View entering={ZoomIn.delay(80).duration(380)} style={[s.avRing, { marginLeft: -14 }]}><Avatar user={m.user as any} size={92} live force /></Animated.View>
           </View>
-          <T style={s.partyTitle}>Match!</T>
-          <T style={s.partyText}><T style={{ fontWeight: '800', color: C.text }}>{m.user.display}</T> und du wollt zusammen spielen. Ihr seid jetzt verbunden und könnt euch schreiben.</T>
-          <Btn title="Nachricht schreiben" icon="comment" onPress={() => { close(); router.push({ pathname: '/chat/[id]', params: { id: m.dm.id } }); }} style={{ alignSelf: 'stretch', marginTop: 20 }} />
-          <Btn title="Weiter suchen" kind="secondary" onPress={close} style={{ alignSelf: 'stretch', marginTop: 10 }} />
+          <T style={s.partyTitle}>{t("Match!")}</T>
+          <T style={s.partyText}><T style={{ fontWeight: '800', color: C.text }}>{m.user.display}</T> {' '}{t("und du wollt zusammen spielen. Ihr seid jetzt verbunden und könnt euch schreiben.")}</T>
+          <Btn title={t("Nachricht schreiben")} icon="comment" onPress={() => { close(); router.push({ pathname: '/chat/[id]', params: { id: m.dm.id } }); }} style={{ alignSelf: 'stretch', marginTop: 20 }} />
+          <Btn title={t("Weiter suchen")} kind="secondary" onPress={close} style={{ alignSelf: 'stretch', marginTop: 10 }} />
         </Animated.View>
       </View>
     </Modal>
@@ -267,12 +268,12 @@ export function CardPeek({ c, kind, onClose, onLike, onMore }: { c: MatchCard | 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={[s.partyBack, { padding: 14, paddingTop: ins.top + 14, paddingBottom: ins.bottom + 14 }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("Schließen")} />
         <Animated.View entering={FadeIn.duration(180)} style={{ width: '100%', maxWidth: 440, flexShrink: 1 }}>
           <ScrollView style={{ borderRadius: 26 }} showsVerticalScrollIndicator={false}><MatchCardView c={c} onMore={onMore} /></ScrollView>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-            <Btn title="Schließen" kind="secondary" onPress={onClose} style={{ flex: 1 }} />
-            {c.liked ? null : <Btn title={kind === 'likes' ? 'Zurück-liken' : 'Liken'} icon="heart" onPress={onLike} style={{ flex: 1.3 }} />}
+            <Btn title={t("Schließen")} kind="secondary" onPress={onClose} style={{ flex: 1 }} />
+            {c.liked ? null : <Btn title={kind === 'likes' ? t("Zurück-liken") : t("Liken")} icon="heart" onPress={onLike} style={{ flex: 1.3 }} />}
           </View>
         </Animated.View>
       </View>

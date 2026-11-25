@@ -8,6 +8,7 @@ import { api, BASE, errText, mediaSource, mediaUrl } from '@/lib/api';
 import { Glass, T } from './ui';
 import { Icon } from './Icon';
 import { C, R } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export type Att = { key: string; type?: string; size?: number; name?: string; w?: number; h?: number; voice?: boolean; dur?: number; local?: string; spoiler?: boolean };
 export type Poll = { q: string; multi: boolean; options: { t: string; n: number }[]; voters: number; mine: number[] };
@@ -41,10 +42,10 @@ export function VoiceMsg({ a, dim }: { a: Att; dim?: boolean }) {
   };
   return (
     <View style={[s.vm, dim && { opacity: 0.6 }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={st.playing ? 'Pause' : 'Sprachnachricht abspielen'} onPress={toggle} style={s.vmPlay}>
+      <Pressable accessibilityRole="button" accessibilityLabel={st.playing ? t("Pause") : t("Sprachnachricht abspielen")} onPress={toggle} style={s.vmPlay}>
         <Icon name={st.playing ? 'pause' : 'play'} size={16} color="#fff" stroke={2.4} />
       </Pressable>
-      <Pressable onLayout={(e) => setW(e.nativeEvent.layout.width || 1)} onPress={(e) => total && player.seekTo((e.nativeEvent.locationX / w) * total)} style={s.vmTrack} accessibilityLabel="Stelle wählen">
+      <Pressable onLayout={(e) => setW(e.nativeEvent.layout.width || 1)} onPress={(e) => total && player.seekTo((e.nativeEvent.locationX / w) * total)} style={s.vmTrack} accessibilityLabel={t("Stelle wählen")}>
         <View style={s.vmBase} />
         <View style={[s.vmFill, { width: `${k * 100}%` }]} />
       </Pressable>
@@ -68,16 +69,16 @@ export function FileCard({ a }: { a: Att }) {
       const to = FS.cacheDirectory! + Date.now() + '-' + safe;
       const r = await FS.downloadAsync(src.uri, to, { headers: src.headers || {} });
       if (r.status !== 200) throw new Error('download');
-      await Sharing.shareAsync(r.uri, { dialogTitle: a.name || 'Datei' });
-    } catch (e) { Alert.alert('Datei', 'Die Datei konnte nicht geladen werden.'); }
+      await Sharing.shareAsync(r.uri, { dialogTitle: a.name || t("Datei") });
+    } catch (e) { Alert.alert(t("Datei"), t("Die Datei konnte nicht geladen werden.")); }
     setBusy(false);
   };
   const video = attKind(a) === 'video', audio = attKind(a) === 'audio';
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${a.name || 'Datei'} öffnen`} onPress={open} style={({ pressed }) => [s.file, pressed && { borderColor: C.accentLine }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t("{0} öffnen", { 0: a.name || 'Datei' })} onPress={open} style={({ pressed }) => [s.file, pressed && { borderColor: C.accentLine }]}>
       <View style={s.fileIc}><Icon name={video ? 'video' : audio ? 'volume' : 'folder'} size={22} color={C.accent} /></View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <T style={s.fileName} numberOfLines={1}>{a.name || 'Datei'}</T>
+        <T style={s.fileName} numberOfLines={1}>{a.name || t("Datei")}</T>
         <T style={s.fileSize}>{[video ? 'Video' : audio ? 'Audio' : '', sizeLabel(a.size)].filter(Boolean).join(' · ')}</T>
       </View>
       {busy ? <ActivityIndicator color={C.accent} /> : <Icon name="download" size={18} color={C.muted} />}
@@ -94,12 +95,12 @@ export function PollCard({ id, poll, pending, onChange }: { id: string; poll: Po
     Haptics.selectionAsync().catch(() => {});
     const mine = new Set(poll.mine || []);
     if (mine.has(i)) mine.delete(i); else { if (!poll.multi) mine.clear(); mine.add(i); }
-    try { const d = await api<any>('POST', `/api/messages/${id}/vote`, { opts: [...mine] }); onChange(d.poll); } catch (e) { Alert.alert('Umfrage', errText(e)); }
+    try { const d = await api<any>('POST', `/api/messages/${id}/vote`, { opts: [...mine] }); onChange(d.poll); } catch (e) { Alert.alert(t("Umfrage"), errText(e)); }
   };
   return (
     <View style={s.poll}>
       <T style={s.pollQ}>{poll.q}</T>
-      <T style={s.pollHint}>{poll.multi ? 'Mehrere Antworten möglich' : 'Eine Antwort wählen'}</T>
+      <T style={s.pollHint}>{poll.multi ? t("Mehrere Antworten möglich") : t("Eine Antwort wählen")}</T>
       {poll.options.map((o, i) => {
         const pct = total ? Math.round((o.n / total) * 100) : 0;
         const on = (poll.mine || []).includes(i);
@@ -112,7 +113,7 @@ export function PollCard({ id, poll, pending, onChange }: { id: string; poll: Po
           </Pressable>
         );
       })}
-      <T style={s.pollHint}>{poll.voters === 1 ? '1 Stimme' : `${poll.voters || 0} Stimmen`}</T>
+      <T style={s.pollHint}>{poll.voters === 1 ? t("1 Stimme") : t("{0} Stimmen", { 0: poll.voters || 0 })}</T>
     </View>
   );
 }
@@ -129,22 +130,22 @@ export function PollComposer({ open, onClose, onSend }: { open: boolean; onClose
       <Pressable style={s.back} onPress={onClose} />
       <Glass style={s.sheet} intensity={50} tint="rgba(19,20,32,0.97)">
         <View style={s.grab} />
-        <T style={s.sheetTitle}>Umfrage erstellen</T>
+        <T style={s.sheetTitle}>{t("Umfrage erstellen")}</T>
         <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 420 }}>
-          <T style={s.label}>Frage</T>
-          <TextInput value={q} onChangeText={setQ} placeholder="Was möchtest du fragen?" placeholderTextColor={C.faint} maxLength={300} style={s.input} />
-          <T style={s.label}>Antworten</T>
+          <T style={s.label}>{t("Frage")}</T>
+          <TextInput value={q} onChangeText={setQ} placeholder={t("Was möchtest du fragen?")} placeholderTextColor={C.faint} maxLength={300} style={s.input} />
+          <T style={s.label}>{t("Antworten")}</T>
           {opts.map((o, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <TextInput value={o} onChangeText={(v) => setOpts((x) => x.map((y, j) => (j === i ? v : y)))} placeholder={`Antwort ${i + 1}`} placeholderTextColor={C.faint} maxLength={80} style={[s.input, { flex: 1, marginBottom: 0 }]} />
-              {opts.length > 2 ? <Pressable accessibilityLabel="Antwort entfernen" onPress={() => setOpts((x) => x.filter((_, j) => j !== i))} style={s.rm}><Icon name="x" size={16} color={C.muted} /></Pressable> : null}
+              <TextInput value={o} onChangeText={(v) => setOpts((x) => x.map((y, j) => (j === i ? v : y)))} placeholder={t("Antwort {0}", { 0: i + 1 })} placeholderTextColor={C.faint} maxLength={80} style={[s.input, { flex: 1, marginBottom: 0 }]} />
+              {opts.length > 2 ? <Pressable accessibilityLabel={t("Antwort entfernen")} onPress={() => setOpts((x) => x.filter((_, j) => j !== i))} style={s.rm}><Icon name="x" size={16} color={C.muted} /></Pressable> : null}
             </View>
           ))}
-          {opts.length < 10 ? <Pressable onPress={() => setOpts((x) => [...x, ''])} style={s.add}><Icon name="plus" size={16} color={C.accent} /><T style={{ color: C.accent, fontWeight: '700' }}>Antwort hinzufügen</T></Pressable> : null}
-          <View style={s.multi}><T style={{ flex: 1, fontWeight: '600' }}>Mehrere Antworten erlauben</T><Switch value={multi} onValueChange={setMulti} trackColor={{ true: C.accent }} /></View>
+          {opts.length < 10 ? <Pressable onPress={() => setOpts((x) => [...x, ''])} style={s.add}><Icon name="plus" size={16} color={C.accent} /><T style={{ color: C.accent, fontWeight: '700' }}>{t("Antwort hinzufügen")}</T></Pressable> : null}
+          <View style={s.multi}><T style={{ flex: 1, fontWeight: '600' }}>{t("Mehrere Antworten erlauben")}</T><Switch value={multi} onValueChange={setMulti} trackColor={{ true: C.accent }} /></View>
         </ScrollView>
         <Pressable accessibilityRole="button" disabled={!ok} onPress={() => { onSend({ q: q.trim(), options: opts.map((o) => o.trim()).filter(Boolean), multi }); onClose(); }} style={[s.send, !ok && { opacity: 0.45 }]}>
-          <T style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Umfrage senden</T>
+          <T style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t("Umfrage senden")}</T>
         </Pressable>
       </Glass>
     </Modal>
@@ -164,7 +165,7 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
     let alive = true, timer: any;
     (async () => {
       const p = await requestRecordingPermissionsAsync();
-      if (!p.granted) { Alert.alert('Mikrofon', 'Erlaube ToLobby das Mikrofon in den iPhone-Einstellungen (Einstellungen → ToLobby → Mikrofon).'); onCancel(); return; }
+      if (!p.granted) { Alert.alert(t("Mikrofon"), t("Erlaube ToLobby das Mikrofon in den iPhone-Einstellungen (Einstellungen → ToLobby → Mikrofon).")); onCancel(); return; }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await rec.prepareToRecordAsync();
       if (!alive) return;
@@ -172,7 +173,7 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
       started.current = Date.now();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       timer = setInterval(() => { const sNow = (Date.now() - started.current) / 1000; setSecs(sNow); if (sNow >= 300) finish(true); }, 250);
-    })().catch(() => { Alert.alert('Mikrofon', 'Die Aufnahme konnte nicht starten.'); onCancel(); });
+    })().catch(() => { Alert.alert(t("Mikrofon"), t("Die Aufnahme konnte nicht starten.")); onCancel(); });
     return () => { alive = false; clearInterval(timer); if (!done.current) rec.stop().catch(() => {}); };
   }, []);
   const finish = async (send: boolean) => {
@@ -184,10 +185,10 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
   };
   return (
     <View style={s.recRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Verwerfen" onPress={() => finish(false)} style={s.recBtn}><Icon name="trash" size={20} color={C.danger} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Verwerfen")} onPress={() => finish(false)} style={s.recBtn}><Icon name="trash" size={20} color={C.danger} /></Pressable>
       <View style={s.recDot} />
-      <T style={{ flex: 1, fontWeight: '700' }}>Aufnahme läuft … {clock(secs)}</T>
-      <Pressable accessibilityRole="button" accessibilityLabel="Senden" onPress={() => finish(true)} style={s.recSend}><Icon name="send" size={19} color="#fff" /></Pressable>
+      <T style={{ flex: 1, fontWeight: '700' }}>{t("Aufnahme läuft …")}{' '}{clock(secs)}</T>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Senden")} onPress={() => finish(true)} style={s.recSend}><Icon name="send" size={19} color="#fff" /></Pressable>
     </View>
   );
 }
@@ -214,19 +215,19 @@ export function GifPicker({ open, onClose, onPick }: { open: boolean; onClose: (
     try {
       const d = await api<any>('GET', '/api/gifs' + (query ? '?q=' + encodeURIComponent(query) : ''));
       if (my !== seq.current) return;
-      setList(d.gifs || []); if (!d.gifs?.length) setMsg('Keine GIFs gefunden.');
-    } catch (e: any) { if (my === seq.current) { setList([]); setMsg(e?.code === 'gif_off' ? 'Die GIF-Suche ist noch nicht eingerichtet.' : errText(e)); } }
+      setList(d.gifs || []); if (!d.gifs?.length) setMsg(t("Keine GIFs gefunden."));
+    } catch (e: any) { if (my === seq.current) { setList([]); setMsg(e?.code === 'gif_off' ? t("Die GIF-Suche ist noch nicht eingerichtet.") : errText(e)); } }
   };
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={s.back} onPress={onClose} />
       <Glass style={[s.sheet, { height: '72%' }]} intensity={50} tint="rgba(19,20,32,0.97)">
         <View style={s.grab} />
-        <TextInput value={q} onChangeText={setQ} placeholder="GIFs suchen …" placeholderTextColor={C.faint} style={s.input} autoCorrect={false} />
+        <TextInput value={q} onChangeText={setQ} placeholder={t("GIFs suchen …")} placeholderTextColor={C.faint} style={s.input} autoCorrect={false} />
         {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : msg ? <T style={{ color: C.muted, textAlign: 'center', marginTop: 30 }}>{msg}</T> : (
           <ScrollView contentContainerStyle={s.gifGrid} keyboardShouldPersistTaps="handled">
             {list.map((g) => (
-              <Pressable key={g.id} accessibilityLabel="GIF senden" onPress={() => { Haptics.selectionAsync().catch(() => {}); onClose(); onPick(g.url); }} style={s.gifItem}>
+              <Pressable key={g.id} accessibilityLabel={t("GIF senden")} onPress={() => { Haptics.selectionAsync().catch(() => {}); onClose(); onPick(g.url); }} style={s.gifItem}>
                 <Image source={{ uri: gifSrc(g.preview) }} style={{ width: '100%', height: '100%' }} contentFit="cover" autoplay />
               </Pressable>
             ))}

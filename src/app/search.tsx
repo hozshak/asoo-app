@@ -10,6 +10,7 @@ import { Avatar, Empty, Glow, Seg, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Mode = 'search' | 'pins';
 
@@ -45,10 +46,10 @@ export default function Search() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title={mode === 'pins' ? 'Angeheftete Nachrichten' : server ? `Suchen in „${server.name}“` : p.ch ? 'In dieser Unterhaltung suchen' : 'In Direktnachrichten suchen'} onClose={() => router.back()} />
+      <SheetHead title={mode === 'pins' ? t("Angeheftete Nachrichten") : server ? t("Suchen in „{0}“", { 0: server.name }) : p.ch ? t("In dieser Unterhaltung suchen") : t("In Direktnachrichten suchen")} onClose={() => router.back()} />
       <View style={{ paddingHorizontal: 16, gap: 10, paddingBottom: 6 }}>
         {p.ch ? <Seg<Mode> items={[['search', 'Suchen'], ['pins', 'Angeheftet']]} value={mode} onChange={setMode} /> : null}
-        {mode === 'search' ? <Field value={q} onChangeText={setQ} placeholder="Wonach suchst du?" autoFocus autoCapitalize="none" returnKeyType="search" /> : null}
+        {mode === 'search' ? <Field value={q} onChangeText={setQ} placeholder={t("Wonach suchst du?")} autoFocus autoCapitalize="none" returnKeyType="search" /> : null}
         {err ? <T style={{ color: C.danger }}>{err}</T> : null}
       </View>
       {list === null ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : (
@@ -57,7 +58,7 @@ export default function Search() {
           keyExtractor={(m) => m.id}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 16, paddingTop: 6, gap: 8, paddingBottom: 40 }}
-          ListEmptyComponent={mode === 'pins' ? <Empty icon="pin" title="Nichts angeheftet" text="Lange auf eine Nachricht drücken → „Anheften“." /> : q.trim().length < 2 ? <Empty icon="search" title="Suche starten" text="Mindestens 2 Zeichen eingeben." /> : <Empty icon="search" title="Nichts gefunden" />}
+          ListEmptyComponent={mode === 'pins' ? <Empty icon="pin" title={t("Nichts angeheftet")} text={t("Lange auf eine Nachricht drücken → „Anheften“.")} /> : q.trim().length < 2 ? <Empty icon="search" title={t("Suche starten")} text={t("Mindestens 2 Zeichen eingeben.")} /> : <Empty icon="search" title={t("Nichts gefunden")} />}
           renderItem={({ item: m }) => {
             const u = userOf(m.author_id);
             return (
@@ -68,7 +69,7 @@ export default function Search() {
                     <T style={{ fontWeight: '700' }} numberOfLines={1}>{u.display}</T>
                     <T style={s.meta} numberOfLines={1}>{where(m.ch)} · {timeLabel(m.created)}</T>
                   </View>
-                  <T style={s.text} numberOfLines={3}>{plainText(m.content, sid) || (m.attachments?.length ? '📷 Bild' : '')}</T>
+                  <T style={s.text} numberOfLines={3}>{plainText(m.content, sid) || (m.attachments?.length ? t("📷 Bild") : '')}</T>
                 </View>
                 <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.faint} /></View>
               </Pressable>

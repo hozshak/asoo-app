@@ -9,11 +9,12 @@ import { putUsers, useStore } from '@/lib/store';
 import { timeLabel } from '@/lib/text';
 import { Avatar, Btn, Empty, Glass, Glow, Sheet, SheetHead, T } from '@/components/ui';
 import { C, F, R } from '@/lib/theme';
+import { t, LOCALE } from '@/lib/i18n';
 
 type Tab = 'open' | 'closed' | 'users' | 'stats';
-const REASON: Record<string, string> = { spam: 'Spam', harassment: 'Belästigung', hate: 'Hass', violence: 'Gewalt', sexual: 'Sexuelle Inhalte', minor_safety: 'Schutz von Minderjährigen', self_harm: 'Selbstverletzung', illegal: 'Illegal', impersonation: 'Nachahmung', other: 'Anderes' };
-const STATS: [string, string][] = [['users', 'Nutzer'], ['users_today', 'Neu heute'], ['active_today', 'Aktiv heute'], ['online', 'Gerade online'], ['in_voice', 'In Sprachräumen'], ['servers', 'Server'], ['messages', 'Nachrichten'], ['messages_today', 'Nachrichten heute'], ['posts', 'Beiträge'], ['open_reports', 'Offene Meldungen']];
-const BADGES: [string, string][] = [['verified', '✅ Verifiziert'], ['partner', '🤝 Partner'], ['helper', '💡 Helfer'], ['supporter', '💎 Unterstützer'], ['creator', '🎨 Creator'], ['bughunter', '🐞 Fehlerjäger']];
+const REASON: Record<string, string> = { spam: t("Spam"), harassment: t("Belästigung"), hate: t("Hass"), violence: t("Gewalt"), sexual: t("Sexuelle Inhalte"), minor_safety: t("Schutz von Minderjährigen"), self_harm: t("Selbstverletzung"), illegal: t("Illegal"), impersonation: t("Nachahmung"), other: t("Anderes") };
+const STATS: [string, string][] = [['users', t("Nutzer")], ['users_today', t("Neu heute")], ['active_today', t("Aktiv heute")], ['online', t("Gerade online")], ['in_voice', t("In Sprachräumen")], ['servers', t("Server")], ['messages', t("Nachrichten")], ['messages_today', t("Nachrichten heute")], ['posts', t("Beiträge")], ['open_reports', t("Offene Meldungen")]];
+const BADGES: [string, string][] = [['verified', t("✅ Verifiziert")], ['partner', t("🤝 Partner")], ['helper', t("💡 Helfer")], ['supporter', t("💎 Unterstützer")], ['creator', t("🎨 Creator")], ['bughunter', t("🐞 Fehlerjäger")]];
 
 export default function Admin() {
   const router = useRouter();
@@ -21,11 +22,11 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('open');
   const [note, setNote] = useState('');
   const say = (t: string) => { setNote(t); setTimeout(() => setNote((x) => (x === t ? '' : x)), 2400); };
-  if (!me?.is_admin) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title="Admin" onClose={() => router.back()} /><T style={s.hint}>Nur für Admins.</T></View>;
+  if (!me?.is_admin) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title={t("Admin")} onClose={() => router.back()} /><T style={s.hint}>{t("Nur für Admins.")}</T></View>;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <SheetHead title="Admin-Bereich" onClose={() => router.back()} />
+      <SheetHead title={t("Admin-Bereich")} onClose={() => router.back()} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={s.tabs}>
         {([['open', 'Meldungen'], ['closed', 'Erledigt'], ['users', 'Nutzer'], ['stats', 'Zahlen']] as [Tab, string][]).map(([k, l]) => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)} style={[s.tab, tab === k && s.tabOn]}><T style={[s.tabText, tab === k && { color: '#fff' }]}>{l}</T></Pressable>
@@ -41,7 +42,7 @@ export default function Admin() {
 
 const confirmIt = (title: string, text: string, fn: () => void) => {
   if (Platform.OS === 'web') { if (confirm(`${title}\n\n${text}`)) fn(); return; }
-  Alert.alert(title, text, [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Ja', style: 'destructive', onPress: fn }]);
+  Alert.alert(title, text, [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Ja"), style: 'destructive', onPress: fn }]);
 };
 
 function Stats({ say }: { say: (t: string) => void }) {
@@ -53,8 +54,8 @@ function Stats({ say }: { say: (t: string) => void }) {
       <View style={s.grid}>{STATS.filter(([k]) => d[k] !== undefined).map(([k, l]) => (
         <Glass key={k} style={s.stat} intensity={20}><T style={s.statNum}>{d[k]}</T><T style={s.statLabel}>{l}</T></Glass>
       ))}</View>
-      <Btn title="Ungenutzte Bilder aufräumen" kind="secondary" onPress={async () => { try { const r = await api<any>('POST', '/api/admin/cleanup', {}); say(`${r.removed} ungenutzte Bilder gelöscht`); } catch (e) { say(errText(e)); } }} style={{ marginTop: 14 }} />
-      <T style={s.hint}>Kostenloser Cloudflare-Plan: 100.000 Anfragen pro Tag und 10 GB Bilder sind frei.</T>
+      <Btn title={t("Ungenutzte Bilder aufräumen")} kind="secondary" onPress={async () => { try { const r = await api<any>('POST', '/api/admin/cleanup', {}); say(t("{0} ungenutzte Bilder gelöscht", { 0: r.removed })); } catch (e) { say(errText(e)); } }} style={{ marginTop: 14 }} />
+      <T style={s.hint}>{t("Kostenloser Cloudflare-Plan: 100.000 Anfragen pro Tag und 10 GB Bilder sind frei.")}</T>
     </>
   );
 }
@@ -67,7 +68,7 @@ function Reports({ status, say }: { status: 'open' | 'closed'; say: (t: string) 
   const load = () => api<any>('GET', '/api/admin/reports?status=' + status).then((d) => setList(d.reports || [])).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { load(); }, []);
   const send = async (r: any, action: string, why = '') => {
-    try { await api('POST', '/api/admin/reports/' + r.id, { action, reason: why }); say('Erledigt ✓'); load(); } catch (e) { say(errText(e)); }
+    try { await api('POST', '/api/admin/reports/' + r.id, { action, reason: why }); say(t("Erledigt ✓")); load(); } catch (e) { say(errText(e)); }
   };
   const act = (r: any, action: string) => {
     if (action === 'dismiss') return send(r, action);
@@ -75,7 +76,7 @@ function Reports({ status, say }: { status: 'open' | 'closed'; say: (t: string) 
     confirmIt('Inhalt löschen?', 'Der gemeldete Inhalt wird gelöscht.', () => send(r, action));
   };
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return status === 'open' ? <Empty icon="check" title="Keine offenen Meldungen" text="Alles erledigt. Neue Meldungen erscheinen hier." /> : <Empty icon="flag" title="Noch nichts erledigt" />;
+  if (!list.length) return status === 'open' ? <Empty icon="check" title={t("Keine offenen Meldungen")} text={t("Alles erledigt. Neue Meldungen erscheinen hier.")} /> : <Empty icon="flag" title={t("Noch nichts erledigt")} />;
   return (
     <>
       {list.map((r) => {
@@ -87,27 +88,27 @@ function Reports({ status, say }: { status: 'open' | 'closed'; say: (t: string) 
             {r.target ? (
               <Pressable onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.target.id } })} style={s.row}>
                 <Avatar user={r.target} size={32} frame={false} />
-                <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{r.target.display}</T><T style={[s.hint, { marginTop: 0 }]}>@{r.target.username}{r.target.deleted ? ' (gelöscht)' : ''}</T></View>
+                <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{r.target.display}</T><T style={[s.hint, { marginTop: 0 }]}>@{r.target.username}{r.target.deleted ? t(" (gelöscht)") : ''}</T></View>
               </Pressable>
             ) : null}
             <View style={s.snap}>
               <T style={{ color: C.text2 }}>{snap.content || snap.bio || snap.name || snap.display || '—'}</T>
               {img ? <Image source={img} style={{ width: 140, height: 100, borderRadius: 8, marginTop: 8 }} contentFit="cover" /> : null}
             </View>
-            {r.details ? <T style={s.hint}><T style={{ fontWeight: '800' }}>Hinweis vom Melder: </T>{r.details}</T> : null}
-            <T style={s.hint}>Gemeldet von {r.reporter?.display || '?'}{r.status !== 'open' ? ' · ' + r.status : ''}</T>
+            {r.details ? <T style={s.hint}><T style={{ fontWeight: '800' }}>{t("Hinweis vom Melder:")}{' '}</T>{r.details}</T> : null}
+            <T style={s.hint}>{t("Gemeldet von")}{' '}{r.reporter?.display || '?'}{r.status !== 'open' ? ' · ' + r.status : ''}</T>
             {status === 'open' ? (
               <View style={s.btns}>
-                <Btn title="Kein Verstoß" small kind="secondary" onPress={() => act(r, 'dismiss')} style={{ flexGrow: 1 }} />
-                <Btn title="Inhalt löschen" small kind="danger" onPress={() => act(r, 'delete_content')} style={{ flexGrow: 1 }} />
-                {r.target && !r.target.deleted ? <Btn title="Sperren" small kind="danger" onPress={() => act(r, 'ban')} style={{ flexGrow: 1 }} /> : null}
-                {r.target && !r.target.deleted ? <Btn title="Löschen + sperren" small kind="danger" onPress={() => act(r, 'delete_and_ban')} style={{ flexGrow: 1 }} /> : null}
+                <Btn title={t("Kein Verstoß")} small kind="secondary" onPress={() => act(r, 'dismiss')} style={{ flexGrow: 1 }} />
+                <Btn title={t("Inhalt löschen")} small kind="danger" onPress={() => act(r, 'delete_content')} style={{ flexGrow: 1 }} />
+                {r.target && !r.target.deleted ? <Btn title={t("Sperren")} small kind="danger" onPress={() => act(r, 'ban')} style={{ flexGrow: 1 }} /> : null}
+                {r.target && !r.target.deleted ? <Btn title={t("Löschen + sperren")} small kind="danger" onPress={() => act(r, 'delete_and_ban')} style={{ flexGrow: 1 }} /> : null}
               </View>
             ) : null}
           </Glass>
         );
       })}
-      {ban ? <ReasonBox title="Grund für die Sperre" reason={reason} setReason={setReason} onCancel={() => setBan(null)} onOk={() => { const b = ban; setBan(null); send(b.r, b.action, reason); }} /> : null}
+      {ban ? <ReasonBox title={t("Grund für die Sperre")} reason={reason} setReason={setReason} onCancel={() => setBan(null)} onOk={() => { const b = ban; setBan(null); send(b.r, b.action, reason); }} /> : null}
     </>
   );
 }
@@ -117,9 +118,9 @@ function ReasonBox({ title, reason, setReason, onCancel, onOk }: { title: string
     <View style={s.overlay}>
       <Glass style={[s.card, { width: '100%' }]} intensity={50} tint="rgba(19,20,32,0.96)">
         <T style={{ fontSize: 17, fontWeight: '800' }}>{title}</T>
-        <T style={s.hint}>Die Person sieht diesen Grund.</T>
+        <T style={s.hint}>{t("Die Person sieht diesen Grund.")}</T>
         <TextInput autoFocus value={reason} onChangeText={setReason} maxLength={200} style={[s.input, { marginTop: 10 }]} placeholderTextColor={C.faint} />
-        <View style={s.btns}><Btn title="Abbrechen" small kind="secondary" onPress={onCancel} style={{ flex: 1 }} /><Btn title="Sperren" small kind="danger" onPress={onOk} style={{ flex: 1 }} /></View>
+        <View style={s.btns}><Btn title={t("Abbrechen")} small kind="secondary" onPress={onCancel} style={{ flex: 1 }} /><Btn title={t("Sperren")} small kind="danger" onPress={onOk} style={{ flex: 1 }} /></View>
       </Glass>
     </View>
   );
@@ -134,31 +135,31 @@ function Users({ say }: { say: (t: string) => void }) {
   const [reason, setReason] = useState('');
   const load = (query = q) => api<any>('GET', '/api/admin/users?q=' + encodeURIComponent(query.trim())).then((d) => { putUsers(d.users || []); setList(d.users || []); }).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { const t = setTimeout(() => load(q), 300); return () => clearTimeout(t); }, [q]);
-  const unban = async (u: any) => { try { await api('POST', `/api/admin/users/${u.id}/ban`, { on: false }); say('Entsperrt'); load(); } catch (e) { say(errText(e)); } };
+  const unban = async (u: any) => { try { await api('POST', `/api/admin/users/${u.id}/ban`, { on: false }); say(t("Entsperrt")); load(); } catch (e) { say(errText(e)); } };
   const setBadge = async (u: any, k: string) => {
     const have = new Set<string>((u.badges || []).filter((b: string) => BADGES.some(([x]) => x === b)));
     have.has(k) ? have.delete(k) : have.add(k);
-    try { await api('POST', `/api/admin/users/${u.id}/badges`, { badges: [...have] }); say('Gespeichert ✓'); load(); } catch (e) { say(errText(e)); }
+    try { await api('POST', `/api/admin/users/${u.id}/badges`, { badges: [...have] }); say(t("Gespeichert ✓")); load(); } catch (e) { say(errText(e)); }
   };
   return (
     <>
-      <TextInput value={q} onChangeText={setQ} placeholder="Name, Benutzername oder ID" placeholderTextColor={C.faint} autoCapitalize="none" style={s.input} />
+      <TextInput value={q} onChangeText={setQ} placeholder={t("Name, Benutzername oder ID")} placeholderTextColor={C.faint} autoCapitalize="none" style={s.input} />
       {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 16 }} /> : list.map((u) => (
         <View key={u.id} style={[s.row, { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }]}>
           <Pressable onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })}><Avatar user={u} size={38} status frame={false} /></Pressable>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <T style={{ fontWeight: '700' }} numberOfLines={1}>{u.display}{u.is_admin ? '  · Admin' : ''}{u.banned ? '  · gesperrt' : ''}</T>
-            <T style={[s.hint, { marginTop: 0 }]} numberOfLines={2}>@{u.username} · {u.messages} Nachrichten · dabei seit {new Date(u.created).toLocaleDateString('de-DE')}{u.last_seen ? ' · zuletzt ' + timeLabel(u.last_seen) : ''}</T>
+            <T style={{ fontWeight: '700' }} numberOfLines={1}>{u.display}{u.is_admin ? t("  · Admin") : ''}{u.banned ? t("  · gesperrt") : ''}</T>
+            <T style={[s.hint, { marginTop: 0 }]} numberOfLines={2}>@{u.username} · {u.messages} {' '}{t("Nachrichten · dabei seit")}{' '}{new Date(u.created).toLocaleDateString(LOCALE)}{u.last_seen ? t(" · zuletzt {0}", { 0: timeLabel(u.last_seen) }) : ''}</T>
             {u.banned && u.ban_reason ? <T style={{ color: C.danger, fontSize: 12.5 }}>{u.ban_reason}</T> : null}
           </View>
-          {!u.is_admin ? <Pressable accessibilityRole="button" onPress={() => setBadges(u)} style={s.mini}><T style={s.miniText}>Abzeichen</T></Pressable> : null}
-          {!u.is_admin ? <Pressable accessibilityRole="button" onPress={() => (u.banned ? unban(u) : (setReason(''), setBan(u)))} style={[s.mini, !u.banned && { borderColor: C.danger }]}><T style={[s.miniText, !u.banned && { color: C.danger }]}>{u.banned ? 'Entsperren' : 'Sperren'}</T></Pressable> : null}
+          {!u.is_admin ? <Pressable accessibilityRole="button" onPress={() => setBadges(u)} style={s.mini}><T style={s.miniText}>{t("Abzeichen")}</T></Pressable> : null}
+          {!u.is_admin ? <Pressable accessibilityRole="button" onPress={() => (u.banned ? unban(u) : (setReason(''), setBan(u)))} style={[s.mini, !u.banned && { borderColor: C.danger }]}><T style={[s.miniText, !u.banned && { color: C.danger }]}>{u.banned ? t("Entsperren") : t("Sperren")}</T></Pressable> : null}
         </View>
       ))}
-      <Sheet open={!!badges} onClose={() => setBadges(null)} title={badges ? `Abzeichen für ${badges.display}` : ''} items={badges ? BADGES.map(([k, l]) => ({ label: ((badges.badges || []).includes(k) ? '✓ ' : '') + l, onPress: () => setBadge(badges, k) })) : []} />
-      {ban ? <ReasonBox title={`${ban.display} sperren?`} reason={reason} setReason={setReason} onCancel={() => setBan(null)} onOk={async () => {
+      <Sheet open={!!badges} onClose={() => setBadges(null)} title={badges ? t("Abzeichen für {0}", { 0: badges.display }) : ''} items={badges ? BADGES.map(([k, l]) => ({ label: ((badges.badges || []).includes(k) ? '✓ ' : '') + l, onPress: () => setBadge(badges, k) })) : []} />
+      {ban ? <ReasonBox title={t("{0} sperren?", { 0: ban.display })} reason={reason} setReason={setReason} onCancel={() => setBan(null)} onOk={async () => {
         const u = ban; setBan(null);
-        try { await api('POST', `/api/admin/users/${u.id}/ban`, { on: true, reason }); say('Gesperrt'); load(); } catch (e) { say(errText(e)); }
+        try { await api('POST', `/api/admin/users/${u.id}/ban`, { on: true, reason }); say(t("Gesperrt")); load(); } catch (e) { say(errText(e)); }
       }} /> : null}
     </>
   );

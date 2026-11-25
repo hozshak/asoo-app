@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "ToLobby",
+  "NSMicrophoneUsageDescription": "Pour que les autres t’entendent dans les salons vocaux, les salles 3D et les appels, et pour enregistrer des messages vocaux.",
+  "NSCameraUsageDescription": "Pour prendre des photos pour ton profil et partager ta caméra pendant les appels.",
+  "NSPhotoLibraryUsageDescription": "Pour envoyer des images dans les chats et choisir une photo de profil."
+}

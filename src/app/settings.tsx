@@ -20,10 +20,11 @@ import { signOut } from '@/lib/session';
 import { setWebCalls, useCalls } from '@/lib/calls';
 import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { t } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
 type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete';
-const TITLES: Record<Page, string> = { profile: 'Profil', look: 'Bild, Banner & Farben', frame: 'Profilrahmen', name: 'Namens-Stil', effect: 'Profil-Effekt', privacy: 'Privatsphäre & Geräte', push: 'Mitteilungen', voice: 'Sprache & Anrufe', password: 'Passwort', email: 'E-Mail', legal: 'Rechtliches', delete: 'Konto löschen' };
+const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -72,32 +73,32 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
   const [q, setQ] = useState('');
   const webCalls = useCalls((c) => c.webCalls);
   const groups: [string, Item[]][] = [
-    ['Konto-Einstellungen', [
-      { icon: 'user', label: 'Profil', sub: 'Name, Status-Text, Über mich', keys: 'anzeigename bio pronomen', onPress: () => open('profile') },
-      { icon: 'lock', label: 'Privatsphäre & Geräte', sub: 'Wer schreiben darf, Blockierte, Geräte', keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
-      { icon: 'bell', label: 'Mitteilungen', keys: 'push benachrichtigungen ton', onPress: () => open('push') },
-      { icon: 'phone', label: 'Sprache & Anrufe', sub: webCalls ? 'Über die Web-Ansicht' : 'Direkt in der App', keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
-      { icon: 'at', label: 'E-Mail', sub: me.email ? maskMail(me.email) : 'Noch nicht eingetragen', keys: 'mail email passwort vergessen', onPress: () => open('email') },
-      { icon: 'shield', label: 'Passwort ändern', keys: 'sicherheit kennwort', onPress: () => open('password') },
+    [t("Konto-Einstellungen"), [
+      { icon: 'user', label: t("Profil"), sub: t("Name, Status-Text, Über mich"), keys: 'anzeigename bio pronomen', onPress: () => open('profile') },
+      { icon: 'lock', label: t("Privatsphäre & Geräte"), sub: t("Wer schreiben darf, Blockierte, Geräte"), keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
+      { icon: 'bell', label: t("Mitteilungen"), keys: 'push benachrichtigungen ton', onPress: () => open('push') },
+      { icon: 'phone', label: t("Sprache & Anrufe"), sub: webCalls ? t("Über die Web-Ansicht") : t("Direkt in der App"), keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
+      { icon: 'at', label: t("E-Mail"), sub: me.email ? maskMail(me.email) : t("Noch nicht eingetragen"), keys: 'mail email passwort vergessen', onPress: () => open('email') },
+      { icon: 'shield', label: t("Passwort ändern"), keys: 'sicherheit kennwort', onPress: () => open('password') },
     ]],
-    ['Aussehen', [
-      { icon: 'cube', label: '3D-Avatar', sub: 'Figur und Farben', keys: 'figur 3d', onPress: () => router.push('/avatar3d') },
-      { icon: 'image', label: 'Bild, Banner & Farben', sub: 'Profilbild, Banner, eigene Farben', keys: 'profilbild hintergrund farbe farbwähler akzent', onPress: () => open('look') },
-      { icon: 'sparkle', label: 'Profilrahmen', sub: frameName || 'Keiner', keys: 'rahmen deko', onPress: () => open('frame') },
-      { icon: 'edit', label: 'Namens-Stil', sub: NAME_STYLES.find((x) => x[0] === (me.name_style || 'default'))?.[1] || 'Standard', keys: 'schrift name farbe gold chrom', onPress: () => open('name') },
-      { icon: 'moon', label: 'Profil-Effekt', sub: EFFECTS.find((x) => x[0] === me.effect)?.[1] || 'Keiner', keys: 'effekt schnee herzen goldstaub', onPress: () => open('effect') },
+    [t("Aussehen"), [
+      { icon: 'cube', label: t("3D-Avatar"), sub: t("Figur und Farben"), keys: 'figur 3d', onPress: () => router.push('/avatar3d') },
+      { icon: 'image', label: t("Bild, Banner & Farben"), sub: t("Profilbild, Banner, eigene Farben"), keys: 'profilbild hintergrund farbe farbwähler akzent', onPress: () => open('look') },
+      { icon: 'sparkle', label: t("Profilrahmen"), sub: frameName || t("Keiner"), keys: 'rahmen deko', onPress: () => open('frame') },
+      { icon: 'edit', label: t("Namens-Stil"), sub: NAME_STYLES.find((x) => x[0] === (me.name_style || 'default'))?.[1] || t("Standard"), keys: 'schrift name farbe gold chrom', onPress: () => open('name') },
+      { icon: 'moon', label: t("Profil-Effekt"), sub: EFFECTS.find((x) => x[0] === me.effect)?.[1] || t("Keiner"), keys: 'effekt schnee herzen goldstaub', onPress: () => open('effect') },
     ]],
-    ['Mehr', [
-      { icon: 'user', label: 'So sehen dich andere', keys: 'profil ansehen', onPress: () => router.push({ pathname: '/user/[id]', params: { id: me.id } }) },
-      { icon: 'pad', label: 'Mitspieler-Match', sub: 'Leute zum Zocken finden und matchen', keys: 'gamer match duo team spieler suchen', onPress: () => router.push('/match') },
-      { icon: 'sparkle', label: 'Feed', keys: 'beiträge posts', onPress: () => router.push('/feed') },
-      { icon: 'compass', label: 'Server entdecken', keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
-      ...(me.is_admin ? [{ icon: 'shield' as IconName, label: 'Admin-Bereich', keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),
-      { icon: 'globe', label: 'Rechtliches', sub: 'Regeln, Datenschutz, Impressum', keys: 'agb', onPress: () => open('legal') },
+    [t("Mehr"), [
+      { icon: 'user', label: t("So sehen dich andere"), keys: 'profil ansehen', onPress: () => router.push({ pathname: '/user/[id]', params: { id: me.id } }) },
+      { icon: 'pad', label: t("Mitspieler-Match"), sub: t("Leute zum Zocken finden und matchen"), keys: 'gamer match duo team spieler suchen', onPress: () => router.push('/match') },
+      { icon: 'sparkle', label: t("Feed"), keys: 'beiträge posts', onPress: () => router.push('/feed') },
+      { icon: 'compass', label: t("Server entdecken"), keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
+      ...(me.is_admin ? [{ icon: 'shield' as IconName, label: t("Admin-Bereich"), keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),
+      { icon: 'globe', label: t("Rechtliches"), sub: t("Regeln, Datenschutz, Impressum"), keys: 'agb', onPress: () => open('legal') },
     ]],
     ['', [
-      { icon: 'logout', label: 'Abmelden', danger: true, keys: 'ausloggen', onPress: () => signOut() },
-      { icon: 'trash', label: 'Konto löschen', danger: true, keys: 'entfernen', onPress: () => open('delete') },
+      { icon: 'logout', label: t("Abmelden"), danger: true, keys: 'ausloggen', onPress: () => signOut() },
+      { icon: 'trash', label: t("Konto löschen"), danger: true, keys: 'entfernen', onPress: () => open('delete') },
     ]],
   ];
   const term = q.trim().toLowerCase();
@@ -107,17 +108,17 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[sh.sheet, { marginTop: ins.top + 4 }]}>
         <View style={sh.head}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={8} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={sh.close}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Schließen")} hitSlop={8} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={sh.close}>
             <Icon name="x" size={24} color={C.text} stroke={2.3} />
           </Pressable>
-          <T style={sh.title}>Einstellungen</T>
+          <T style={sh.title}>{t("Einstellungen")}</T>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 + ins.bottom }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           <View style={sh.search}>
             <Icon name="search" size={19} color={C.muted} />
-            <TextInput value={q} onChangeText={setQ} placeholder="Suchen" placeholderTextColor={C.faint} style={sh.input} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
+            <TextInput value={q} onChangeText={setQ} placeholder={t("Suchen")} placeholderTextColor={C.faint} style={sh.input} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
           </View>
-          {!shown.length ? <T style={{ color: C.muted, textAlign: 'center', marginTop: 24 }}>Nichts gefunden.</T> : null}
+          {!shown.length ? <T style={{ color: C.muted, textAlign: 'center', marginTop: 24 }}>{t("Nichts gefunden.")}</T> : null}
           {shown.map(([title, items], gi) => (
             <View key={title || 'x' + gi}>
               {title ? <T style={sh.group}>{title}</T> : <View style={{ height: 22 }} />}
@@ -169,11 +170,11 @@ function ProfilePage({ me, patch }: PP) {
   const dirty = display !== (me.display || '') || custom !== (me.custom_status || '') || bio !== (me.bio || '') || pronouns !== (me.pronouns || '');
   return (
     <Glass style={s.card} intensity={20}>
-      <Field label="Anzeigename" value={display} onChangeText={setDisplay} maxLength={32} />
-      <Field label="Status-Text" value={custom} onChangeText={setCustom} maxLength={80} placeholder="z. B. „Zocke gerade 🎮“" />
-      <Field label="Pronomen" value={pronouns} onChangeText={setPronouns} maxLength={40} placeholder="z. B. sie/ihr" />
-      <Field label="Über mich" value={bio} onChangeText={setBio} maxLength={300} multiline />
-      <Btn title="Speichern" disabled={!dirty || !display.trim()} onPress={() => patch({ display: display.trim(), bio, custom_status: custom, pronouns })} style={{ marginTop: 14 }} />
+      <Field label={t("Anzeigename")} value={display} onChangeText={setDisplay} maxLength={32} />
+      <Field label={t("Status-Text")} value={custom} onChangeText={setCustom} maxLength={80} placeholder={t("z. B. „Zocke gerade 🎮“")} />
+      <Field label={t("Pronomen")} value={pronouns} onChangeText={setPronouns} maxLength={40} placeholder={t("z. B. sie/ihr")} />
+      <Field label={t("Über mich")} value={bio} onChangeText={setBio} maxLength={300} multiline />
+      <Btn title={t("Speichern")} disabled={!dirty || !display.trim()} onPress={() => patch({ display: display.trim(), bio, custom_status: custom, pronouns })} style={{ marginTop: 14 }} />
     </Glass>
   );
 }
@@ -188,24 +189,24 @@ function EmailPage({ say }: { say: (t: string) => void }) {
   const [busy, setBusy] = useState(false);
   const send = async () => {
     setBusy(true);
-    try { await api('POST', '/api/me/email', { email: email.trim() }); setSent(true); say('Code gesendet – schau in dein Postfach.'); } catch (e) { say(errText(e)); }
+    try { await api('POST', '/api/me/email', { email: email.trim() }); setSent(true); say(t("Code gesendet – schau in dein Postfach.")); } catch (e) { say(errText(e)); }
     setBusy(false);
   };
   const confirm = async () => {
     setBusy(true);
-    try { const d = await api<any>('POST', '/api/me/email/confirm', { email: email.trim(), code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setSent(false); setCode(''); say('E-Mail gespeichert ✓'); } catch (e) { say(errText(e)); }
+    try { const d = await api<any>('POST', '/api/me/email/confirm', { email: email.trim(), code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setSent(false); setCode(''); say(t("E-Mail gespeichert ✓")); } catch (e) { say(errText(e)); }
     setBusy(false);
   };
   return (
     <Glass style={s.card} intensity={20}>
-      <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginBottom: 4 }}>Damit kannst du dein Passwort zurücksetzen, falls du es vergisst. Deine E-Mail sieht niemand.</T>
-      {me?.email ? <T style={{ fontWeight: '700', marginTop: 6 }}>Eingetragen: {maskMail(me.email)} ✓</T> : null}
-      <Field label={me?.email ? 'Neue E-Mail' : 'E-Mail'} value={email} onChangeText={(v: string) => { setEmail(v); setSent(false); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" placeholder="name@beispiel.de" />
-      {!sent ? <Btn title="Code schicken" busy={busy} onPress={send} disabled={!/^\S+@\S+\.\S+$/.test(email.trim())} style={{ marginTop: 14 }} />
+      <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginBottom: 4 }}>{t("Damit kannst du dein Passwort zurücksetzen, falls du es vergisst. Deine E-Mail sieht niemand.")}</T>
+      {me?.email ? <T style={{ fontWeight: '700', marginTop: 6 }}>{t("Eingetragen:")}{' '}{maskMail(me.email)} ✓</T> : null}
+      <Field label={me?.email ? t("Neue E-Mail") : t("E-Mail")} value={email} onChangeText={(v: string) => { setEmail(v); setSent(false); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" placeholder={t("name@beispiel.de")} />
+      {!sent ? <Btn title={t("Code schicken")} busy={busy} onPress={send} disabled={!/^\S+@\S+\.\S+$/.test(email.trim())} style={{ marginTop: 14 }} />
         : <>
-            <Field label="Code aus der E-Mail" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" maxLength={8} placeholder="123456" />
-            <Btn title="Bestätigen" busy={busy} onPress={confirm} disabled={code.trim().length < 6} style={{ marginTop: 14 }} />
-            <Btn title="Code noch einmal schicken" kind="ghost" small onPress={send} style={{ marginTop: 6 }} />
+            <Field label={t("Code aus der E-Mail")} value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" maxLength={8} placeholder="123456" />
+            <Btn title={t("Bestätigen")} busy={busy} onPress={confirm} disabled={code.trim().length < 6} style={{ marginTop: 14 }} />
+            <Btn title={t("Code noch einmal schicken")} kind="ghost" small onPress={send} style={{ marginTop: 6 }} />
           </>}
     </Glass>
   );
@@ -216,14 +217,14 @@ function PasswordPage({ say }: { say: (t: string) => void }) {
   const [busy, setBusy] = useState(false);
   const change = async () => {
     setBusy(true);
-    try { await api('POST', '/api/me/password', { old: oldPw, new: newPw }); setOldPw(''); setNewPw(''); say('Passwort geändert ✓'); } catch (e) { say(errText(e)); }
+    try { await api('POST', '/api/me/password', { old: oldPw, new: newPw }); setOldPw(''); setNewPw(''); say(t("Passwort geändert ✓")); } catch (e) { say(errText(e)); }
     setBusy(false);
   };
   return (
     <Glass style={s.card} intensity={20}>
-      <Field label="Aktuelles Passwort" value={oldPw} onChangeText={setOldPw} secureTextEntry textContentType="password" autoCapitalize="none" />
-      <Field label="Neues Passwort" value={newPw} onChangeText={setNewPw} secureTextEntry textContentType="newPassword" autoCapitalize="none" placeholder="mindestens 8 Zeichen" />
-      <Btn title="Passwort ändern" busy={busy} onPress={change} disabled={!oldPw || newPw.length < 8} style={{ marginTop: 14 }} />
+      <Field label={t("Aktuelles Passwort")} value={oldPw} onChangeText={setOldPw} secureTextEntry textContentType="password" autoCapitalize="none" />
+      <Field label={t("Neues Passwort")} value={newPw} onChangeText={setNewPw} secureTextEntry textContentType="newPassword" autoCapitalize="none" placeholder={t("mindestens 8 Zeichen")} />
+      <Btn title={t("Passwort ändern")} busy={busy} onPress={change} disabled={!oldPw || newPw.length < 8} style={{ marginTop: 14 }} />
     </Glass>
   );
 }
@@ -236,15 +237,14 @@ function VoicePage() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
           <Icon name="phone" size={20} color={C.accent} />
           <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '700' }}>Anrufe direkt in der App</T>
-            <T style={{ color: C.muted, fontSize: 12.5 }}>Anrufe und Sprachräume laufen schneller und stabiler, auch mit gesperrtem Handy.</T>
+            <T style={{ fontWeight: '700' }}>{t("Anrufe direkt in der App")}</T>
+            <T style={{ color: C.muted, fontSize: 12.5 }}>{t("Anrufe und Sprachräume laufen schneller und stabiler, auch mit gesperrtem Handy.")}</T>
           </View>
           <Switch value={!webCalls} onValueChange={(on) => setWebCalls(!on)} trackColor={{ true: C.accent, false: C.bg5 }} />
         </View>
       </Card>
       <T style={{ color: C.muted, fontSize: 12.5, marginTop: 10, paddingHorizontal: 4 }}>
-        Klappt etwas nicht, schalte es aus – dann laufen Anrufe wie früher über die Web-Ansicht. 3D-Räume und Spiele laufen immer über die Web-Ansicht.
-      </T>
+        {t("Klappt etwas nicht, schalte es aus – dann laufen Anrufe wie früher über die Web-Ansicht. 3D-Räume und Spiele laufen immer über die Web-Ansicht.")}</T>
     </>
   );
 }
@@ -253,7 +253,7 @@ function LegalPage() {
   const Link = ({ icon, label, page, last }: { icon: IconName; label: string; page: string; last?: boolean }) => (
     <MenuRow icon={icon} label={label} onPress={() => WebBrowser.openBrowserAsync(LEGAL(page)).catch(() => {})} last={last} />
   );
-  return <Card><Link icon="shield" label="Regeln" page="regeln" /><Link icon="lock" label="Datenschutz" page="datenschutz" /><Link icon="globe" label="Impressum" page="impressum" last /></Card>;
+  return <Card><Link icon="shield" label={t("Regeln")} page="regeln" /><Link icon="lock" label={t("Datenschutz")} page="datenschutz" /><Link icon="globe" label={t("Impressum")} page="impressum" last /></Card>;
 }
 function DeletePage({ say }: { say: (t: string) => void }) {
   const [pw, setPw] = useState('');
@@ -264,13 +264,13 @@ function DeletePage({ say }: { say: (t: string) => void }) {
   const del = () => {
     const text = 'Profil, Nachrichten, Bilder, Freundschaften und Mitgliedschaften werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.';
     if (Platform.OS === 'web') { if (confirm(text)) really(); return; }
-    Alert.alert('Konto endgültig löschen?', text, [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Löschen', style: 'destructive', onPress: really }]);
+    Alert.alert(t("Konto endgültig löschen?"), text, [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Löschen"), style: 'destructive', onPress: really }]);
   };
   return (
     <Glass style={[s.card, { borderColor: 'rgba(255,77,94,0.3)' }]} intensity={20}>
-      <T style={{ color: C.text2, lineHeight: 21 }}>Dein Konto und alles, was du geschrieben und hochgeladen hast, wird endgültig gelöscht.</T>
-      <Field label="Passwort zur Bestätigung" value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" />
-      <Btn title="Konto endgültig löschen" kind="danger" icon="trash" disabled={!pw} onPress={del} style={{ marginTop: 14 }} />
+      <T style={{ color: C.text2, lineHeight: 21 }}>{t("Dein Konto und alles, was du geschrieben und hochgeladen hast, wird endgültig gelöscht.")}</T>
+      <Field label={t("Passwort zur Bestätigung")} value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" />
+      <Btn title={t("Konto endgültig löschen")} kind="danger" icon="trash" disabled={!pw} onPress={del} style={{ marginTop: 14 }} />
     </Glass>
   );
 }

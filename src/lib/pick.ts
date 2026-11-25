@@ -4,6 +4,7 @@ import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { t } from './i18n';
 
 export type PickedImage = { uri: string; mime: string; width?: number; height?: number };
 type Source = 'camera' | 'library' | 'files';
@@ -21,7 +22,7 @@ function askSource(title: string): Promise<Source | null> {
     } else {
       Alert.alert(title, undefined, [
         ...opts.slice(0, 3).map(([text, v]) => ({ text, onPress: () => resolve(v) })),
-        { text: 'Abbrechen', style: 'cancel' as const, onPress: () => resolve(null) },
+        { text: t("Abbrechen"), style: 'cancel' as const, onPress: () => resolve(null) },
       ], { cancelable: true, onDismiss: () => resolve(null) });
     }
   });
@@ -69,7 +70,7 @@ async function pickRaw({ title = 'Bild wählen', crop }: Opts): Promise<PickedIm
   if (src === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Kamera nicht erlaubt', 'Erlaube ToLobby die Kamera in den iPhone-Einstellungen (Einstellungen → ToLobby → Kamera).');
+      Alert.alert(t("Kamera nicht erlaubt"), t("Erlaube ToLobby die Kamera in den iPhone-Einstellungen (Einstellungen → ToLobby → Kamera)."));
       return null;
     }
     const r = await ImagePicker.launchCameraAsync(common);
@@ -84,7 +85,7 @@ async function pickRaw({ title = 'Bild wählen', crop }: Opts): Promise<PickedIm
   const d = await DocumentPicker.getDocumentAsync({ type: IMAGE_TYPES, copyToCacheDirectory: true, multiple: false });
   if (d.canceled || !d.assets?.[0]) return null;
   const a = d.assets[0];
-  if (a.mimeType && !IMAGE_TYPES.includes(a.mimeType)) { Alert.alert('Kein passendes Bild', 'Bitte wähle ein JPG-, PNG-, WebP- oder GIF-Bild.'); return null; }
-  if (a.size && a.size > 40 * 1024 * 1024) { Alert.alert('Bild zu groß', 'Das Bild darf höchstens 40 MB groß sein.'); return null; }
+  if (a.mimeType && !IMAGE_TYPES.includes(a.mimeType)) { Alert.alert(t("Kein passendes Bild"), t("Bitte wähle ein JPG-, PNG-, WebP- oder GIF-Bild.")); return null; }
+  if (a.size && a.size > 40 * 1024 * 1024) { Alert.alert(t("Bild zu groß"), t("Das Bild darf höchstens 40 MB groß sein.")); return null; }
   return { uri: a.uri, mime: a.mimeType || 'image/jpeg' };
 }

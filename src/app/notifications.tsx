@@ -9,12 +9,13 @@ import { Avatar, Empty, Glow, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { timeLabel } from '@/lib/text';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const KIND: Record<string, [string, IconName, string]> = {
-  mention: ['hat dich erwähnt', 'at', C.warn], reply: ['hat dir geantwortet', 'reply', C.accent], friend_request: ['möchte mit dir befreundet sein', 'userPlus', C.accent2],
-  friend_accept: ['hat deine Anfrage angenommen', 'check', C.ok], call: ['hat dich angerufen', 'phone', C.ok], follow: ['folgt dir jetzt', 'user', C.info], like: ['gefällt dein Beitrag', 'heart', C.accent2], comment: ['hat deinen Beitrag kommentiert', 'comment', C.info],
+  mention: [t("hat dich erwähnt"), 'at', C.warn], reply: [t("hat dir geantwortet"), 'reply', C.accent], friend_request: [t("möchte mit dir befreundet sein"), 'userPlus', C.accent2],
+  friend_accept: [t("hat deine Anfrage angenommen"), 'check', C.ok], call: [t("hat dich angerufen"), 'phone', C.ok], follow: [t("folgt dir jetzt"), 'user', C.info], like: [t("gefällt dein Beitrag"), 'heart', C.accent2], comment: [t("hat deinen Beitrag kommentiert"), 'comment', C.info],
   // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „ToLobby“ davor)
-  match: ['und du passt zusammen – ihr könnt euch jetzt schreiben', 'pad', C.accent], match_like: ['– jemand mag dein Mitspieler-Profil', 'pad', C.accent2],
+  match: [t("und du passt zusammen – ihr könnt euch jetzt schreiben"), 'pad', C.accent], match_like: [t("– jemand mag dein Mitspieler-Profil"), 'pad', C.accent2],
 };
 
 export default function Notifications() {
@@ -42,14 +43,14 @@ export default function Notifications() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <TopBar title="Mitteilungen" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("Mitteilungen")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <View style={{ flex: 1 }}>
         <FlatList
           data={list}
           keyExtractor={(n) => n.id}
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={C.accent} />}
-          ListEmptyComponent={!loading ? <Empty icon="bell" title="Alles ruhig" text="Hier erscheint, wenn dich jemand erwähnt oder dir eine Anfrage schickt." /> : undefined}
+          ListEmptyComponent={!loading ? <Empty icon="bell" title={t("Alles ruhig")} text={t("Hier erscheint, wenn dich jemand erwähnt oder dir eine Anfrage schickt.")} /> : undefined}
           renderItem={({ item: n, index }) => {
             const [label, icon, color] = KIND[n.kind] || ['', 'bell', C.muted];
             return (
@@ -60,7 +61,7 @@ export default function Notifications() {
                     <View style={[s.kind, { backgroundColor: color }]}><Icon name={icon} size={11} color="#fff" stroke={2.6} /></View>
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <T style={s.title}><T style={{ fontWeight: '800' }}>{n.actor?.display || 'ToLobby'}</T> {label}</T>
+                    <T style={s.title}><T style={{ fontWeight: '800' }}>{n.actor?.display || t("ToLobby")}</T> {label}</T>
                     {n.text ? <T style={s.text} numberOfLines={2}>{n.text}</T> : null}
                     <T style={s.time}>{timeLabel(n.created)}</T>
                   </View>

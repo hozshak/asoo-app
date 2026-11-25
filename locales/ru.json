@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "ToLobby",
+  "NSMicrophoneUsageDescription": "Чтобы другие слышали тебя в голосовых и 3D-комнатах и в звонках, а ты мог записывать голосовые сообщения.",
+  "NSCameraUsageDescription": "Чтобы ты мог делать фото для профиля и показывать камеру в звонках.",
+  "NSPhotoLibraryUsageDescription": "Чтобы ты мог отправлять изображения в чатах и выбрать фото профиля."
+}

@@ -11,6 +11,7 @@ import { Art, CardMenu, CardPeek, GameChip, MiniCard } from '@/components/MatchB
 import { Avatar, Badge, Btn, Glow, Sheet, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { C, HOME } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Tab = 'likes' | 'views' | 'matches';
 
@@ -51,15 +52,15 @@ export default function MatchLikes() {
       const d = await likeCard(c.pid);
       setPeek(null);
       if (d.match) { showParty(d.match); load(); }
-      else { setNote('Gelikt! Wenn die Person dich auch likt, habt ihr ein Match.'); setViews((l) => l && l.map((x) => (x.pid === c.pid ? { ...x, liked: true } : x))); }
+      else { setNote(t("Gelikt! Wenn die Person dich auch likt, habt ihr ein Match.")); setViews((l) => l && l.map((x) => (x.pid === c.pid ? { ...x, liked: true } : x))); }
     } catch (e) { setNote(matchErr(e)); }
   };
   const drop = (pid: string | null) => { setPeek(null); setLikes((l) => l && l.filter((x) => x.pid !== pid)); setViews((l) => l && l.filter((x) => x.pid !== pid)); };
   const askUnmatch = (p: MatchPair) => {
-    const go = async () => { try { await unmatch(p.user.id); setNote('Match aufgelöst.'); load(); } catch (e) { setNote(matchErr(e)); } };
+    const go = async () => { try { await unmatch(p.user.id); setNote(t("Match aufgelöst.")); load(); } catch (e) { setNote(matchErr(e)); } };
     const text = 'Ihr seid dann nicht mehr verbunden und könnt euch nicht mehr schreiben. Die Person bekommt keine Nachricht darüber.';
     if (Platform.OS === 'web') { if (confirm(`Match mit ${p.user.display} auflösen?\n\n${text}`)) go(); return; }
-    Alert.alert(`Match mit ${p.user.display} auflösen?`, text, [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Auflösen', style: 'destructive', onPress: go }]);
+    Alert.alert(t("Match mit {0} auflösen?", { 0: p.user.display }), text, [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Auflösen"), style: 'destructive', onPress: go }]);
   };
 
   const tabs: [Tab, string, number][] = [['likes', 'Mag dich', counts.likes], ['views', 'Besucher', counts.views], ['matches', 'Matches', counts.matches]];
@@ -70,7 +71,7 @@ export default function MatchLikes() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <TopBar title="Likes & Matches" onBack={() => (router.canGoBack() ? router.back() : router.replace('/match'))} />
+      <TopBar title={t("Likes & Matches")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/match'))} />
       <View style={s.tabs}>
         {tabs.map(([k, label, n]) => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)} style={[s.tab, tab === k && s.tabOn]}>
@@ -83,9 +84,9 @@ export default function MatchLikes() {
         {tab !== 'matches' ? (
           !list ? <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />
           : !list.length ? (
-            <Hole title={tab === 'likes' ? 'Noch keine Likes' : 'Noch keine Besucher'} text={tab === 'likes' ? 'Sobald jemand deine Karte likt, steht sie hier – du kannst direkt zurück-liken.' : 'Hier siehst du, wer sich deine Karte angesehen hat – ohne Namen, bis ihr ein Match habt.'} onGo={() => router.replace('/match')} />
+            <Hole title={tab === 'likes' ? t("Noch keine Likes") : t("Noch keine Besucher")} text={tab === 'likes' ? t("Sobald jemand deine Karte likt, steht sie hier – du kannst direkt zurück-liken.") : t("Hier siehst du, wer sich deine Karte angesehen hat – ohne Namen, bis ihr ein Match habt.")} onGo={() => router.replace('/match')} />
           ) : <>
-            <T style={s.lead}>{tab === 'likes' ? 'Diese Leute mögen deine Karte. Like zurück – dann habt ihr sofort ein Match.' : 'Diese Leute haben sich deine Karte angesehen (letzte 30 Tage).'}</T>
+            <T style={s.lead}>{tab === 'likes' ? t("Diese Leute mögen deine Karte. Like zurück – dann habt ihr sofort ein Match.") : t("Diese Leute haben sich deine Karte angesehen (letzte 30 Tage).")}</T>
             {rows.map((row, i) => (
               <Animated.View key={row[0].pid} entering={FadeInDown.delay(Math.min(i, 8) * 40).duration(240)} style={s.row2}>
                 {row.map((c) => <MiniCard key={c.pid} c={c} kind={tab} onOpen={() => setPeek(c)} onLike={() => like(c)} />)}
@@ -94,23 +95,23 @@ export default function MatchLikes() {
             ))}
           </>
         ) : !pairs ? <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />
-          : !pairs.length ? <Hole title="Noch kein Match" text="Like Karten, die zu dir passen. Likt dich die Person auch, landet ihr hier – mit Namen und Chat." onGo={() => router.replace('/match')} />
+          : !pairs.length ? <Hole title={t("Noch kein Match")} text={t("Like Karten, die zu dir passen. Likt dich die Person auch, landet ihr hier – mit Namen und Chat.")} onGo={() => router.replace('/match')} />
           : pairs.map((p, i) => (
             <Animated.View key={p.user.id} entering={FadeInDown.delay(Math.min(i, 8) * 40).duration(240)}>
               <View style={[s.pair, p.fresh && s.pairFresh]}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Nachricht an ${p.user.display}`} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: p.dm } })} onLongPress={() => setPairMenu(p)} style={({ pressed }) => [s.pairMain, pressed && { opacity: 0.7 }]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("Nachricht an {0}", { 0: p.user.display })} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: p.dm } })} onLongPress={() => setPairMenu(p)} style={({ pressed }) => [s.pairMain, pressed && { opacity: 0.7 }]}>
                 <Avatar user={p.user} size={54} status />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <T style={{ fontSize: 16.5, fontWeight: '800', flexShrink: 1 }} numberOfLines={1}>{p.user.display}</T>
-                    {p.fresh ? <View style={s.new}><T style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>Neu</T></View> : null}
+                    {p.fresh ? <View style={s.new}><T style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{t("Neu")}</T></View> : null}
                   </View>
-                  <T style={{ color: C.muted, fontSize: 12.5 }}>Match {agoShort(p.created)}</T>
+                  <T style={{ color: C.muted, fontSize: 12.5 }}>{t("Match")}{' '}{agoShort(p.created)}</T>
                   {p.games.length ? <View style={s.pairGames}>{p.games.slice(0, 2).map((g) => <GameChip key={g} name={g} small />)}</View> : null}
                 </View>
                 <View style={s.write}><Icon name="comment" size={18} color="#fff" /></View>
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel="Mehr" hitSlop={10} onPress={() => setPairMenu(p)} style={{ padding: 4 }}><Icon name="more" size={20} color={C.muted} /></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("Mehr")} hitSlop={10} onPress={() => setPairMenu(p)} style={{ padding: 4 }}><Icon name="more" size={20} color={C.muted} /></Pressable>
               </View>
             </Animated.View>
           ))}
@@ -119,9 +120,9 @@ export default function MatchLikes() {
       <CardPeek c={peek} kind={tab === 'views' ? 'views' : 'likes'} onClose={() => setPeek(null)} onLike={() => peek && like(peek)} onMore={() => peek && openMenu(peek)} />
       <CardMenu pid={menu} onClose={() => setMenu(null)} say={setNote} done={() => drop(menuCard?.pid || null)} />
       <Sheet open={!!pairMenu} onClose={() => setPairMenu(null)} title={pairMenu?.user.display} items={pairMenu ? [
-        { label: 'Nachricht schreiben', icon: 'comment', onPress: () => router.push({ pathname: '/chat/[id]', params: { id: pairMenu.dm } }) },
-        { label: 'Profil ansehen', icon: 'user', onPress: () => router.push({ pathname: '/user/[id]', params: { id: pairMenu.user.id } }) },
-        { label: 'Match auflösen', icon: 'x', danger: true, onPress: () => askUnmatch(pairMenu) },
+        { label: t("Nachricht schreiben"), icon: 'comment', onPress: () => router.push({ pathname: '/chat/[id]', params: { id: pairMenu.dm } }) },
+        { label: t("Profil ansehen"), icon: 'user', onPress: () => router.push({ pathname: '/user/[id]', params: { id: pairMenu.user.id } }) },
+        { label: t("Match auflösen"), icon: 'x', danger: true, onPress: () => askUnmatch(pairMenu) },
       ] : []} />
     </View>
   );
@@ -133,7 +134,7 @@ function Hole({ title, text, onGo }: { title: string; text: string; onGo: () => 
       <Art size={64} />
       <T style={{ fontSize: 20, fontWeight: '800', marginTop: 14, textAlign: 'center' }}>{title}</T>
       <T style={{ color: C.muted, textAlign: 'center', marginTop: 6, lineHeight: 21 }}>{text}</T>
-      <Btn title="Karten ansehen" icon="pad" onPress={onGo} style={{ alignSelf: 'stretch', marginTop: 18 }} />
+      <Btn title={t("Karten ansehen")} icon="pad" onPress={onGo} style={{ alignSelf: 'stretch', marginTop: 18 }} />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import { api, errText } from '@/lib/api';
 import { bootstrap, getState } from '@/lib/store';
 import { Btn, Glass, ServerIcon, T } from './ui';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Peek = { server: { id: string; name: string; icon?: string | null; icon_emoji?: string | null; color?: string | null; description?: string; member_count?: number; online?: number } };
 const cache = new Map<string, { at: number; d: Peek | null; err?: string }>();
@@ -46,16 +47,16 @@ export function InviteCard({ code, big = false, onOpen }: { code: string; big?: 
   };
   return (
     <Glass style={[s.card, big && s.big]} intensity={20}>
-      <T style={s.label}>{err ? 'Einladung' : 'Einladung zu einem Server'}</T>
-      {err ? <T style={{ color: C.muted }}>{err === 'Nicht gefunden.' ? 'Diese Einladung ist ungültig oder abgelaufen.' : err}</T>
+      <T style={s.label}>{err ? t("Einladung") : t("Einladung zu einem Server")}</T>
+      {err ? <T style={{ color: C.muted }}>{err === 'Nicht gefunden.' ? t("Diese Einladung ist ungültig oder abgelaufen.") : err}</T>
         : !d ? <ActivityIndicator color={C.accent} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
         : big ? (
           <View style={{ alignItems: 'center', gap: 6 }}>
             <ServerIcon server={{ ...d.server, owner_id: '', role: 'member', channels: [] } as any} size={84} active />
             <T style={[s.name, { fontSize: 22, textAlign: 'center', marginTop: 8 }]} numberOfLines={2}>{d.server.name}</T>
-            <T style={s.meta}><T style={{ color: C.ok }}>● </T>{d.server.online ?? 0} online  ·  {d.server.member_count ?? 0} Mitglieder</T>
+            <T style={s.meta}><T style={{ color: C.ok }}>● </T>{d.server.online ?? 0} {' '}{t("online ·")}{' '}{d.server.member_count ?? 0} {' '}{t("Mitglieder")}</T>
             {d.server.description ? <T style={[s.meta, { textAlign: 'center' }]}>{d.server.description}</T> : null}
-            <Btn title={member ? 'Server öffnen' : 'Beitreten'} busy={busy} onPress={go} style={{ alignSelf: 'stretch', marginTop: 12 }} />
+            <Btn title={member ? t("Server öffnen") : t("Beitreten")} busy={busy} onPress={go} style={{ alignSelf: 'stretch', marginTop: 12 }} />
           </View>
         ) : (
           <View style={{ gap: 10 }}>
@@ -63,10 +64,10 @@ export function InviteCard({ code, big = false, onOpen }: { code: string; big?: 
               <ServerIcon server={{ ...d.server, owner_id: '', role: 'member', channels: [] } as any} size={46} active />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <T style={s.name} numberOfLines={1}>{d.server.name}</T>
-                <T style={s.meta} numberOfLines={1}><T style={{ color: C.ok }}>● </T>{d.server.online ?? 0} online  ·  {d.server.member_count ?? 0} Mitglieder</T>
+                <T style={s.meta} numberOfLines={1}><T style={{ color: C.ok }}>● </T>{d.server.online ?? 0} {' '}{t("online ·")}{' '}{d.server.member_count ?? 0} {' '}{t("Mitglieder")}</T>
               </View>
             </View>
-            <Btn title={member ? 'Server öffnen' : 'Beitreten'} small busy={busy} onPress={go} kind={member ? 'secondary' : 'primary'} />
+            <Btn title={member ? t("Server öffnen") : t("Beitreten")} small busy={busy} onPress={go} kind={member ? 'secondary' : 'primary'} />
           </View>
         )}
     </Glass>

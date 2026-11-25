@@ -14,9 +14,10 @@ import { Btn, Card, Glow, Section, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { ColorRow, isHex } from '@/components/ColorPicker';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Model = { id: string; name: string; cat: 'anime' | 'real'; bottom?: boolean; fixed?: boolean };
-const CATS: [Model['cat'], string][] = [['anime', 'Anime'], ['real', 'Charaktere']];
+const CATS: [Model['cat'], string][] = [['anime', t("Anime")], ['real', t("Charaktere")]];
 const MODELS: Model[] = [
   { id: 'shibu', name: 'Shibu', cat: 'anime', bottom: true }, { id: 'vita', name: 'Vita', cat: 'anime' }, { id: 'ren', name: 'Ren', cat: 'anime', bottom: true },
   { id: 'vivi', name: 'Vivi', cat: 'anime' }, { id: 'fumi', name: 'Fumi', cat: 'anime', bottom: true }, { id: 'rubin', name: 'Rubin', cat: 'anime' },
@@ -60,7 +61,7 @@ export default function Avatar3D() {
     try {
       const d = await api<any>('PATCH', '/api/me', { avatar3d: cfg });
       setState((s) => ({ me: { ...s.me!, ...d.user } }));
-      setSaved(JSON.stringify(cfg)); setMsg('Avatar gespeichert ✓');
+      setSaved(JSON.stringify(cfg)); setMsg(t("Avatar gespeichert ✓"));
     } catch (e) { setMsg(errText(e)); } finally { setBusy(false); }
   };
   // eine Farb-Zeile je Körperteil: „A“ = Originalfarbe, fertige Farben, dazu jede eigene Farbe über den Farbwähler
@@ -70,7 +71,7 @@ export default function Avatar3D() {
       <View style={s.card}>
         <ColorRow title={title} value={own || list[idx] || null} presets={list.slice(1) as string[]}
           onChange={(c) => { const i = list.indexOf(c); set(i > 0 ? { [key]: i, [key + 'C']: undefined } as any : { [key + 'C']: c } as any); }}
-          none={{ label: 'Originalfarbe', on: !own && idx === 0, onPick: () => set({ [key]: 0, [key + 'C']: undefined } as any), text: 'A' }} />
+          none={{ label: t("Originalfarbe"), on: !own && idx === 0, onPick: () => set({ [key]: 0, [key + 'C']: undefined } as any), text: t("A") }} />
       </View>
     );
   };
@@ -78,20 +79,20 @@ export default function Avatar3D() {
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <Glow />
-      <TopBar title="3D-Avatar" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("3D-Avatar")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: ins.bottom + 110, gap: 12 }}>
         <View style={s.hero}>
           <Image source={thumb(model.id)} style={s.heroImg} contentFit="contain" transition={150} />
           <View style={{ flex: 1, gap: 6 }}>
             <T style={s.heroName}>{model.name}</T>
-            <T style={s.heroSub}>{model.cat === 'real' ? 'Realistische Figur' : 'Anime-Figur'}</T>
+            <T style={s.heroSub}>{model.cat === 'real' ? t("Realistische Figur") : t("Anime-Figur")}</T>
             <Pressable accessibilityRole="button" onPress={() => openWeb(router, '/settings/avatar?solo=1')} style={s.view3d}>
-              <Icon name="cube" size={15} color={C.text} /><T style={{ fontWeight: '700', fontSize: 13.5 }}>In 3D ansehen</T>
+              <Icon name="cube" size={15} color={C.text} /><T style={{ fontWeight: '700', fontSize: 13.5 }}>{t("In 3D ansehen")}</T>
             </Pressable>
           </View>
         </View>
 
-        <Section>Figur</Section>
+        <Section>{t("Figur")}</Section>
         <View style={s.cats}>
           {CATS.map(([k, l]) => (
             <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: cat === k }} onPress={() => setCat(k)} style={[s.cat, cat === k && s.catOn]}>
@@ -108,19 +109,19 @@ export default function Avatar3D() {
           ))}
         </View>
 
-        {model.fixed ? <Card style={{ padding: 14 }}><T style={{ color: C.muted }}>Diese Figur ist fertig gestaltet – Farben lassen sich hier nicht ändern.</T></Card> : <>
-          <Section>Haare</Section>{part('hair', HAIR, 'Haarfarbe')}
-          <Section>Augen</Section>{part('eyes', EYES, 'Augenfarbe')}
-          <Section>Haut</Section>{part('skin', SKIN, 'Hautfarbe')}
-          <Section>{model.bottom ? 'Oberteil' : 'Outfit'}</Section>{part('top', CLOTH, model.bottom ? 'Farbe des Oberteils' : 'Farbe des Outfits')}
-          {model.bottom ? <><Section>Hose / Rock</Section>{part('bottom', CLOTH, 'Farbe von Hose / Rock')}</> : null}
-          <Section>Schuhe</Section>{part('shoes', CLOTH, 'Farbe der Schuhe')}
-          <T style={{ color: C.faint, fontSize: 12.5 }}>„A“ = Originalfarbe der Figur. Über den bunten Kreis wählst du jede beliebige Farbe. In 3D siehst du sie über „In 3D ansehen“ (nach dem Speichern).</T>
+        {model.fixed ? <Card style={{ padding: 14 }}><T style={{ color: C.muted }}>{t("Diese Figur ist fertig gestaltet – Farben lassen sich hier nicht ändern.")}</T></Card> : <>
+          <Section>{t("Haare")}</Section>{part('hair', HAIR, 'Haarfarbe')}
+          <Section>{t("Augen")}</Section>{part('eyes', EYES, 'Augenfarbe')}
+          <Section>{t("Haut")}</Section>{part('skin', SKIN, 'Hautfarbe')}
+          <Section>{model.bottom ? t("Oberteil") : t("Outfit")}</Section>{part('top', CLOTH, model.bottom ? 'Farbe des Oberteils' : 'Farbe des Outfits')}
+          {model.bottom ? <><Section>{t("Hose / Rock")}</Section>{part('bottom', CLOTH, 'Farbe von Hose / Rock')}</> : null}
+          <Section>{t("Schuhe")}</Section>{part('shoes', CLOTH, 'Farbe der Schuhe')}
+          <T style={{ color: C.faint, fontSize: 12.5 }}>{t("„A“ = Originalfarbe der Figur. Über den bunten Kreis wählst du jede beliebige Farbe. In 3D siehst du sie über „In 3D ansehen“ (nach dem Speichern).")}</T>
         </>}
       </ScrollView>
       <View style={[s.bar, { paddingBottom: ins.bottom + 10 }]}>
         {msg ? <T style={{ color: msg.includes('✓') ? C.ok : C.warn, textAlign: 'center', marginBottom: 6 }}>{msg}</T> : null}
-        <Btn title="Avatar speichern" icon="check" onPress={save} busy={busy} disabled={!dirty || busy} />
+        <Btn title={t("Avatar speichern")} icon="check" onPress={save} busy={busy} disabled={!dirty || busy} />
       </View>
     </View>
   );

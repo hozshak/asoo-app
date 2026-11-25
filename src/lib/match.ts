@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { api, ApiError, errText } from './api';
 import { getState, putUsers, setState, type DM, type MatchBadge, type User } from './store';
+import { t } from './i18n';
 
 export type { MatchBadge };
 export type MatchGame = { n: string; c: boolean };
@@ -22,21 +23,21 @@ export type MatchSelf = {
 export type MatchResult = { user: User; dm: DM };
 export type MatchPair = { user: User; dm: string; created: number; fresh: boolean; games: string[] };
 
-export const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-export const SLOTS = ['Morgens', 'Nachmittags', 'Abends', 'Nachts'];
-export const SLOT_HINT = ['6–12 Uhr', '12–18 Uhr', '18–24 Uhr', '0–6 Uhr'];
-export const PLATFORM: Record<string, string> = { pc: 'PC', ps: 'PlayStation', xbox: 'Xbox', switch: 'Switch', mobile: 'Handy' };
-export const LOOKING: Record<string, string> = { duo: 'Duo-Partner', team: 'Ein Team', clan: 'Einen Clan', chat: 'Leute zum Quatschen' };
-export const STYLE: Record<string, string> = { casual: 'Locker', ranked: 'Ehrgeizig (Ranked)', both: 'Locker & Ranked' };
-export const ACTIVE: Record<string, string> = { now: 'Jetzt online', today: 'Heute aktiv', week: 'Diese Woche aktiv' };
-export const LANG_NAME: Record<string, string> = { en: 'English', de: 'Deutsch', tr: 'Türkçe', ku: 'Kurdî', ar: 'العربية', fr: 'Français', es: 'Español', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ru: 'Русский' };
-export const REASONS: [string, string][] = [['spam', 'Spam oder Werbung'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['sexual', 'Sexuelle Inhalte'],
-  ['minor_safety', 'Gefahr für Minderjährige'], ['impersonation', 'Gibt sich als jemand anderes aus'], ['other', 'Etwas anderes']];
+export const DAYS = [t("Mo"), t("Di"), t("Mi"), t("Do"), t("Fr"), t("Sa"), t("So")];
+export const SLOTS = [t("Morgens"), t("Nachmittags"), t("Abends"), t("Nachts")];
+export const SLOT_HINT = [t("6–12 Uhr"), t("12–18 Uhr"), t("18–24 Uhr"), t("0–6 Uhr")];
+export const PLATFORM: Record<string, string> = { pc: t("PC"), ps: t("PlayStation"), xbox: t("Xbox"), switch: t("Switch"), mobile: t("Handy") };
+export const LOOKING: Record<string, string> = { duo: t("Duo-Partner"), team: t("Ein Team"), clan: t("Einen Clan"), chat: t("Leute zum Quatschen") };
+export const STYLE: Record<string, string> = { casual: t("Locker"), ranked: t("Ehrgeizig (Ranked)"), both: t("Locker & Ranked") };
+export const ACTIVE: Record<string, string> = { now: t("Jetzt online"), today: t("Heute aktiv"), week: t("Diese Woche aktiv") };
+export const LANG_NAME: Record<string, string> = { en: t("English"), de: t("Deutsch"), tr: t("Türkçe"), ku: t("Kurdî"), ar: 'العربية', fr: t("Français"), es: t("Español"), it: t("Italiano"), pt: t("Português"), nl: t("Nederlands"), pl: t("Polski"), ru: t("Русский") };
+export const REASONS: [string, string][] = [['spam', t("Spam oder Werbung")], ['harassment', t("Belästigung oder Mobbing")], ['hate', t("Hass oder Hetze")], ['sexual', t("Sexuelle Inhalte")],
+  ['minor_safety', t("Gefahr für Minderjährige")], ['impersonation', t("Gibt sich als jemand anderes aus")], ['other', t("Etwas anderes")]];
 
 const MSG: Record<string, string> = {
-  like_limit: 'Für heute sind deine Likes aufgebraucht. Morgen geht es weiter.', boost_wait: 'Du hast dein Profil heute schon gepusht.',
-  need_game: 'Wähle mindestens ein Spiel aus.', no_profile: 'Richte zuerst dein Gamer-Profil ein.', profile_paused: 'Dein Profil ist pausiert – schalte es erst wieder sichtbar.',
-  nothing_to_undo: 'Es gibt nichts zum Zurückholen.', not_found: 'Diese Karte gibt es nicht mehr.',
+  like_limit: t("Für heute sind deine Likes aufgebraucht. Morgen geht es weiter."), boost_wait: t("Du hast dein Profil heute schon gepusht."),
+  need_game: t("Wähle mindestens ein Spiel aus."), no_profile: t("Richte zuerst dein Gamer-Profil ein."), profile_paused: t("Dein Profil ist pausiert – schalte es erst wieder sichtbar."),
+  nothing_to_undo: t("Es gibt nichts zum Zurückholen."), not_found: t("Diese Karte gibt es nicht mehr."),
 };
 export const matchErr = (e: unknown) => (e instanceof ApiError && MSG[e.code] ? MSG[e.code] : errText(e));
 
@@ -48,15 +49,15 @@ export function gameTile(name: string): { a: string; b: string; t: string } {
   const t = ((w[0] || '?')[0] + (w[1] ? w[1][0] : (w[0] || '')[1] || '')).toUpperCase();
   return { a: `hsl(${x}, 78%, 56%)`, b: `hsl(${(x + 48) % 360}, 80%, 44%)`, t };
 }
-export const mins = (ms: number) => { const m = Math.max(1, Math.ceil(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)} Std. ${m % 60} Min.` : `${m} Min.`; };
+export const mins = (ms: number) => { const m = Math.max(1, Math.ceil(ms / 60000)); return m >= 60 ? t('{0} Std. {1} Min.', { 0: Math.floor(m / 60), 1: m % 60 }) : t('{0} Min.', { 0: m }); };
 /** „vor 5 Min.“, „vor 3 Std.“, „vor 2 T.“ */
-export function agoShort(t?: number) {
-  if (!t) return '';
-  const d = Date.now() - t;
-  if (d < 60000) return 'gerade eben';
-  if (d < 3600000) return `vor ${Math.floor(d / 60000)} Min.`;
-  if (d < 86400000) return `vor ${Math.floor(d / 3600000)} Std.`;
-  return `vor ${Math.floor(d / 86400000)} T.`;
+export function agoShort(ts?: number) {
+  if (!ts) return '';
+  const d = Date.now() - ts;
+  if (d < 60000) return t('gerade eben');
+  if (d < 3600000) return t('vor {0} Min.', { 0: Math.floor(d / 60000) });
+  if (d < 86400000) return t('vor {0} Std.', { 0: Math.floor(d / 3600000) });
+  return t('vor {0} T.', { 0: Math.floor(d / 86400000) });
 }
 
 // ---------- Zähler (im gemeinsamen Zustand, damit die Einstiege mitzeichnen) ----------

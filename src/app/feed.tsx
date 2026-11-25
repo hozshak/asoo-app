@@ -12,6 +12,7 @@ import { Icon } from '@/components/Icon';
 import { PostCard, type Post } from '@/components/PostCard';
 import { C, F } from '@/lib/theme';
 import { useHeaderOffset } from '@/lib/keyboard';
+import { t } from '@/lib/i18n';
 
 type Mode = 'all' | 'following';
 
@@ -49,7 +50,7 @@ export default function Feed() {
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <Glow />
-      <TopBar title={'Feed'} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("Feed")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerOffset}>
         <FlatList
           data={posts}
@@ -60,12 +61,12 @@ export default function Feed() {
           onEndReachedThreshold={0.6}
           onEndReached={() => { if (!done && !loading && posts.length) load(false); }}
           ListHeaderComponent={<>
-            {me ? <Composer onPosted={(p) => { setPosts((l) => [p, ...l]); say('Gepostet!'); }} /> : null}
+            {me ? <Composer onPosted={(p) => { setPosts((l) => [p, ...l]); say(t("Gepostet!")); }} /> : null}
             <Seg items={[['all', 'Für dich'], ['following', 'Folge ich']]} value={mode} onChange={setMode} style={{ marginHorizontal: 12, marginBottom: 12 }} />
           </>}
-          ListEmptyComponent={loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : err ? <Empty icon="sparkle" title="Konnte nicht laden" text={err} />
-            : <Empty icon="sparkle" title={mode === 'following' ? 'Noch nichts hier' : 'Noch keine Beiträge'} text={mode === 'following' ? 'Folge Leuten, um hier ihre Beiträge zu sehen.' : 'Schreib den ersten!'} />}
-          ListFooterComponent={posts.length ? (loading ? <ActivityIndicator color={C.accent} style={{ margin: 16 }} /> : done ? <T style={s.end}>Das war alles. ✨</T> : undefined) : undefined}
+          ListEmptyComponent={loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : err ? <Empty icon="sparkle" title={t("Konnte nicht laden")} text={err} />
+            : <Empty icon="sparkle" title={mode === 'following' ? t("Noch nichts hier") : t("Noch keine Beiträge")} text={mode === 'following' ? t("Folge Leuten, um hier ihre Beiträge zu sehen.") : t("Schreib den ersten!")} />}
+          ListFooterComponent={posts.length ? (loading ? <ActivityIndicator color={C.accent} style={{ margin: 16 }} /> : done ? <T style={s.end}>{t("Das war alles. ✨")}</T> : undefined) : undefined}
           renderItem={({ item }) => <PostCard post={item} onChange={update} onRemove={() => remove(item.id)} onNote={say}
             onOpen={() => router.push({ pathname: '/post/[id]', params: { id: item.id } })} />}
         />
@@ -82,7 +83,7 @@ function Composer({ onPosted }: { onPosted: (p: Post) => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const pick = async () => {
-    const r = await chooseImage({ title: 'Bild zum Beitrag', quality: 0.75, maxSide: 1600 });
+    const r = await chooseImage({ title: t("Bild zum Beitrag"), quality: 0.75, maxSide: 1600 });
     if (!r) return;
     setBusy(true); setErr('');
     try { const up = await upload('post', r.uri, r.mime); setImg(up.key); }
@@ -101,14 +102,14 @@ function Composer({ onPosted }: { onPosted: (p: Post) => void }) {
     <View style={s.composer}>
       <Avatar user={me} size={40} />
       <View style={{ flex: 1, gap: 8 }}>
-        <TextInput value={text} onChangeText={setText} placeholder={`Was gibt’s Neues, ${me?.display || ''}?`} placeholderTextColor={C.faint} multiline maxLength={2000} style={s.input} />
+        <TextInput value={text} onChangeText={setText} placeholder={t("Was gibt’s Neues, {0}?", { 0: me?.display || '' })} placeholderTextColor={C.faint} multiline maxLength={2000} style={s.input} />
         {prev ? <View><Image source={prev} style={s.prev} contentFit="cover" />
-          <Pressable accessibilityRole="button" accessibilityLabel="Bild entfernen" onPress={() => setImg(null)} style={s.prevX}><Icon name="x" size={14} color="#fff" stroke={2.6} /></Pressable></View> : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Bild entfernen")} onPress={() => setImg(null)} style={s.prevX}><Icon name="x" size={14} color="#fff" stroke={2.6} /></Pressable></View> : null}
         {err ? <T style={{ color: C.danger, fontSize: 13 }}>{err}</T> : null}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Bild anhängen" onPress={pick} style={s.iconBtn}><Icon name="image" size={20} color={C.text2} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Bild anhängen")} onPress={pick} style={s.iconBtn}><Icon name="image" size={20} color={C.text2} /></Pressable>
           <View style={{ flex: 1 }} />
-          <Btn title="Posten" small busy={busy} disabled={!text.trim() && !img} onPress={post} />
+          <Btn title={t("Posten")} small busy={busy} disabled={!text.trim() && !img} onPress={post} />
         </View>
       </View>
     </View>

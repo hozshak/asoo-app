@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { mediaSource } from '@/lib/api';
 import { Icon } from './Icon';
+import { t } from '@/lib/i18n';
 
 const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic', 'video/mp4': 'mp4' };
 const sourceOf = (src: string) => (src.startsWith('http') || src.startsWith('/') ? { uri: src } : (mediaSource(src) as any)) as { uri: string; headers?: Record<string, string> };
@@ -27,7 +28,7 @@ export async function saveImageToDevice(src: string) {
   let uri = r.uri;
   const ext = EXT[type];
   if (ext && ext !== guess) { const to = base + '.' + ext; await FS.moveAsync({ from: r.uri, to }); uri = to; }
-  await Sharing.shareAsync(uri, { mimeType: type || 'image/jpeg', UTI: type === 'image/gif' ? 'com.compuserve.gif' : 'public.image', dialogTitle: 'Bild speichern' });
+  await Sharing.shareAsync(uri, { mimeType: type || 'image/jpeg', UTI: type === 'image/gif' ? 'com.compuserve.gif' : 'public.image', dialogTitle: t("Bild speichern") });
 }
 
 export function ImageViewer({ src, onClose }: { src: string | null; onClose: () => void }) {
@@ -37,19 +38,19 @@ export function ImageViewer({ src, onClose }: { src: string | null; onClose: () 
     if (!src || busy) return;
     Haptics.selectionAsync().catch(() => {});
     setBusy(true);
-    try { await saveImageToDevice(src); } catch { Alert.alert('Bild speichern', 'Das Bild konnte nicht geladen werden.'); }
+    try { await saveImageToDevice(src); } catch { Alert.alert(t("Bild speichern"), t("Das Bild konnte nicht geladen werden.")); }
     setBusy(false);
   };
   return (
     <Modal visible={!!src} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.back} onPress={onClose} accessibilityLabel="Schließen">
+      <Pressable style={s.back} onPress={onClose} accessibilityLabel={t("Schließen")}>
         {src ? <Image source={sourceOf(src)} style={{ width: '100%', height: '80%' }} contentFit="contain" /> : null}
       </Pressable>
       <View style={[s.bar, { top: ins.top + 8 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Bild speichern" onPress={save} hitSlop={6} style={({ pressed }) => [s.btn, pressed && { opacity: 0.7 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Bild speichern")} onPress={save} hitSlop={6} style={({ pressed }) => [s.btn, pressed && { opacity: 0.7 }]}>
           {busy ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="download" size={20} color="#fff" />}
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Schließen" onPress={onClose} hitSlop={6} style={({ pressed }) => [s.btn, pressed && { opacity: 0.7 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Schließen")} onPress={onClose} hitSlop={6} style={({ pressed }) => [s.btn, pressed && { opacity: 0.7 }]}>
           <Icon name="x" size={20} color="#fff" />
         </Pressable>
       </View>

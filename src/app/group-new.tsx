@@ -8,6 +8,7 @@ import { Avatar, Btn, Card, Empty, Glow, SheetHead, T } from '@/components/ui';
 import { Field } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export default function GroupNew() {
   const router = useRouter();
@@ -26,11 +27,11 @@ export default function GroupNew() {
   return (
     <View style={{ flex: 1 }}>
       <Glow />
-      <SheetHead title="Gruppe erstellen" onClose={() => router.back()} />
+      <SheetHead title={t("Gruppe erstellen")} onClose={() => router.back()} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <T style={{ color: C.muted }}>Wähle bis zu 9 Freunde aus ({sel.length} gewählt).</T>
-        {friends.length > 6 ? <Field value={q} onChangeText={setQ} placeholder="Freunde durchsuchen" /> : null}
-        {!friends.length ? <Empty icon="users" title="Noch keine Freunde" text="Füge unter „Freunde“ Leute hinzu, dann kannst du Gruppen erstellen." /> : (
+        <T style={{ color: C.muted }}>{t("Wähle bis zu 9 Freunde aus (")}{sel.length} {' '}{t("gewählt).")}</T>
+        {friends.length > 6 ? <Field value={q} onChangeText={setQ} placeholder={t("Freunde durchsuchen")} /> : null}
+        {!friends.length ? <Empty icon="users" title={t("Noch keine Freunde")} text={t("Füge unter „Freunde“ Leute hinzu, dann kannst du Gruppen erstellen.")} /> : (
           <Card>{shown.map((f, i) => {
             const on = sel.includes(f.id);
             return (
@@ -43,7 +44,7 @@ export default function GroupNew() {
           })}</Card>
         )}
         {err ? <T style={{ color: C.danger }}>{err}</T> : null}
-        <Btn title="Gruppe erstellen" icon="users" busy={busy} disabled={sel.length < 2} onPress={create} />
+        <Btn title={t("Gruppe erstellen")} icon="users" busy={busy} disabled={sel.length < 2} onPress={create} />
       </ScrollView>
     </View>
   );

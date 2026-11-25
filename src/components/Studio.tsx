@@ -18,9 +18,10 @@ import { NameText, NAME_STYLES } from './NameText';
 import { EFFECTS, ProfileFx } from './ProfileFx';
 import { ColorRow } from './ColorPicker';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export type StudioTab = 'look' | 'frame' | 'name' | 'effect';
-const TABS: [StudioTab, string, IconName][] = [['look', 'Bild & Farben', 'image'], ['frame', 'Rahmen', 'sparkle'], ['name', 'Name', 'edit'], ['effect', 'Effekt', 'moon']];
+const TABS: [StudioTab, string, IconName][] = [['look', t("Bild & Farben"), 'image'], ['frame', t("Rahmen"), 'sparkle'], ['name', t("Name"), 'edit'], ['effect', t("Effekt"), 'moon']];
 const ACCENTS = ['#8468ff', '#ff5c8a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#e04dff', '#5865f2'];
 const GOLD = '#ffd86b';
 
@@ -43,10 +44,10 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
     catch (e) { setState((s) => ({ me: { ...s.me!, ...before } })); setMsg(errText(e)); }
   };
   const pick = async (kind: 'avatar' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'avatar' ? 'Profilbild ändern' : 'Banner ändern', crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'avatar' ? t("Profilbild ändern") : t("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
     if (!r) return;
     setBusy(kind);
-    try { const up = await upload(kind, r.uri, r.mime); const d = await api<any>('PATCH', '/api/me', { [kind]: up.key }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setMsg(kind === 'avatar' ? 'Profilbild gespeichert ✓' : 'Banner gespeichert ✓'); }
+    try { const up = await upload(kind, r.uri, r.mime); const d = await api<any>('PATCH', '/api/me', { [kind]: up.key }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setMsg(kind === 'avatar' ? t("Profilbild gespeichert ✓") : t("Banner gespeichert ✓")); }
     catch (e) { setMsg(errText(e)); }
     setBusy('');
   };
@@ -60,10 +61,10 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
     const id = f ? f.id : 'none', on = f ? deco === f.id : !FRAMES[deco];
     const size = f ? Math.min(56, 88 / Math.max(f.w, f.h)) : 52;
     return (
-      <Pressable key={id} accessibilityRole="radio" accessibilityLabel={f ? f.name : 'Kein Rahmen'} accessibilityState={{ checked: on }} onPress={() => { tick(); patch({ deco: id }, f ? 'Rahmen gesetzt ✓' : 'Rahmen entfernt'); }}
+      <Pressable key={id} accessibilityRole="radio" accessibilityLabel={f ? f.name : t("Kein Rahmen")} accessibilityState={{ checked: on }} onPress={() => { tick(); patch({ deco: id }, f ? 'Rahmen gesetzt ✓' : 'Rahmen entfernt'); }}
         style={[st.tile, { width: col3, height: col3 * 1.24 }, f?.premium && st.tilePremium, on && st.tileOn]}>
         <View style={st.tileArt}><Avatar user={{ ...me, deco: id }} size={size} force live={on && !!f} /></View>
-        <T style={[st.tileName, st.tileName2, on && { color: C.text }]} numberOfLines={2}>{f ? f.name : 'Kein Rahmen'}</T>
+        <T style={[st.tileName, st.tileName2, on && { color: C.text }]} numberOfLines={2}>{f ? f.name : t("Kein Rahmen")}</T>
         {on ? <Check /> : null}
       </Pressable>
     );
@@ -72,7 +73,7 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <TopBar title="Profil gestalten" onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={t("Profil gestalten")} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       {/* Live-Vorschau */}
       <View style={st.preview}>
         {banner ? <Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
@@ -86,7 +87,7 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
             <T style={st.pvHandle} numberOfLines={1}>@{me.username}</T>
           </View>
         </View>
-        <View style={st.pvTag}><View style={st.pvDot} /><T style={st.pvTagT}>Vorschau</T></View>
+        <View style={st.pvTag}><View style={st.pvDot} /><T style={st.pvTagT}>{t("Vorschau")}</T></View>
       </View>
       {/* Bereiche */}
       <View style={st.tabs}>
@@ -105,43 +106,43 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
         {tab === 'look' ? (
           <Animated.View entering={FadeIn.duration(160)}>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Big icon="user" title="Profilbild" sub={busy === 'avatar' ? 'Lädt hoch …' : 'Foto oder Bild wählen'} onPress={() => pick('avatar')} />
-              <Big icon="image" title="Banner" sub={busy === 'banner' ? 'Lädt hoch …' : 'Bild hinter dem Profil'} onPress={() => pick('banner')} />
+              <Big icon="user" title={t("Profilbild")} sub={busy === 'avatar' ? t("Lädt hoch …") : t("Foto oder Bild wählen")} onPress={() => pick('avatar')} />
+              <Big icon="image" title={t("Banner")} sub={busy === 'banner' ? t("Lädt hoch …") : t("Bild hinter dem Profil")} onPress={() => pick('banner')} />
             </View>
             {me.avatar || me.banner ? (
               <View style={{ flexDirection: 'row', gap: 18, marginTop: 10, marginLeft: 4 }}>
-                {me.avatar ? <T style={st.link} onPress={() => patch({ avatar: null }, 'Profilbild entfernt')}>Profilbild entfernen</T> : null}
-                {me.banner ? <T style={st.link} onPress={() => patch({ banner: null }, 'Banner entfernt')}>Banner entfernen</T> : null}
+                {me.avatar ? <T style={st.link} onPress={() => patch({ avatar: null }, 'Profilbild entfernt')}>{t("Profilbild entfernen")}</T> : null}
+                {me.banner ? <T style={st.link} onPress={() => patch({ banner: null }, 'Banner entfernt')}>{t("Banner entfernen")}</T> : null}
               </View>
             ) : null}
-            <Head title="Akzentfarbe" sub="Für dein Profil, deinen 3D-Avatar und das Leuchten um deinen Namen." />
-            <View style={st.card}><ColorRow title="Akzentfarbe" value={me.accent} presets={ACCENTS} onChange={(c) => patch({ accent: c }, 'Farbe gesetzt ✓')} /></View>
-            <Head title="Bannerfarbe" sub={me.banner ? 'Gilt, sobald kein Banner-Bild gesetzt ist.' : 'Die Farbe hinter deinem Profil, solange du kein Banner-Bild hast.'} />
+            <Head title={t("Akzentfarbe")} sub={t("Für dein Profil, deinen 3D-Avatar und das Leuchten um deinen Namen.")} />
+            <View style={st.card}><ColorRow title={t("Akzentfarbe")} value={me.accent} presets={ACCENTS} onChange={(c) => patch({ accent: c }, 'Farbe gesetzt ✓')} /></View>
+            <Head title={t("Bannerfarbe")} sub={me.banner ? t("Gilt, sobald kein Banner-Bild gesetzt ist.") : t("Die Farbe hinter deinem Profil, solange du kein Banner-Bild hast.")} />
             <View style={st.card}>
-              <ColorRow title="Bannerfarbe" value={me.banner_color} presets={ACCENTS} onChange={(c) => patch({ banner_color: c }, 'Farbe gesetzt ✓')}
-                none={{ label: 'Standard', on: !me.banner_color, onPick: () => patch({ banner_color: null }, 'Farbe gesetzt ✓'), colors: [me.accent || C.accent, '#ff5c8a'] }} />
+              <ColorRow title={t("Bannerfarbe")} value={me.banner_color} presets={ACCENTS} onChange={(c) => patch({ banner_color: c }, 'Farbe gesetzt ✓')}
+                none={{ label: t("Standard"), on: !me.banner_color, onPick: () => patch({ banner_color: null }, 'Farbe gesetzt ✓'), colors: [me.accent || C.accent, '#ff5c8a'] }} />
             </View>
             <Pressable accessibilityRole="button" onPress={() => router.push('/avatar3d')} style={({ pressed }) => [st.rowLink, pressed && { backgroundColor: C.bg4 }]}>
               <View style={st.rowIcon}><Icon name="cube" size={19} color={C.accent} /></View>
-              <View style={{ flex: 1 }}><T style={{ fontWeight: '700', fontSize: 15.5 }}>3D-Avatar gestalten</T><T style={{ color: C.muted, fontSize: 12.5 }}>Figur, Haare, Haut und Kleidung – jede Farbe frei wählbar</T></View>
+              <View style={{ flex: 1 }}><T style={{ fontWeight: '700', fontSize: 15.5 }}>{t("3D-Avatar gestalten")}</T><T style={{ color: C.muted, fontSize: 12.5 }}>{t("Figur, Haare, Haut und Kleidung – jede Farbe frei wählbar")}</T></View>
               <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={15} color={C.muted} stroke={2.4} /></View>
             </Pressable>
           </Animated.View>
         ) : tab === 'frame' ? (
           <Animated.View entering={FadeIn.duration(160)}>
-            <Pressable accessibilityRole="radio" accessibilityLabel="Kein Rahmen" accessibilityState={{ checked: !FRAMES[deco] }} onPress={() => { tick(); patch({ deco: 'none' }, 'Rahmen entfernt'); }} style={[st.noneRow, !FRAMES[deco] && st.tileOn]}>
+            <Pressable accessibilityRole="radio" accessibilityLabel={t("Kein Rahmen")} accessibilityState={{ checked: !FRAMES[deco] }} onPress={() => { tick(); patch({ deco: 'none' }, 'Rahmen entfernt'); }} style={[st.noneRow, !FRAMES[deco] && st.tileOn]}>
               <View style={st.noneIcon}><Icon name="minusCircle" size={18} color={C.text2} /></View>
-              <T style={{ flex: 1, fontWeight: '700', fontSize: 15 }}>Kein Rahmen</T>
+              <T style={{ flex: 1, fontWeight: '700', fontSize: 15 }}>{t("Kein Rahmen")}</T>
               {!FRAMES[deco] ? <View style={[st.check, { position: 'relative', right: 0, top: 0 }]}><Icon name="check" size={12} color="#fff" stroke={3.2} /></View> : null}
             </Pressable>
-            <Head title="Premium" icon="sparkle" gold sub="Echt in 3D gerendert – das Licht wandert über Gold, Diamanten und Kristall." />
+            <Head title={t("Premium")} icon="sparkle" gold sub={t("Echt in 3D gerendert – das Licht wandert über Gold, Diamanten und Kristall.")} />
             <View style={st.grid}>{premium.map(frameTile)}</View>
-            <Head title="Leuchtringe" sub="Schlanke Ringe aus Licht." />
+            <Head title={t("Leuchtringe")} sub={t("Schlanke Ringe aus Licht.")} />
             <View style={st.grid}>{rings.map(frameTile)}</View>
           </Animated.View>
         ) : tab === 'name' ? (
           <Animated.View entering={FadeIn.duration(160)}>
-            <Head title="Namens-Stil" sub="So sehen andere deinen Namen im Chat und auf deinem Profil." first />
+            <Head title={t("Namens-Stil")} sub={t("So sehen andere deinen Namen im Chat und auf deinem Profil.")} first />
             <View style={st.grid}>
               {NAME_STYLES.map(([k, label, , kind]) => {
                 const on = style === k;
@@ -158,7 +159,7 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
           </Animated.View>
         ) : (
           <Animated.View entering={FadeIn.duration(160)}>
-            <Head title="Profil-Effekt" sub="Liegt über deinem Profil und deiner Profilkarte." first />
+            <Head title={t("Profil-Effekt")} sub={t("Liegt über deinem Profil und deiner Profilkarte.")} first />
             <View style={st.grid}>
               {[['none', 'Kein Effekt'] as [string, string], ...EFFECTS.map(([k, l]) => [k, l] as [string, string])].map(([k, label]) => {
                 const on = effect === k;
@@ -197,7 +198,7 @@ function Head({ title, sub, icon, gold, first }: { title: string; sub?: string; 
 }
 function Big({ icon, title, sub, onPress }: { icon: IconName; title: string; sub: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title + ' ändern'} onPress={() => { tick(); onPress(); }} style={({ pressed }) => [st.big, pressed && { backgroundColor: C.bg4 }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t("{0} ändern", { 0: title })} onPress={() => { tick(); onPress(); }} style={({ pressed }) => [st.big, pressed && { backgroundColor: C.bg4 }]}>
       <View style={st.rowIcon}><Icon name={icon} size={19} color={C.accent} /></View>
       <T style={{ fontWeight: '800', fontSize: 15.5, marginTop: 10 }}>{title}</T>
       <T style={{ color: C.muted, fontSize: 12.5 }} numberOfLines={1}>{sub}</T>

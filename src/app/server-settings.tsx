@@ -13,33 +13,34 @@ import { Avatar, Btn, Card, Empty, Glass, Glow, MenuRow, Section, Seg, Sheet, Sh
 import { ColorRow } from '@/components/ColorPicker';
 import { Icon, type IconName } from '@/components/Icon';
 import { C, F, R } from '@/lib/theme';
+import { t, LOCALE } from '@/lib/i18n';
 
 type Tab = 'overview' | 'channels' | 'roles' | 'members' | 'invites' | 'bans' | 'audit' | 'danger';
 type Member = User & { role: string; base?: string; roles?: string[]; nick?: string | null; joined?: number; muted_until?: number };
 const SERVER_COLORS = ['#5865f2', '#7c5cff', '#ff5c8a', '#ff6b3d', '#ffb02e', '#3ddc97', '#2ec5ff', '#1f1f2e'];
 const ROLE_COLORS = ['#ff5c8a', '#ff6b3d', '#ffb02e', '#f5d90a', '#3ddc97', '#1abc9c', '#2ec5ff', '#5865f2', '#7c5cff', '#b45cff', '#e91e63', '#95a5a6'];
-const THEMES: [string, string][] = [['lounge', 'Skylounge'], ['beach', 'Strand'], ['orbit', 'Raumstation'], ['theater', 'Kino'], ['wedding', 'Dawet (Hochzeit)'], ['gaming', 'Gaming'], ['hangout', 'Wohnzimmer'], ['office', 'Büro']];
+const THEMES: [string, string][] = [['lounge', t("Skylounge")], ['beach', t("Strand")], ['orbit', t("Raumstation")], ['theater', t("Kino")], ['wedding', t("Dawet (Hochzeit)")], ['gaming', t("Gaming")], ['hangout', t("Wohnzimmer")], ['office', t("Büro")]];
 const SLOW: [number, string][] = [[0, 'Aus'], [5, '5 s'], [10, '10 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min'], [3600, '1 h']];
 const LIMITS = [0, 2, 3, 4, 5, 6, 8, 10, 12];
-const RANK_NAME: Record<string, string> = { member: 'Mitglied', mod: 'Moderator', admin: 'Admin', owner: 'Besitzer' };
+const RANK_NAME: Record<string, string> = { member: t("Mitglied"), mod: t("Moderator"), admin: t("Admin"), owner: t("Besitzer") };
 
 const ask = (title: string, text: string, ok: string, fn: () => void) => {
   if (Platform.OS === 'web') { if (confirm(`${title}\n\n${text}`)) fn(); return; }
-  Alert.alert(title, text, [{ text: 'Abbrechen', style: 'cancel' }, { text: ok, style: 'destructive', onPress: fn }]);
+  Alert.alert(title, text, [{ text: t("Abbrechen"), style: 'cancel' }, { text: ok, style: 'destructive', onPress: fn }]);
 };
 
 // Seiten der Server-Einstellungen (wie bei Discord: erst eine Liste, jeder Punkt öffnet eine eigene Seite)
 const PAGES: Record<Tab, { label: string; sub?: string; icon: IconName; min: 'member' | 'mod' | 'admin' | 'owner' }> = {
-  overview: { label: 'Übersicht', sub: 'Name, Bild, Banner, Farbe, Beschreibung', icon: 'home', min: 'admin' },
-  channels: { label: 'Kanäle', sub: 'Umbenennen, sortieren, Rechte', icon: 'hash', min: 'admin' },
-  roles: { label: 'Rollen', sub: 'Farben, Abzeichen und Rechte', icon: 'shield', min: 'admin' },
-  members: { label: 'Mitglieder', sub: 'Rollen vergeben, Timeout, Rauswurf', icon: 'users', min: 'member' },
-  invites: { label: 'Einladungen', sub: 'Links erstellen und löschen', icon: 'link', min: 'admin' },
-  bans: { label: 'Banns', sub: 'Gesperrte Leute', icon: 'ban', min: 'mod' },
-  audit: { label: 'Protokoll', sub: 'Wer hat was geändert', icon: 'clock', min: 'mod' },
-  danger: { label: 'Server löschen', icon: 'trash', min: 'owner' },
+  overview: { label: t("Übersicht"), sub: t("Name, Bild, Banner, Farbe, Beschreibung"), icon: 'home', min: 'admin' },
+  channels: { label: t("Kanäle"), sub: t("Umbenennen, sortieren, Rechte"), icon: 'hash', min: 'admin' },
+  roles: { label: t("Rollen"), sub: t("Farben, Abzeichen und Rechte"), icon: 'shield', min: 'admin' },
+  members: { label: t("Mitglieder"), sub: t("Rollen vergeben, Timeout, Rauswurf"), icon: 'users', min: 'member' },
+  invites: { label: t("Einladungen"), sub: t("Links erstellen und löschen"), icon: 'link', min: 'admin' },
+  bans: { label: t("Banns"), sub: t("Gesperrte Leute"), icon: 'ban', min: 'mod' },
+  audit: { label: t("Protokoll"), sub: t("Wer hat was geändert"), icon: 'clock', min: 'mod' },
+  danger: { label: t("Server löschen"), icon: 'trash', min: 'owner' },
 };
-const GROUPS: [string, Tab[]][] = [['Einstellungen', ['overview', 'channels', 'roles']], ['Leute', ['members', 'invites', 'bans']], ['Moderation', ['audit']], ['', ['danger']]];
+const GROUPS: [string, Tab[]][] = [[t("Einstellungen"), ['overview', 'channels', 'roles']], [t("Leute"), ['members', 'invites', 'bans']], [t("Moderation"), ['audit']], ['', ['danger']]];
 
 export default function ServerSettings() {
   const p = useLocalSearchParams<{ sid: string; tab?: Tab }>();
@@ -49,7 +50,7 @@ export default function ServerSettings() {
   const say = (t: string) => { setNote(t); setTimeout(() => setNote((x) => (x === t ? '' : x)), 2400); };
   const allowed = (k: Tab) => !!server && (PAGES[k].min === 'owner' ? server.role === 'owner' : can(server.id, PAGES[k].min));
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  if (!server) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title="Server-Einstellungen" onClose={back} /><Empty icon="globe" title="Server nicht gefunden" /></View>;
+  if (!server) return <View style={{ flex: 1, backgroundColor: C.bg0 }}><SheetHead title={t("Server-Einstellungen")} onClose={back} /><Empty icon="globe" title={t("Server nicht gefunden")} /></View>;
   const tab = p.tab && PAGES[p.tab] && allowed(p.tab) ? p.tab : null;
   const props = { sid: server.id, say };
   const open = (k: Tab) => router.push({ pathname: '/server-settings', params: { sid: server.id, tab: k } });
@@ -58,7 +59,7 @@ export default function ServerSettings() {
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
       {!tab ? <>
-        <SheetHead title="Server-Einstellungen" onClose={back} />
+        <SheetHead title={t("Server-Einstellungen")} onClose={back} />
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60, gap: 6 }}>
           {/* Kopf: Server-Bild und Name, wie oben in Discords Server-Einstellungen */}
           <View style={s.srvHead}>
@@ -67,7 +68,7 @@ export default function ServerSettings() {
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <T style={{ fontSize: 20, fontWeight: '800' }} numberOfLines={1}>{server.name}</T>
-              <T style={s.hint} numberOfLines={1}>{RANK_NAME[server.role] || 'Mitglied'}{server.member_count ? ` · ${server.member_count} Mitglieder` : ''}</T>
+              <T style={s.hint} numberOfLines={1}>{RANK_NAME[server.role] || t("Mitglied")}{server.member_count ? t(" · {0} Mitglieder", { 0: server.member_count }) : ''}</T>
             </View>
           </View>
           {GROUPS.map(([title, keys]) => {
@@ -104,7 +105,7 @@ function Overview({ sid, say }: P) {
   const [d, setD] = useState({ name: sv.name, description: sv.description || '', icon: sv.icon || null, icon_emoji: sv.icon_emoji || '', color: sv.color || '#5865f2', banner: sv.banner || null, public: !!(sv as any).public });
   const [busy, setBusy] = useState('');
   const pick = async (kind: 'icon' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'icon' ? 'Server-Bild' : 'Server-Banner', crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'icon' ? t("Server-Bild") : t("Server-Banner"), crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
     if (!r) return;
     setBusy(kind);
     try { const up = await upload(kind, r.uri, r.mime); setD((x) => ({ ...x, [kind]: up.key })); } catch (e) { say(errText(e)); }
@@ -112,7 +113,7 @@ function Overview({ sid, say }: P) {
   };
   const save = async () => {
     setBusy('save');
-    try { await api('PATCH', '/api/servers/' + sid, d); await bootstrap(); say('Gespeichert ✓'); } catch (e) { say(errText(e)); }
+    try { await api('PATCH', '/api/servers/' + sid, d); await bootstrap(); say(t("Gespeichert ✓")); } catch (e) { say(errText(e)); }
     setBusy('');
   };
   const icon = mediaSource(d.icon), banner = mediaSource(d.banner);
@@ -125,26 +126,26 @@ function Overview({ sid, say }: P) {
         </View>
       </View>
       <View style={s.row2}>
-        <Btn title="Icon ändern" small kind="secondary" busy={busy === 'icon'} onPress={() => pick('icon')} style={{ flex: 1 }} />
-        <Btn title="Banner ändern" small kind="secondary" busy={busy === 'banner'} onPress={() => pick('banner')} style={{ flex: 1 }} />
+        <Btn title={t("Icon ändern")} small kind="secondary" busy={busy === 'icon'} onPress={() => pick('icon')} style={{ flex: 1 }} />
+        <Btn title={t("Banner ändern")} small kind="secondary" busy={busy === 'banner'} onPress={() => pick('banner')} style={{ flex: 1 }} />
       </View>
       {d.icon || d.banner ? <View style={{ flexDirection: 'row', gap: 16, marginTop: 6 }}>
-        {d.icon ? <T style={s.link} onPress={() => setD({ ...d, icon: null })}>Icon entfernen</T> : null}
-        {d.banner ? <T style={s.link} onPress={() => setD({ ...d, banner: null })}>Banner entfernen</T> : null}
+        {d.icon ? <T style={s.link} onPress={() => setD({ ...d, icon: null })}>{t("Icon entfernen")}</T> : null}
+        {d.banner ? <T style={s.link} onPress={() => setD({ ...d, banner: null })}>{t("Banner entfernen")}</T> : null}
       </View> : null}
-      <T style={s.label}>Farbe</T>
-      <ColorRow title="Server-Farbe" value={d.color} presets={SERVER_COLORS} onChange={(c) => setD({ ...d, color: c })} />
-      <T style={s.label}>Server-Name</T>
+      <T style={s.label}>{t("Farbe")}</T>
+      <ColorRow title={t("Server-Farbe")} value={d.color} presets={SERVER_COLORS} onChange={(c) => setD({ ...d, color: c })} />
+      <T style={s.label}>{t("Server-Name")}</T>
       <TextInput value={d.name} onChangeText={(v) => setD({ ...d, name: v })} maxLength={50} style={s.input} placeholderTextColor={C.faint} />
-      <T style={s.label}>Emoji als Icon (wenn kein Bild)</T>
+      <T style={s.label}>{t("Emoji als Icon (wenn kein Bild)")}</T>
       <TextInput value={d.icon_emoji} onChangeText={(v) => setD({ ...d, icon_emoji: v })} maxLength={8} style={[s.input, { width: 90 }]} placeholderTextColor={C.faint} />
-      <T style={s.label}>Beschreibung</T>
+      <T style={s.label}>{t("Beschreibung")}</T>
       <TextInput value={d.description} onChangeText={(v) => setD({ ...d, description: v })} maxLength={300} multiline style={[s.input, s.multi]} placeholderTextColor={C.faint} />
       <View style={[s.switchRow, { marginTop: 14 }]}>
-        <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>Öffentlich</T><T style={s.hint}>Der Server erscheint unter „Entdecken“ und jeder kann ohne Einladung beitreten.</T></View>
+        <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{t("Öffentlich")}</T><T style={s.hint}>{t("Der Server erscheint unter „Entdecken“ und jeder kann ohne Einladung beitreten.")}</T></View>
         <Switch value={d.public} onValueChange={(v) => setD({ ...d, public: v })} trackColor={{ true: C.accent }} />
       </View>
-      <Btn title="Speichern" busy={busy === 'save'} disabled={!d.name.trim()} onPress={save} style={{ marginTop: 16 }} />
+      <Btn title={t("Speichern")} busy={busy === 'save'} disabled={!d.name.trim()} onPress={save} style={{ marginTop: 16 }} />
     </Glass>
   );
 }
@@ -165,13 +166,13 @@ function Channels({ sid, say }: P) {
   const moveCh = (gi: number, i: number, dir: number) => { const gs = groups.map((g) => ({ ...g, chs: [...g.chs] })); const a = gs[gi].chs; [a[i], a[i + dir]] = [a[i + dir], a[i]]; saveLayout(gs); };
   const moveCat = (gi: number, dir: number) => { const gs = [...groups]; [gs[gi], gs[gi + dir]] = [gs[gi + dir], gs[gi]]; if (!gs[0].cat || gi + dir > 0) saveLayout(gs); };
   const renameCat = (cat: any) => {
-    if (Platform.OS === 'ios') Alert.prompt('Kategorie umbenennen', undefined, async (v) => { if (!v?.trim()) return; try { await api('PATCH', '/api/categories/' + cat.id, { name: v.trim() }); await bootstrap(); } catch (e) { say(errText(e)); } }, 'plain-text', cat.name);
+    if (Platform.OS === 'ios') Alert.prompt(t("Kategorie umbenennen"), undefined, async (v) => { if (!v?.trim()) return; try { await api('PATCH', '/api/categories/' + cat.id, { name: v.trim() }); await bootstrap(); } catch (e) { say(errText(e)); } }, 'plain-text', cat.name);
     else { const v = prompt('Kategorie umbenennen', cat.name); if (v?.trim()) api('PATCH', '/api/categories/' + cat.id, { name: v.trim() }).then(bootstrap).catch((e) => say(errText(e))); }
   };
   const delCat = (cat: any) => ask(`Kategorie „${cat.name}“ löschen?`, 'Die Kanäle darin bleiben erhalten und stehen danach ohne Kategorie.', 'Löschen', async () => { try { await api('DELETE', '/api/categories/' + cat.id); await bootstrap(); } catch (e) { say(errText(e)); } });
   return (
     <>
-      <T style={s.hint}>Tippe einen Kanal an, um ihn zu bearbeiten. Mit den Pfeilen änderst du die Reihenfolge.</T>
+      <T style={s.hint}>{t("Tippe einen Kanal an, um ihn zu bearbeiten. Mit den Pfeilen änderst du die Reihenfolge.")}</T>
       {groups.map((g, gi) => (!g.cat && !g.chs.length) ? null : (
         <View key={g.cat?.id || '_'} style={{ marginTop: 14 }}>
           {g.cat ? (
@@ -179,14 +180,14 @@ function Channels({ sid, say }: P) {
               <Section style={{ flex: 1 }}>{g.cat.name}</Section>
               <Arrow dir="up" disabled={gi <= 1} onPress={() => moveCat(gi, -1)} />
               <Arrow dir="down" disabled={gi === groups.length - 1} onPress={() => moveCat(gi, 1)} />
-              <Pressable accessibilityRole="button" accessibilityLabel="Umbenennen" onPress={() => renameCat(g.cat)} style={s.small}><Icon name="edit" size={15} color={C.text2} /></Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Kategorie löschen" onPress={() => delCat(g.cat)} style={s.small}><Icon name="trash" size={15} color={C.danger} /></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Umbenennen")} onPress={() => renameCat(g.cat)} style={s.small}><Icon name="edit" size={15} color={C.text2} /></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Kategorie löschen")} onPress={() => delCat(g.cat)} style={s.small}><Icon name="trash" size={15} color={C.danger} /></Pressable>
             </View>
           ) : null}
           {g.chs.map((c, i) => (
             <Glass key={c.id} style={[s.card, { marginTop: 8, padding: 0 }]} intensity={20}>
               <View style={s.chHead}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Kanal ${c.name} bearbeiten`} onPress={() => setOpen(open === c.id ? null : c.id)} style={s.chMain}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("Kanal {0} bearbeiten", { 0: c.name })} onPress={() => setOpen(open === c.id ? null : c.id)} style={s.chMain}>
                   <Icon name={c.type === 'text' ? 'hash' : c.type === 'voice3d' ? 'cube' : c.type === 'game' ? 'target' : 'volume'} size={17} color={C.muted} />
                   <T style={{ flex: 1, fontWeight: '700' }} numberOfLines={1}>{c.name}</T>
                   {c.view_role && c.view_role !== 'member' ? <Icon name="lock" size={13} color={C.muted} /> : null}
@@ -203,7 +204,7 @@ function Channels({ sid, say }: P) {
   );
 }
 const Arrow = ({ dir, disabled, onPress }: { dir: 'up' | 'down'; disabled?: boolean; onPress: () => void }) => (
-  <Pressable accessibilityRole="button" accessibilityLabel={dir === 'up' ? 'Nach oben' : 'Nach unten'} disabled={disabled} onPress={onPress} hitSlop={4} style={[s.small, disabled && { opacity: 0.3 }]}>
+  <Pressable accessibilityRole="button" accessibilityLabel={dir === 'up' ? t("Nach oben") : t("Nach unten")} disabled={disabled} onPress={onPress} hitSlop={4} style={[s.small, disabled && { opacity: 0.3 }]}>
     <View style={{ transform: [{ rotate: dir === 'up' ? '180deg' : '0deg' }] }}><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View>
   </Pressable>
 );
@@ -215,7 +216,7 @@ function ChannelEdit({ c, cats, say, onGone }: { c: Channel; cats: any[]; say: (
     try {
       await api('PATCH', '/api/channels/' + c.id, { name: d.name, topic: d.topic, slowmode: d.slowmode, ...(c.type === 'voice3d' ? { theme: d.theme } : {}), ...(cats.length ? { parent: d.parent } : {}),
         ...(c.type !== 'text' ? { user_limit: d.user_limit } : {}), view_role: d.view_role });
-      await bootstrap(); say('Gespeichert ✓');
+      await bootstrap(); say(t("Gespeichert ✓"));
     } catch (e) { say(errText(e)); }
     setBusy(false);
   };
@@ -225,19 +226,19 @@ function ChannelEdit({ c, cats, say, onGone }: { c: Channel; cats: any[]; say: (
   );
   return (
     <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
-      <T style={s.label}>Name</T>
+      <T style={s.label}>{t("Name")}</T>
       <TextInput value={d.name} onChangeText={(v) => setD({ ...d, name: v })} maxLength={32} style={s.input} />
-      <T style={s.label}>Thema</T>
-      <TextInput value={d.topic} onChangeText={(v) => setD({ ...d, topic: v })} maxLength={200} placeholder="Thema (freiwillig)" placeholderTextColor={C.faint} style={s.input} />
-      {c.type === 'text' ? <><T style={s.label}>Langsamer Modus</T>{chips(SLOW, d.slowmode, (v) => setD({ ...d, slowmode: v }))}</> : null}
-      {c.type === 'voice3d' ? <><T style={s.label}>Raum-Design</T>{chips(THEMES, d.theme, (v) => setD({ ...d, theme: v }))}</> : null}
-      {c.type !== 'text' ? <><T style={s.label}>Personenlimit</T>{chips(LIMITS.map((n) => [n, n ? String(n) : 'Kein Limit'] as [number, string]), d.user_limit, (v) => setD({ ...d, user_limit: v }))}</> : null}
-      {cats.length ? <><T style={s.label}>Kategorie</T>{chips([[null, 'Ohne'], ...cats.map((x) => [x.id, x.name] as [string, string])], d.parent, (v) => setD({ ...d, parent: v }))}</> : null}
-      <T style={s.label}>Wer darf den Kanal sehen?</T>
+      <T style={s.label}>{t("Thema")}</T>
+      <TextInput value={d.topic} onChangeText={(v) => setD({ ...d, topic: v })} maxLength={200} placeholder={t("Thema (freiwillig)")} placeholderTextColor={C.faint} style={s.input} />
+      {c.type === 'text' ? <><T style={s.label}>{t("Langsamer Modus")}</T>{chips(SLOW, d.slowmode, (v) => setD({ ...d, slowmode: v }))}</> : null}
+      {c.type === 'voice3d' ? <><T style={s.label}>{t("Raum-Design")}</T>{chips(THEMES, d.theme, (v) => setD({ ...d, theme: v }))}</> : null}
+      {c.type !== 'text' ? <><T style={s.label}>{t("Personenlimit")}</T>{chips(LIMITS.map((n) => [n, n ? String(n) : 'Kein Limit'] as [number, string]), d.user_limit, (v) => setD({ ...d, user_limit: v }))}</> : null}
+      {cats.length ? <><T style={s.label}>{t("Kategorie")}</T>{chips([[null, 'Ohne'], ...cats.map((x) => [x.id, x.name] as [string, string])], d.parent, (v) => setD({ ...d, parent: v }))}</> : null}
+      <T style={s.label}>{t("Wer darf den Kanal sehen?")}</T>
       {chips([['member', 'Alle'], ['mod', 'Ab Moderator'], ['admin', 'Nur Admins']], d.view_role, (v) => setD({ ...d, view_role: v }))}
       <View style={s.row2}>
-        <Btn title="Speichern" small busy={busy} disabled={!d.name.trim()} onPress={save} style={{ flex: 1 }} />
-        <Btn title="Löschen" small kind="danger" onPress={del} style={{ flex: 1 }} />
+        <Btn title={t("Speichern")} small busy={busy} disabled={!d.name.trim()} onPress={save} style={{ flex: 1 }} />
+        <Btn title={t("Löschen")} small kind="danger" onPress={del} style={{ flex: 1 }} />
       </View>
     </View>
   );
@@ -263,18 +264,18 @@ function Roles({ sid, say }: P) {
   };
   return (
     <>
-      <Btn title="Rolle erstellen" icon="plus" small onPress={create} />
-      <T style={[s.hint, { marginTop: 10 }]}>Die oberste Rolle mit Farbe bestimmt die Namensfarbe. Schieb wichtige Rollen mit den Pfeilen nach oben.</T>
-      {!roles.length ? <T style={[s.hint, { marginTop: 14 }]}>Noch keine eigenen Rollen. Rollen geben Leuten eine Farbe, ein Abzeichen und – wenn du willst – Mod- oder Admin-Rechte.</T> : null}
+      <Btn title={t("Rolle erstellen")} icon="plus" small onPress={create} />
+      <T style={[s.hint, { marginTop: 10 }]}>{t("Die oberste Rolle mit Farbe bestimmt die Namensfarbe. Schieb wichtige Rollen mit den Pfeilen nach oben.")}</T>
+      {!roles.length ? <T style={[s.hint, { marginTop: 14 }]}>{t("Noch keine eigenen Rollen. Rollen geben Leuten eine Farbe, ein Abzeichen und – wenn du willst – Mod- oder Admin-Rechte.")}</T> : null}
       {roles.map((r, i) => {
         const n = (members || []).filter((m) => (m.roles || []).includes(r.id)).length;
         return (
           <Glass key={r.id} style={[s.card, { marginTop: 8, padding: 0 }]} intensity={20}>
             <View style={s.chHead}>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Rolle ${r.name} bearbeiten`} onPress={() => setOpen(open === r.id ? null : r.id)} style={s.chMain}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("Rolle {0} bearbeiten", { 0: r.name })} onPress={() => setOpen(open === r.id ? null : r.id)} style={s.chMain}>
                 <View style={[s.roleDot, { backgroundColor: r.color || C.muted }]} />
                 <T style={{ flex: 1, fontWeight: '700', color: r.color || C.text }} numberOfLines={1}>{r.name}</T>
-                {r.rank && r.rank !== 'member' ? <View style={s.pill}><Icon name="shield" size={11} color={C.text2} /><T style={s.pillText}>{r.rank === 'admin' ? 'Admin' : 'Mod'}</T></View> : null}
+                {r.rank && r.rank !== 'member' ? <View style={s.pill}><Icon name="shield" size={11} color={C.text2} /><T style={s.pillText}>{r.rank === 'admin' ? t("Admin") : t("Mod")}</T></View> : null}
                 <T style={[s.hint, { marginTop: 0 }]}>{members ? n : ''}</T>
               </Pressable>
               <Arrow dir="up" disabled={i === 0} onPress={() => move(i, -1)} />
@@ -291,7 +292,7 @@ function RoleEdit({ sid, r, editable, rankOk, members, say, onChanged, onGone }:
   const [d, setD] = useState({ name: r.name, color: r.color || null as string | null, rank: r.rank || 'member', hoist: !!r.hoist, mentionable: !!r.mentionable });
   const [q, setQ] = useState('');
   const save = async () => {
-    try { await api('PATCH', '/api/roles/' + r.id, d); await bootstrap(); say('Gespeichert ✓'); } catch (e) { say(errText(e)); }
+    try { await api('PATCH', '/api/roles/' + r.id, d); await bootstrap(); say(t("Gespeichert ✓")); } catch (e) { say(errText(e)); }
   };
   const del = () => ask(`Rolle „${r.name}“ löschen?`, 'Alle verlieren diese Rolle und die Rechte, die sie mitbringt.', 'Löschen', async () => { try { await api('DELETE', '/api/roles/' + r.id); onGone(); await bootstrap(); } catch (e) { say(errText(e)); } });
   const setHolder = async (m: Member, on: boolean) => {
@@ -302,29 +303,29 @@ function RoleEdit({ sid, r, editable, rankOk, members, say, onChanged, onGone }:
   const found = q.trim().length >= 1 ? (members || []).filter((m) => !(m.roles || []).includes(r.id) && (m.username.includes(q.trim().toLowerCase()) || (m.display || '').toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 8) : [];
   return (
     <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
-      {!editable ? <T style={s.hint}>Diese Rolle hat Admin-Rechte. Nur der Besitzer kann sie ändern.</T> : null}
-      <T style={s.label}>Name</T>
+      {!editable ? <T style={s.hint}>{t("Diese Rolle hat Admin-Rechte. Nur der Besitzer kann sie ändern.")}</T> : null}
+      <T style={s.label}>{t("Name")}</T>
       <TextInput value={d.name} onChangeText={(v) => setD({ ...d, name: v })} maxLength={32} editable={editable} style={s.input} />
-      <T style={s.label}>Farbe</T>
+      <T style={s.label}>{t("Farbe")}</T>
       <View pointerEvents={editable ? 'auto' : 'none'} style={!editable && { opacity: 0.5 }}>
-        <ColorRow title="Rollenfarbe" value={d.color} presets={ROLE_COLORS} onChange={(c) => setD({ ...d, color: c })} none={{ label: 'Keine Farbe', on: !d.color, onPick: () => setD({ ...d, color: null }), text: '∅' }} />
+        <ColorRow title={t("Rollenfarbe")} value={d.color} presets={ROLE_COLORS} onChange={(c) => setD({ ...d, color: c })} none={{ label: t("Keine Farbe"), on: !d.color, onPick: () => setD({ ...d, color: null }), text: '∅' }} />
       </View>
-      <T style={s.label}>Rechte</T>
+      <T style={s.label}>{t("Rechte")}</T>
       <View style={s.chips}>{(['member', 'mod', 'admin'] as const).map((k) => <Pressable key={k} disabled={!editable || !rankOk(k)} onPress={() => setD({ ...d, rank: k })} style={[s.chip, d.rank === k && s.chipOn, (!editable || !rankOk(k)) && { opacity: 0.4 }]}>
-        <T style={[s.chipText, d.rank === k && { color: '#fff' }]}>{k === 'member' ? 'Nur Abzeichen' : k === 'mod' ? 'Moderator' : 'Admin'}</T></Pressable>)}</View>
-      <T style={s.hint}>Moderator: rauswerfen, bannen, Timeout, Nachrichten löschen, im Sprachraum stummschalten und verschieben. Admin: dazu Kanäle, Rollen und Server-Einstellungen.</T>
-      <View style={[s.switchRow, { marginTop: 12 }]}><T style={{ flex: 1 }}>In der Mitgliederliste getrennt anzeigen</T><Switch disabled={!editable} value={d.hoist} onValueChange={(v) => setD({ ...d, hoist: v })} trackColor={{ true: C.accent }} /></View>
-      <View style={s.switchRow}><T style={{ flex: 1 }}>Jeder darf @{r.name} erwähnen</T><Switch disabled={!editable} value={d.mentionable} onValueChange={(v) => setD({ ...d, mentionable: v })} trackColor={{ true: C.accent }} /></View>
-      {editable ? <View style={s.row2}><Btn title="Speichern" small onPress={save} style={{ flex: 1 }} /><Btn title="Löschen" small kind="danger" onPress={del} style={{ flex: 1 }} /></View> : null}
-      <T style={s.label}>Mitglieder mit dieser Rolle</T>
-      {!members ? <ActivityIndicator color={C.accent} /> : !holders.length ? <T style={s.hint}>Noch niemand.</T> : holders.map((m) => (
+        <T style={[s.chipText, d.rank === k && { color: '#fff' }]}>{k === 'member' ? t("Nur Abzeichen") : k === 'mod' ? t("Moderator") : t("Admin")}</T></Pressable>)}</View>
+      <T style={s.hint}>{t("Moderator: rauswerfen, bannen, Timeout, Nachrichten löschen, im Sprachraum stummschalten und verschieben. Admin: dazu Kanäle, Rollen und Server-Einstellungen.")}</T>
+      <View style={[s.switchRow, { marginTop: 12 }]}><T style={{ flex: 1 }}>{t("In der Mitgliederliste getrennt anzeigen")}</T><Switch disabled={!editable} value={d.hoist} onValueChange={(v) => setD({ ...d, hoist: v })} trackColor={{ true: C.accent }} /></View>
+      <View style={s.switchRow}><T style={{ flex: 1 }}>{t("Jeder darf @")}{r.name} {' '}{t("erwähnen")}</T><Switch disabled={!editable} value={d.mentionable} onValueChange={(v) => setD({ ...d, mentionable: v })} trackColor={{ true: C.accent }} /></View>
+      {editable ? <View style={s.row2}><Btn title={t("Speichern")} small onPress={save} style={{ flex: 1 }} /><Btn title={t("Löschen")} small kind="danger" onPress={del} style={{ flex: 1 }} /></View> : null}
+      <T style={s.label}>{t("Mitglieder mit dieser Rolle")}</T>
+      {!members ? <ActivityIndicator color={C.accent} /> : !holders.length ? <T style={s.hint}>{t("Noch niemand.")}</T> : holders.map((m) => (
         <View key={m.id} style={s.person}>
           <Avatar user={m} size={30} frame={false} /><T style={{ flex: 1 }} numberOfLines={1}>{m.nick || m.display}</T>
-          {editable ? <Pressable accessibilityRole="button" accessibilityLabel="Rolle wegnehmen" onPress={() => setHolder(m, false)} style={s.small}><Icon name="x" size={14} color={C.muted} /></Pressable> : null}
+          {editable ? <Pressable accessibilityRole="button" accessibilityLabel={t("Rolle wegnehmen")} onPress={() => setHolder(m, false)} style={s.small}><Icon name="x" size={14} color={C.muted} /></Pressable> : null}
         </View>
       ))}
       {editable ? <>
-        <TextInput value={q} onChangeText={setQ} placeholder="Mitglied hinzufügen …" placeholderTextColor={C.faint} style={[s.input, { marginTop: 8 }]} autoCapitalize="none" />
+        <TextInput value={q} onChangeText={setQ} placeholder={t("Mitglied hinzufügen …")} placeholderTextColor={C.faint} style={[s.input, { marginTop: 8 }]} autoCapitalize="none" />
         {found.map((m) => (
           <Pressable key={m.id} accessibilityRole="button" onPress={() => { setHolder(m, true); setQ(''); }} style={s.person}>
             <Avatar user={m} size={30} frame={false} /><T style={{ flex: 1 }} numberOfLines={1}>{m.nick || m.display} <T style={s.hint}>@{m.username}</T></T><Icon name="plus" size={16} color={C.accent} />
@@ -357,7 +358,7 @@ function Members({ sid, say }: P) {
   const m = menu;
   return (
     <>
-      <TextInput value={q} onChangeText={setQ} placeholder="Mitglied suchen …" placeholderTextColor={C.faint} style={s.input} autoCapitalize="none" />
+      <TextInput value={q} onChangeText={setQ} placeholder={t("Mitglied suchen …")} placeholderTextColor={C.faint} style={s.input} autoCapitalize="none" />
       {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 20 }} /> : rows.map((x) => {
         const roles = (sv.roles || []).filter((r) => (x.roles || []).includes(r.id));
         const muted = (x.muted_until || 0) > Date.now();
@@ -376,31 +377,31 @@ function Members({ sid, say }: P) {
         );
       })}
       <Sheet open={!!m && !act} onClose={() => setMenu(null)} title={m ? (m.nick || m.display) : ''} items={m ? [
-        { label: 'Profil ansehen', icon: 'user', onPress: () => { const id = m.id; setMenu(null); router.push({ pathname: '/user/[id]', params: { id } }); } },
-        (m.id === me?.id || (mod && over(m))) ? { label: 'Spitzname ändern', icon: 'edit', onPress: () => { setNick(m.nick || ''); setMenu(m); setAct('nick'); } } : null,
-        admin && over(m) ? { label: 'Rollen', icon: 'shield', onPress: () => { setMenu(m); setAct('roles'); } } : null,
-        admin && over(m) ? { label: 'Rang (Mitglied, Mod, Admin)', icon: 'shield', onPress: () => { setMenu(m); setAct('base'); } } : null,
-        mod && over(m) ? { label: (m.muted_until || 0) > Date.now() ? 'Timeout beenden' : 'Timeout geben', icon: 'clock', onPress: () => {
+        { label: t("Profil ansehen"), icon: 'user', onPress: () => { const id = m.id; setMenu(null); router.push({ pathname: '/user/[id]', params: { id } }); } },
+        (m.id === me?.id || (mod && over(m))) ? { label: t("Spitzname ändern"), icon: 'edit', onPress: () => { setNick(m.nick || ''); setMenu(m); setAct('nick'); } } : null,
+        admin && over(m) ? { label: t("Rollen"), icon: 'shield', onPress: () => { setMenu(m); setAct('roles'); } } : null,
+        admin && over(m) ? { label: t("Rang (Mitglied, Mod, Admin)"), icon: 'shield', onPress: () => { setMenu(m); setAct('base'); } } : null,
+        mod && over(m) ? { label: (m.muted_until || 0) > Date.now() ? t("Timeout beenden") : t("Timeout geben"), icon: 'clock', onPress: () => {
           if ((m.muted_until || 0) > Date.now()) run(() => api('PATCH', `/api/servers/${sid}/members/${m.id}`, { timeout_minutes: 0 }), 'Timeout beendet'); else { setMenu(m); setAct('timeout'); }
         } } : null,
-        mod && over(m) ? { label: 'Rauswerfen', icon: 'logout', danger: true, onPress: () => ask(`${m.display} rauswerfen?`, 'Die Person kann mit einer neuen Einladung wieder beitreten.', 'Rauswerfen', () => run(() => api('POST', `/api/servers/${sid}/kick/${m.id}`, {}), 'Rausgeworfen')) } : null,
-        mod && over(m) ? { label: 'Bannen', icon: 'ban', danger: true, onPress: () => { setReason(''); setMenu(m); setAct('ban'); } } : null,
-        mine === 'owner' && m.id !== me?.id ? { label: 'Besitz übertragen', icon: 'shield', danger: true, onPress: () => ask(`Server an ${m.display} übertragen?`, 'Du bist danach Admin, nicht mehr Besitzer. Das kann nur der neue Besitzer rückgängig machen.', 'Übertragen', () => run(() => api('POST', `/api/servers/${sid}/transfer`, { user_id: m.id }).then(bootstrap), 'Übertragen')) } : null,
+        mod && over(m) ? { label: t("Rauswerfen"), icon: 'logout', danger: true, onPress: () => ask(`${m.display} rauswerfen?`, 'Die Person kann mit einer neuen Einladung wieder beitreten.', 'Rauswerfen', () => run(() => api('POST', `/api/servers/${sid}/kick/${m.id}`, {}), 'Rausgeworfen')) } : null,
+        mod && over(m) ? { label: t("Bannen"), icon: 'ban', danger: true, onPress: () => { setReason(''); setMenu(m); setAct('ban'); } } : null,
+        mine === 'owner' && m.id !== me?.id ? { label: t("Besitz übertragen"), icon: 'shield', danger: true, onPress: () => ask(`Server an ${m.display} übertragen?`, 'Du bist danach Admin, nicht mehr Besitzer. Das kann nur der neue Besitzer rückgängig machen.', 'Übertragen', () => run(() => api('POST', `/api/servers/${sid}/transfer`, { user_id: m.id }).then(bootstrap), 'Übertragen')) } : null,
       ] : []} />
-      <Sheet open={!!m && act === 'timeout'} onClose={() => setAct('')} title="Timeout für …" items={[[5, '5 Minuten'], [60, '1 Stunde'], [1440, '1 Tag'], [10080, '1 Woche']].map(([n, l]) => ({ label: l as string, onPress: () => run(() => api('PATCH', `/api/servers/${sid}/members/${m!.id}`, { timeout_minutes: n }), 'Timeout gesetzt') }))} />
-      <Sheet open={!!m && act === 'base'} onClose={() => setAct('')} title="Rang" items={(['member', 'mod', 'admin'] as const).filter((k) => mine === 'owner' || RANK[k] < RANK[mine]).map((k) => ({ label: (m?.role === k ? '✓ ' : '') + RANK_NAME[k], onPress: () => run(() => api('PATCH', `/api/servers/${sid}/members/${m!.id}`, { role: k }).then(bootstrap), 'Rang geändert') }))} />
-      <Sheet open={!!m && act === 'roles'} onClose={() => setAct('')} title="Rollen" items={(sv.roles || []).filter((r) => mine === 'owner' || RANK[r.rank || 'member'] < RANK[mine]).map((r) => {
+      <Sheet open={!!m && act === 'timeout'} onClose={() => setAct('')} title={t("Timeout für …")} items={[[5, '5 Minuten'], [60, '1 Stunde'], [1440, '1 Tag'], [10080, '1 Woche']].map(([n, l]) => ({ label: l as string, onPress: () => run(() => api('PATCH', `/api/servers/${sid}/members/${m!.id}`, { timeout_minutes: n }), 'Timeout gesetzt') }))} />
+      <Sheet open={!!m && act === 'base'} onClose={() => setAct('')} title={t("Rang")} items={(['member', 'mod', 'admin'] as const).filter((k) => mine === 'owner' || RANK[k] < RANK[mine]).map((k) => ({ label: (m?.role === k ? '✓ ' : '') + RANK_NAME[k], onPress: () => run(() => api('PATCH', `/api/servers/${sid}/members/${m!.id}`, { role: k }).then(bootstrap), 'Rang geändert') }))} />
+      <Sheet open={!!m && act === 'roles'} onClose={() => setAct('')} title={t("Rollen")} items={(sv.roles || []).filter((r) => mine === 'owner' || RANK[r.rank || 'member'] < RANK[mine]).map((r) => {
         const has = (m?.roles || []).includes(r.id);
         return { label: (has ? '✓ ' : '') + r.name, onPress: () => { const cur = new Set(m!.roles || []); has ? cur.delete(r.id) : cur.add(r.id); run(() => api('PUT', `/api/servers/${sid}/members/${m!.id}/roles`, { roles: [...cur] }), 'Rollen geändert'); } };
       })} />
       {m && (act === 'nick' || act === 'ban') ? (
         <View style={s.overlay}>
           <Glass style={[s.card, { width: '100%' }]} intensity={50} tint="rgba(19,20,32,0.95)">
-            <T style={{ fontSize: 17, fontWeight: '800', marginBottom: 8 }}>{act === 'nick' ? 'Spitzname' : `${m.display} bannen`}</T>
-            <TextInput autoFocus value={act === 'nick' ? nick : reason} onChangeText={act === 'nick' ? setNick : setReason} maxLength={act === 'nick' ? 32 : 200} placeholder={act === 'nick' ? 'leer = keiner' : 'Grund (freiwillig)'} placeholderTextColor={C.faint} style={s.input} />
+            <T style={{ fontSize: 17, fontWeight: '800', marginBottom: 8 }}>{act === 'nick' ? t("Spitzname") : `${m.display} bannen`}</T>
+            <TextInput autoFocus value={act === 'nick' ? nick : reason} onChangeText={act === 'nick' ? setNick : setReason} maxLength={act === 'nick' ? 32 : 200} placeholder={act === 'nick' ? t("leer = keiner") : t("Grund (freiwillig)")} placeholderTextColor={C.faint} style={s.input} />
             <View style={s.row2}>
-              <Btn title="Abbrechen" small kind="secondary" onPress={() => setAct('')} style={{ flex: 1 }} />
-              <Btn title={act === 'nick' ? 'Speichern' : 'Bannen'} small kind={act === 'ban' ? 'danger' : 'primary'} style={{ flex: 1 }}
+              <Btn title={t("Abbrechen")} small kind="secondary" onPress={() => setAct('')} style={{ flex: 1 }} />
+              <Btn title={act === 'nick' ? t("Speichern") : t("Bannen")} small kind={act === 'ban' ? 'danger' : 'primary'} style={{ flex: 1 }}
                 onPress={() => act === 'nick' ? run(() => api('PATCH', `/api/servers/${sid}/members/${m.id}`, { nick: nick.trim() || null }), 'Gespeichert ✓')
                   : run(() => api('POST', `/api/servers/${sid}/bans/${m.id}`, { reason, delete_messages: false }), 'Gebannt')} />
             </View>
@@ -421,19 +422,19 @@ function Invites({ sid, say }: P) {
   // neue Einladung: 7 Tage gültig, beliebig oft – Link gleich in die Zwischenablage
   const create = async () => {
     setBusy(true);
-    try { const d = await api<any>('POST', `/api/servers/${sid}/invites`, { expires_hours: 168, max_uses: 0 }); await Clipboard.setStringAsync(url(d.code)).catch(() => {}); say('Einladung erstellt – Link kopiert'); load(); }
+    try { const d = await api<any>('POST', `/api/servers/${sid}/invites`, { expires_hours: 168, max_uses: 0 }); await Clipboard.setStringAsync(url(d.code)).catch(() => {}); say(t("Einladung erstellt – Link kopiert")); load(); }
     catch (e) { say(errText(e)); } finally { setBusy(false); }
   };
-  const head = <Btn title="Einladung erstellen" icon="userPlus" onPress={create} busy={busy} style={{ marginBottom: 12 }} />;
+  const head = <Btn title={t("Einladung erstellen")} icon="userPlus" onPress={create} busy={busy} style={{ marginBottom: 12 }} />;
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <>{head}<Empty icon="link" title="Keine aktiven Einladungen" text="Erstelle einen Link und schick ihn deinen Freunden – damit kommen sie direkt auf den Server." /></>;
+  if (!list.length) return <>{head}<Empty icon="link" title={t("Keine aktiven Einladungen")} text={t("Erstelle einen Link und schick ihn deinen Freunden – damit kommen sie direkt auf den Server.")} /></>;
   return <>{head}{list.map((inv) => (
     <Glass key={inv.code} style={[s.card, { marginBottom: 8 }]} intensity={20}>
       <T style={{ fontWeight: '800', fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) }}>{inv.code}</T>
-      <T style={s.hint}>{(inv.creator ? inv.creator.display + ' · ' : '') + `${inv.uses} mal benutzt · ` + (inv.expires ? `läuft ab ${new Date(inv.expires).toLocaleString('de-DE')}` : 'läuft nie ab')}</T>
+      <T style={s.hint}>{(inv.creator ? inv.creator.display + ' · ' : '') + `${inv.uses} mal benutzt · ` + (inv.expires ? `läuft ab ${new Date(inv.expires).toLocaleString(LOCALE)}` : 'läuft nie ab')}</T>
       <View style={s.row2}>
-        <Btn title="Link kopieren" small kind="secondary" style={{ flex: 1 }} onPress={async () => { await Clipboard.setStringAsync(url(inv.code)).catch(() => {}); say('Link kopiert'); }} />
-        <Btn title="Löschen" small kind="danger" style={{ flex: 1 }} onPress={async () => { await api('DELETE', '/api/invites/' + inv.code).catch((e) => say(errText(e))); load(); }} />
+        <Btn title={t("Link kopieren")} small kind="secondary" style={{ flex: 1 }} onPress={async () => { await Clipboard.setStringAsync(url(inv.code)).catch(() => {}); say(t("Link kopiert")); }} />
+        <Btn title={t("Löschen")} small kind="danger" style={{ flex: 1 }} onPress={async () => { await api('DELETE', '/api/invites/' + inv.code).catch((e) => say(errText(e))); load(); }} />
       </View>
     </Glass>
   ))}</>;
@@ -443,22 +444,22 @@ function Bans({ sid, say }: P) {
   const load = () => api<any>('GET', `/api/servers/${sid}/bans`).then((d) => { putUsers((d.bans || []).map((b: any) => b.user)); setList(d.bans || []); }).catch((e) => { setList([]); say(errText(e)); });
   useEffect(() => { load(); }, []);
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <Empty icon="ban" title="Niemand ist gebannt" text="Gebannte Leute erscheinen hier. Du kannst den Bann jederzeit wieder aufheben." />;
+  if (!list.length) return <Empty icon="ban" title={t("Niemand ist gebannt")} text={t("Gebannte Leute erscheinen hier. Du kannst den Bann jederzeit wieder aufheben.")} />;
   return <>{list.map((b) => (
     <View key={b.user?.id} style={s.person}>
       <Avatar user={b.user} size={36} frame={false} />
-      <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{b.user?.display || '?'}</T><T style={s.hint}>{b.reason || 'Kein Grund angegeben'}</T></View>
-      <Btn title="Aufheben" small kind="secondary" onPress={async () => { await api('DELETE', `/api/servers/${sid}/bans/${b.user.id}`).catch((e) => say(errText(e))); load(); }} />
+      <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{b.user?.display || '?'}</T><T style={s.hint}>{b.reason || t("Kein Grund angegeben")}</T></View>
+      <Btn title={t("Aufheben")} small kind="secondary" onPress={async () => { await api('DELETE', `/api/servers/${sid}/bans/${b.user.id}`).catch((e) => say(errText(e))); load(); }} />
     </View>
   ))}</>;
 }
-const AUDIT: Record<string, string> = { kick: 'hat {b} rausgeworfen', ban: 'hat {b} gebannt', unban: 'hat den Bann von {b} aufgehoben', role: 'hat die Rolle von {b} geändert', timeout: 'hat {b} einen Timeout gegeben', timeout_end: 'hat den Timeout von {b} beendet',
-  channel_create: 'hat einen Kanal erstellt', channel_update: 'hat einen Kanal geändert', channel_delete: 'hat einen Kanal gelöscht', server_update: 'hat den Server geändert', message_delete: 'hat eine Nachricht von {b} gelöscht', transfer: 'hat den Server an {b} übertragen' };
+const AUDIT: Record<string, string> = { kick: t("hat {b} rausgeworfen"), ban: t("hat {b} gebannt"), unban: t("hat den Bann von {b} aufgehoben"), role: t("hat die Rolle von {b} geändert"), timeout: t("hat {b} einen Timeout gegeben"), timeout_end: t("hat den Timeout von {b} beendet"),
+  channel_create: t("hat einen Kanal erstellt"), channel_update: t("hat einen Kanal geändert"), channel_delete: t("hat einen Kanal gelöscht"), server_update: t("hat den Server geändert"), message_delete: t("hat eine Nachricht von {b} gelöscht"), transfer: t("hat den Server an {b} übertragen") };
 function Audit({ sid, say }: P) {
   const [list, setList] = useState<any[] | null>(null);
   useEffect(() => { api<any>('GET', `/api/servers/${sid}/audit`).then((d) => setList(d.entries || [])).catch((e) => { setList([]); say(errText(e)); }); }, []);
   if (!list) return <ActivityIndicator color={C.accent} />;
-  if (!list.length) return <Empty icon="clock" title="Noch keine Einträge" text="Hier steht, wer Kanäle, Rollen oder Mitglieder geändert hat." />;
+  if (!list.length) return <Empty icon="clock" title={t("Noch keine Einträge")} text={t("Hier steht, wer Kanäle, Rollen oder Mitglieder geändert hat.")} />;
   return <>{list.map((e, i) => (
     <View key={e.id || i} style={[s.person, { alignItems: 'flex-start' }]}>
       <Avatar user={e.actor} size={30} frame={false} />
@@ -478,10 +479,10 @@ function Danger({ sid, say, onGone }: P & { onGone: () => void }) {
   });
   return (
     <Glass style={s.card} intensity={20}>
-      <T style={{ color: C.text2, lineHeight: 21 }}>Alle Kanäle, Nachrichten und Bilder werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</T>
-      <T style={s.label}>Gib zur Bestätigung den Server-Namen ein</T>
+      <T style={{ color: C.text2, lineHeight: 21 }}>{t("Alle Kanäle, Nachrichten und Bilder werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.")}</T>
+      <T style={s.label}>{t("Gib zur Bestätigung den Server-Namen ein")}</T>
       <TextInput value={name} onChangeText={setName} placeholder={sv.name} placeholderTextColor={C.faint} style={s.input} autoCapitalize="none" />
-      <Btn title="Server endgültig löschen" kind="danger" disabled={name.trim() !== sv.name} onPress={del} style={{ marginTop: 14 }} />
+      <Btn title={t("Server endgültig löschen")} kind="danger" disabled={name.trim() !== sv.name} onPress={del} style={{ marginTop: 14 }} />
     </Glass>
   );
 }

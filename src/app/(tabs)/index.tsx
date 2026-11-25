@@ -20,6 +20,7 @@ import { openWeb, webAction } from '@/lib/web';
 import { joinCall, leaveForWeb, nativeRoom } from '@/lib/calls';
 import { matchNew } from '@/lib/match';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
+import { t, LOCALE } from '@/lib/i18n';
 
 export default function Home() {
   const servers = useStore((s) => s.servers);
@@ -40,20 +41,20 @@ export default function Home() {
     try {
       const d = await api<any>('PUT', `/api/servers/${sv.id}/notify`, { level });
       setState((st) => ({ servers: st.servers.map((x) => (x.id === sv.id ? { ...x, notify: d.notify, notify_raw: d.notify_raw } : x)) }));
-      setNote('Gespeichert ✓'); setTimeout(() => setNote(''), 1600);
+      setNote(t("Gespeichert ✓")); setTimeout(() => setNote(''), 1600);
     } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3000); }
   };
   const [note, setNote] = useState('');
   const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
   const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'icon' ? 'Server-Bild' : 'Server-Banner', crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'icon' ? t("Server-Bild") : t("Server-Banner"), crop: kind === 'icon' ? [1, 1] : [16, 6], quality: 0.75, maxSide: kind === 'icon' ? 1024 : 1600 });
     if (!r) return;
     try {
-      setNote(kind === 'icon' ? 'Server-Bild wird hochgeladen …' : 'Banner wird hochgeladen …');
+      setNote(kind === 'icon' ? t("Server-Bild wird hochgeladen …") : t("Banner wird hochgeladen …"));
       const up = await upload(kind, r.uri, r.mime);
       await api('PATCH', `/api/servers/${sv.id}`, { [kind]: up.key });
       await bootstrap();
-      setNote('Gespeichert ✓'); setTimeout(() => setNote(''), 1800);
+      setNote(t("Gespeichert ✓")); setTimeout(() => setNote(''), 1800);
     } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3500); }
   };
   const markServerRead = (sv: Server) => {
@@ -62,14 +63,14 @@ export default function Home() {
   const leave = (sv: Server) => {
     const go = async () => { try { await api('POST', `/api/servers/${sv.id}/leave`, {}); setSel(null); await bootstrap(); } catch (e) { setNote(errText(e)); } };
     if (Platform.OS === 'web') { if (confirm(`„${sv.name}“ verlassen?`)) go(); return; }
-    Alert.alert(`„${sv.name}“ verlassen?`, 'Du kannst nur mit einer neuen Einladung wieder beitreten.', [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Verlassen', style: 'destructive', onPress: go }]);
+    Alert.alert(t("„{0}“ verlassen?", { 0: sv.name }), t("Du kannst nur mit einer neuen Einladung wieder beitreten."), [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Verlassen"), style: 'destructive', onPress: go }]);
   };
   const menuAdmin = menuFor ? can(menuFor.id, 'admin') : false;
   return (
     <View style={{ flex: 1, backgroundColor: HOME.rail }}>
       <SafeAreaView edges={['top']} style={{ flex: 1, flexDirection: 'row' }}>
         <ScrollView style={s.rail} contentContainerStyle={{ alignItems: 'center', paddingVertical: 12, gap: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-          <RailItem active={!sel} onPress={() => setSel(null)} label="Direktnachrichten" badge={dmUnread}>
+          <RailItem active={!sel} onPress={() => setSel(null)} label={t("Direktnachrichten")} badge={dmUnread}>
             {!sel ? <View style={[s.dmBtn, s.dmOn]}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="comment" size={24} color="#fff" stroke={2.2} /></View></View>
               : <View style={s.dmBtn}><Icon name="comment" size={24} color={C.text2} /></View>}
           </RailItem>
@@ -82,9 +83,9 @@ export default function Home() {
             return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
           })}
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
-          <RailItem active={false} onPress={() => router.push('/server-new')} label="Server hinzufügen"><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.accent} /></View></RailItem>
-          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label="Server entdecken"><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
-          <RailItem active={false} onPress={() => router.push('/feed')} label="Feed"><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/server-new')} label={t("Server hinzufügen")}><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.accent} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label={t("Server entdecken")}><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/feed')} label={t("Feed")}><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
         </ScrollView>
         <View style={s.panel}>
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
@@ -94,15 +95,15 @@ export default function Home() {
       <MeBar onNote={setNote} />
       {note ? <View style={s.note} pointerEvents="none"><T style={{ color: C.text, fontWeight: '700' }}>{note}</T></View> : null}
       <Sheet open={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor?.name} items={menuFor ? [
-        { label: 'Als gelesen markieren', icon: 'check', onPress: () => markServerRead(menuFor) },
-        { label: 'Leute einladen', icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
-        { label: 'Mitteilungen', icon: 'bell', onPress: () => setNotifFor(menuFor) },
-        menuAdmin ? { label: 'Server-Bild ändern', icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
-        menuAdmin ? { label: 'Banner ändern', icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
-        menuAdmin ? { label: 'Server-Einstellungen', icon: 'gear', onPress: () => router.push({ pathname: '/server-settings', params: { sid: menuFor.id } }) } : null,
-        menuFor.role !== 'owner' ? { label: 'Server verlassen', icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
+        { label: t("Als gelesen markieren"), icon: 'check', onPress: () => markServerRead(menuFor) },
+        { label: t("Leute einladen"), icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
+        { label: t("Mitteilungen"), icon: 'bell', onPress: () => setNotifFor(menuFor) },
+        menuAdmin ? { label: t("Server-Bild ändern"), icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
+        menuAdmin ? { label: t("Banner ändern"), icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
+        menuAdmin ? { label: t("Server-Einstellungen"), icon: 'gear', onPress: () => router.push({ pathname: '/server-settings', params: { sid: menuFor.id } }) } : null,
+        menuFor.role !== 'owner' ? { label: t("Server verlassen"), icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
       ] : []} />
-      <Sheet open={!!notifFor} onClose={() => setNotifFor(null)} title={notifFor ? `Mitteilungen · ${notifFor.name}` : undefined} items={notifFor ? ([
+      <Sheet open={!!notifFor} onClose={() => setNotifFor(null)} title={notifFor ? t("Mitteilungen · {0}", { 0: notifFor.name }) : undefined} items={notifFor ? ([
         [null, 'Standard (bis 50 Mitglieder alles)'], ['all', 'Alle Nachrichten'], ['mentions', 'Nur @Erwähnungen'], ['none', 'Nichts'],
       ] as const).map(([k, label]) => ({ label, icon: (notifFor.notify_raw ?? null) === k ? 'check' : 'bell', onPress: () => setNotify(notifFor, k) })) : []} />
     </View>
@@ -138,15 +139,15 @@ function ToolChip({ icon, label, onPress, color = C.accent, primary }: { icon: I
 }
 
 /** Zeit wie bei Discord: „5 Min.“, heute die Uhrzeit, dann „3 T.“, ältere als Datum */
-function ago(t?: number) {
-  if (!t) return '';
-  const d = Date.now() - t, min = 60000, day = 86400000;
-  if (d < min) return 'jetzt';
-  if (d < 60 * min) return Math.floor(d / min) + ' Min.';
-  const dt = new Date(t), now = new Date();
-  if (dt.toDateString() === now.toDateString()) return dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  if (d < 7 * day) return Math.max(1, Math.round(d / day)) + ' T.';
-  return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+function ago(ts?: number) {
+  if (!ts) return '';
+  const d = Date.now() - ts, min = 60000, day = 86400000;
+  if (d < min) return t('jetzt');
+  if (d < 60 * min) return t('{0} Min.', { 0: Math.floor(d / min) });
+  const dt = new Date(ts), now = new Date();
+  if (dt.toDateString() === now.toDateString()) return dt.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
+  if (d < 7 * day) return t('{0} T.', { 0: Math.max(1, Math.round(d / day)) });
+  return dt.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit' });
 }
 
 function DmPanel() {
@@ -161,40 +162,40 @@ function DmPanel() {
   const router = useRouter();
   const preview =(d: (typeof dms)[number]) => {
     const l = d.last;
-    if (!l) return d.kind === 'group' ? `${d.members.length} Mitglieder` : '';
-    const who = l.a === me?.id ? 'Du: ' : d.kind === 'group' ? (userOf(l.a)?.display || '') + ': ' : '';
-    if (l.k === 'call') return who + 'Anruf';
+    if (!l) return d.kind === 'group' ? t('{0} Mitglieder', { 0: d.members.length }) : '';
+    const who = l.a === me?.id ? t('Du: ') : d.kind === 'group' ? (userOf(l.a)?.display || '') + ': ' : '';
+    if (l.k === 'call') return who + t('Anruf');
     if (l.k === 'poll') return who + '📊 ' + plainText(l.c);
     const text = plainText(l.c).replace(/\s+/g, ' ').trim();
-    return who + (text || (l.att ? '📎 Anhang' : ''));
+    return who + (text || (l.att ? t('📎 Anhang') : ''));
   };
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
       <View style={[s.head, s.headRow]}>
-        <T style={[s.headText, { flex: 1, fontSize: 22 }]}>Nachrichten</T>
+        <T style={[s.headText, { flex: 1, fontSize: 22 }]}>{t("Nachrichten")}</T>
       </View>
       {/* wie bei Discord: Suchen, Freunde hinzufügen, neue Gruppe */}
       <View style={s.dmTools}>
-        <Pressable accessibilityRole="button" accessibilityLabel="In Nachrichten suchen" onPress={() => router.push('/search')} style={({ pressed }) => [s.toolRound, pressed && s.rowPressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("In Nachrichten suchen")} onPress={() => router.push('/search')} style={({ pressed }) => [s.toolRound, pressed && s.rowPressed]}>
           <Icon name="search" size={19} color={C.text2} />
         </Pressable>
         <Pressable accessibilityRole="button" onPress={() => router.push('/friends')} style={({ pressed }) => [s.toolWide, pressed && s.rowPressed]}>
           <Icon name="userPlus" size={18} color={C.text2} />
-          <T style={{ fontWeight: '700', color: C.text2 }}>Freunde hinzufügen</T>
+          <T style={{ fontWeight: '700', color: C.text2 }}>{t("Freunde hinzufügen")}</T>
           {requests ? <Badge n={requests} /> : null}
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Neue Gruppe" onPress={() => router.push('/group-new')} style={({ pressed }) => [s.toolPlus, pressed && { opacity: 0.85 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Neue Gruppe")} onPress={() => router.push('/group-new')} style={({ pressed }) => [s.toolPlus, pressed && { opacity: 0.85 }]}>
           <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <View><Icon name="plus" size={22} color="#fff" stroke={2.4} /></View>
         </Pressable>
       </View>
       {/* „Mitspieler finden“ (Gamer-Matching): gut sichtbar über den Gesprächen, mit Zähler für neue Likes und Matches */}
-      <Pressable accessibilityRole="button" accessibilityLabel="Mitspieler-Match" onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.matchCard, pressed && { opacity: 0.85 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Mitspieler-Match")} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.matchCard, pressed && { opacity: 0.85 }]}>
         <LinearGradient colors={['rgba(132,104,255,0.22)', 'rgba(255,92,154,0.10)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View style={s.matchIc}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="pad" size={22} color="#fff" stroke={2.2} /></View></View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <T style={{ fontWeight: '800', fontSize: 15.5 }} numberOfLines={1}>Mitspieler-Match</T>
-          <T style={{ color: C.text2, fontSize: 12.5, marginTop: -2 }} numberOfLines={1}>{matchCount ? `${matchCount} neu · Likes & Matches` : match.has ? 'Karten ansehen, Likes und Matches' : 'Finde Leute zum Zocken'}</T>
+          <T style={{ fontWeight: '800', fontSize: 15.5 }} numberOfLines={1}>{t("Mitspieler-Match")}</T>
+          <T style={{ color: C.text2, fontSize: 12.5, marginTop: -2 }} numberOfLines={1}>{matchCount ? t("{0} neu · Likes & Matches", { 0: matchCount }) : match.has ? t("Karten ansehen, Likes und Matches") : t("Finde Leute zum Zocken")}</T>
         </View>
         {matchCount ? <Badge n={matchCount} /> : <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View>}
       </Pressable>
@@ -203,14 +204,14 @@ function DmPanel() {
           <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/settings', params: { page: 'email' } })} style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, pressed && { opacity: 0.8 }]}>
           <View style={s.mailIc}><Icon name="at" size={18} color={C.accent} /></View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <T style={{ fontWeight: '800', fontSize: 14.5 }} numberOfLines={1}>E-Mail hinzufügen</T>
-            <T style={{ color: C.muted, fontSize: 12.5, marginTop: -2 }} numberOfLines={2}>Damit du dein Passwort zurücksetzen kannst.</T>
+            <T style={{ fontWeight: '800', fontSize: 14.5 }} numberOfLines={1}>{t("E-Mail hinzufügen")}</T>
+            <T style={{ color: C.muted, fontSize: 12.5, marginTop: -2 }} numberOfLines={2}>{t("Damit du dein Passwort zurücksetzen kannst.")}</T>
           </View>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Ausblenden" hitSlop={10} onPress={() => setMailHidden(true)}><Icon name="x" size={16} color={C.muted} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Ausblenden")} hitSlop={10} onPress={() => setMailHidden(true)}><Icon name="x" size={16} color={C.muted} /></Pressable>
         </View>
       ) : null}
-      {!dms.length ? <Empty icon="comment" title="Noch keine Gespräche" text="Unter „Freunde hinzufügen“ findest du Leute und kannst ihnen schreiben." /> : null}
+      {!dms.length ? <Empty icon="comment" title={t("Noch keine Gespräche")} text={t("Unter „Freunde hinzufügen“ findest du Leute und kannst ihnen schreiben.")} /> : null}
       {dms.map((d, i) => {
         const other = d.kind === 'dm' ? d.members.find((u) => u.id !== me?.id) : null;
         const n = unread[d.id];
@@ -263,20 +264,20 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
   // beschriftete Knöpfe in Farbe, waagerecht wischbar – „Einladen“ hervorgehoben
   const tools = (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tools}>
-      <ToolChip icon="userPlus" label="Einladen" primary onPress={() => router.push({ pathname: '/server-invite', params: { sid: server.id } })} />
-      <ToolChip icon="search" label="Suchen" onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
-      {admin ? <ToolChip icon="plusCircle" label="Kanal" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
-      {admin ? <ToolChip icon="folder" label="Kategorie" onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
-      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? 'Einstellungen' : 'Moderation'} onPress={() => router.push({ pathname: '/server-settings', params: { sid: server.id, tab: admin ? 'overview' : 'members' } })} /> : null}
+      <ToolChip icon="userPlus" label={t("Einladen")} primary onPress={() => router.push({ pathname: '/server-invite', params: { sid: server.id } })} />
+      <ToolChip icon="search" label={t("Suchen")} onPress={() => router.push({ pathname: '/search', params: { sid: server.id } })} />
+      {admin ? <ToolChip icon="plusCircle" label={t("Kanal")} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id } })} /> : null}
+      {admin ? <ToolChip icon="folder" label={t("Kategorie")} onPress={() => router.push({ pathname: '/channel-new', params: { sid: server.id, category: '1' } })} /> : null}
+      {mod ? <ToolChip icon={admin ? 'gear' : 'shield'} label={admin ? t("Einstellungen") : t("Moderation")} onPress={() => router.push({ pathname: '/server-settings', params: { sid: server.id, tab: admin ? 'overview' : 'members' } })} /> : null}
     </ScrollView>
   );
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
       {/* Kopf antippen = Server-Menü (wie in der Web-App) */}
-      <Pressable accessibilityRole="button" accessibilityLabel="Server-Menü" onPress={onMenu}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Server-Menü")} onPress={onMenu}>
         {banner ? <View style={s.banner}><Image source={banner} style={StyleSheet.absoluteFill} contentFit="cover" /><LinearGradient colors={['transparent', 'rgba(14,15,24,0.95)']} style={StyleSheet.absoluteFill} />
             <View style={[s.headRow, { position: 'absolute', left: 16, right: 12, bottom: 10 }]}><T style={[s.headText, { flex: 1 }]} numberOfLines={1}>{server.name}</T><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View></View>
-          : <View style={[s.head, s.headRow]}><View style={{ flex: 1, minWidth: 0 }}><T style={s.headText} numberOfLines={1}>{server.name}</T>{server.member_count ? <T style={s.headSub}>{server.member_count} Mitglieder</T> : null}</View><Icon name="chevron" size={14} color={C.muted} stroke={2.4} /></View>}
+          : <View style={[s.head, s.headRow]}><View style={{ flex: 1, minWidth: 0 }}><T style={s.headText} numberOfLines={1}>{server.name}</T>{server.member_count ? <T style={s.headSub}>{server.member_count} {' '}{t("Mitglieder")}</T> : null}</View><Icon name="chevron" size={14} color={C.muted} stroke={2.4} /></View>}
       </Pressable>
       {tools}
       {groups.map((g) => (!g.chs.length && g.id !== '_') ? null : (

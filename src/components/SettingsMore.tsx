@@ -12,6 +12,7 @@ import { registerPush } from '@/lib/push';
 import { Avatar, Btn, Glass, Section, Seg, T } from './ui';
 import { Icon } from './Icon';
 import { C, F, R } from '@/lib/theme';
+import { t as tr, LOCALE } from '@/lib/i18n';
 
 const ACCENTS = ['#7c5cff', '#ff5c8a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#e04dff', '#5865f2', '#00c2a8', '#ff3d3d'];
 type Patch = (body: any, ok?: string) => Promise<void>;
@@ -22,7 +23,7 @@ export function LookSection({ patch, say }: { patch: Patch; say: (t: string) => 
   const [busy, setBusy] = useState<'' | 'avatar' | 'banner'>('');
   if (!me) return null;
   const pick = async (kind: 'avatar' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'avatar' ? 'Profilbild ändern' : 'Banner ändern', crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'avatar' ? tr("Profilbild ändern") : tr("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
     if (!r) return;
     setBusy(kind);
     try { const up = await upload(kind, r.uri, r.mime); await patch({ [kind]: up.key }, kind === 'avatar' ? 'Profilbild gespeichert ✓' : 'Banner gespeichert ✓'); }
@@ -39,22 +40,22 @@ export function LookSection({ patch, say }: { patch: Patch; say: (t: string) => 
           <View style={s.previewAv}><Avatar user={me} size={72} /></View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 44 }}>
-          <Btn title={busy === 'avatar' ? 'Lädt …' : 'Profilbild ändern'} kind="secondary" small busy={busy === 'avatar'} onPress={() => pick('avatar')} style={{ flex: 1 }} />
-          <Btn title={busy === 'banner' ? 'Lädt …' : 'Banner ändern'} kind="secondary" small busy={busy === 'banner'} onPress={() => pick('banner')} style={{ flex: 1 }} />
+          <Btn title={busy === 'avatar' ? tr("Lädt …") : tr("Profilbild ändern")} kind="secondary" small busy={busy === 'avatar'} onPress={() => pick('avatar')} style={{ flex: 1 }} />
+          <Btn title={busy === 'banner' ? tr("Lädt …") : tr("Banner ändern")} kind="secondary" small busy={busy === 'banner'} onPress={() => pick('banner')} style={{ flex: 1 }} />
         </View>
         {me.avatar || me.banner ? (
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 8 }}>
-            {me.avatar ? <T style={s.textLink} onPress={() => patch({ avatar: null }, 'Profilbild entfernt')}>Profilbild entfernen</T> : null}
-            {me.banner ? <T style={s.textLink} onPress={() => patch({ banner: null }, 'Banner entfernt')}>Banner entfernen</T> : null}
+            {me.avatar ? <T style={s.textLink} onPress={() => patch({ avatar: null }, 'Profilbild entfernt')}>{tr("Profilbild entfernen")}</T> : null}
+            {me.banner ? <T style={s.textLink} onPress={() => patch({ banner: null }, 'Banner entfernt')}>{tr("Banner entfernen")}</T> : null}
           </View>
         ) : null}
-        <T style={s.label}>Akzentfarbe</T>
+        <T style={s.label}>{tr("Akzentfarbe")}</T>
         <View style={s.colors}>
           {ACCENTS.map((c) => <Pressable key={c} accessibilityRole="radio" accessibilityLabel={c} accessibilityState={{ checked: me.accent === c }} onPress={() => patch({ accent: c }, 'Farbe gesetzt ✓')} style={[s.dot, { backgroundColor: c }, me.accent === c && s.dotOn]} />)}
         </View>
-        <T style={s.label}>Bannerfarbe {me.banner ? '(gilt, wenn kein Banner-Bild gesetzt ist)' : ''}</T>
+        <T style={s.label}>{tr("Bannerfarbe")}{' '}{me.banner ? tr("(gilt, wenn kein Banner-Bild gesetzt ist)") : ''}</T>
         <View style={s.colors}>
-          <Pressable accessibilityRole="radio" accessibilityLabel="Standard" accessibilityState={{ checked: !me.banner_color }} onPress={() => patch({ banner_color: null }, 'Farbe gesetzt ✓')} style={[s.dot, !me.banner_color && s.dotOn, { overflow: 'hidden' }]}>
+          <Pressable accessibilityRole="radio" accessibilityLabel={tr("Standard")} accessibilityState={{ checked: !me.banner_color }} onPress={() => patch({ banner_color: null }, 'Farbe gesetzt ✓')} style={[s.dot, !me.banner_color && s.dotOn, { overflow: 'hidden' }]}>
             <LinearGradient colors={[C.accent, '#ff5c8a']} style={StyleSheet.absoluteFill} />
           </Pressable>
           {ACCENTS.map((c) => <Pressable key={c} accessibilityRole="radio" accessibilityLabel={c} accessibilityState={{ checked: me.banner_color === c }} onPress={() => patch({ banner_color: c }, 'Farbe gesetzt ✓')} style={[s.dot, { backgroundColor: c }, me.banner_color === c && s.dotOn]} />)}
@@ -83,37 +84,37 @@ export function PrivacySection({ patch, say }: { patch: Patch; say: (t: string) 
   }, [blocks.join(',')]);
   if (!me) return null;
   const unblock = async (id: string) => {
-    try { await api('POST', `/api/users/${id}/block`, { on: false }); setState((s) => ({ blocks: s.blocks.filter((x) => x !== id) })); say('Blockierung aufgehoben'); }
+    try { await api('POST', `/api/users/${id}/block`, { on: false }); setState((s) => ({ blocks: s.blocks.filter((x) => x !== id) })); say(tr("Blockierung aufgehoben")); }
     catch (e) { say(errText(e)); }
   };
   const others = async () => {
-    try { await api('POST', '/api/me/sessions/revoke-others', {}); say('Alle anderen Geräte wurden abgemeldet.'); loadSessions(); } catch (e) { say(errText(e)); }
+    try { await api('POST', '/api/me/sessions/revoke-others', {}); say(tr("Alle anderen Geräte wurden abgemeldet.")); loadSessions(); } catch (e) { say(errText(e)); }
   };
   return (
     <>
       <Glass style={s.card} intensity={20}>
-        <T style={[s.label, { marginTop: 0 }]}>Wer darf mir Direktnachrichten schicken?</T>
+        <T style={[s.label, { marginTop: 0 }]}>{tr("Wer darf mir Direktnachrichten schicken?")}</T>
         <Seg items={[['all', 'Meine Freunde'], ['none', 'Niemand']]} value={me.dm_policy === 'none' ? 'none' : 'all'} onChange={(v) => patch({ dm_policy: v })} />
-        <T style={s.hint}>Schreiben und anrufen können dich nur Leute, deren Freundschaftsanfrage du angenommen hast. Mit dem Status „Unsichtbar“ sehen andere dich als offline.</T>
-        <T style={s.label}>Blockierte Nutzer</T>
-        {!blocks.length ? <T style={s.hint}>Du hast niemanden blockiert.</T> : blocks.map((id) => (
+        <T style={s.hint}>{tr("Schreiben und anrufen können dich nur Leute, deren Freundschaftsanfrage du angenommen hast. Mit dem Status „Unsichtbar“ sehen andere dich als offline.")}</T>
+        <T style={s.label}>{tr("Blockierte Nutzer")}</T>
+        {!blocks.length ? <T style={s.hint}>{tr("Du hast niemanden blockiert.")}</T> : blocks.map((id) => (
           <View key={id} style={s.row}>
             <Avatar user={userOf(id)} size={32} frame={false} />
             <T style={{ flex: 1, fontWeight: '600' }} numberOfLines={1}>{userOf(id).display}</T>
-            <Btn title="Freigeben" small kind="secondary" onPress={() => unblock(id)} />
+            <Btn title={tr("Freigeben")} small kind="secondary" onPress={() => unblock(id)} />
           </View>
         ))}
-        <T style={s.label}>Angemeldete Geräte</T>
+        <T style={s.label}>{tr("Angemeldete Geräte")}</T>
         {!sessions ? <ActivityIndicator color={C.accent} /> : sessions.map((x, i) => (
           <View key={x.id || i} style={s.row}>
             <Icon name={/iphone|android|asoo-app|expo|cfnetwork/i.test(x.ua || '') ? 'phone' : 'globe'} size={18} color={C.text2} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <T style={{ fontWeight: '600' }} numberOfLines={1}>{deviceName(x.ua)}{x.current ? '  · Dieses Gerät' : ''}</T>
-              {x.created ? <T style={s.hint}>Angemeldet am {new Date(x.created).toLocaleString('de-DE')}</T> : null}
+              <T style={{ fontWeight: '600' }} numberOfLines={1}>{deviceName(x.ua)}{x.current ? tr("  · Dieses Gerät") : ''}</T>
+              {x.created ? <T style={s.hint}>{tr("Angemeldet am")}{' '}{new Date(x.created).toLocaleString(LOCALE)}</T> : null}
             </View>
           </View>
         ))}
-        {sessions && sessions.length > 1 ? <Btn title="Alle anderen Geräte abmelden" small kind="secondary" onPress={others} style={{ marginTop: 10 }} /> : null}
+        {sessions && sessions.length > 1 ? <Btn title={tr("Alle anderen Geräte abmelden")} small kind="secondary" onPress={others} style={{ marginTop: 10 }} /> : null}
       </Glass>
     </>
   );
@@ -127,7 +128,7 @@ export function PushSection({ say }: { say: (t: string) => void }) {
   const enable = async () => {
     if (status === 'denied') { Linking.openSettings().catch(() => {}); return; }
     const t = await registerPush(); check();
-    say(t ? 'Mitteilungen sind an ✓' : 'Mitteilungen konnten nicht eingeschaltet werden.');
+    say(t ? tr("Mitteilungen sind an ✓") : tr("Mitteilungen konnten nicht eingeschaltet werden."));
   };
   const label = status === 'granted' ? 'Erlaubt ✓' : status === 'denied' ? 'In den iPhone-Einstellungen ausgeschaltet' : status === 'web' ? 'Nur in der iPhone-App' : 'Noch nicht erlaubt';
   return (
@@ -136,12 +137,12 @@ export function PushSection({ say }: { say: (t: string) => void }) {
         <View style={s.row}>
           <Icon name="bell" size={20} color={C.text2} />
           <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '700' }}>Push-Mitteilungen</T>
-            <T style={s.hint}>Für Direktnachrichten, Erwähnungen und Anrufe – auch wenn die App zu ist. {label}</T>
+            <T style={{ fontWeight: '700' }}>{tr("Push-Mitteilungen")}</T>
+            <T style={s.hint}>{tr("Für Direktnachrichten, Erwähnungen und Anrufe – auch wenn die App zu ist.")}{' '}{label}</T>
           </View>
         </View>
-        {status !== 'granted' && status !== 'web' ? <Btn title={status === 'denied' ? 'iPhone-Einstellungen öffnen' : 'Einschalten'} small onPress={enable} style={{ marginTop: 8 }} /> : null}
-        <T style={s.hint}>Mit dem Status „Bitte nicht stören“ bekommst du keine Töne und keine Anrufe.</T>
+        {status !== 'granted' && status !== 'web' ? <Btn title={status === 'denied' ? tr("iPhone-Einstellungen öffnen") : tr("Einschalten")} small onPress={enable} style={{ marginTop: 8 }} /> : null}
+        <T style={s.hint}>{tr("Mit dem Status „Bitte nicht stören“ bekommst du keine Töne und keine Anrufe.")}</T>
       </Glass>
     </>
   );

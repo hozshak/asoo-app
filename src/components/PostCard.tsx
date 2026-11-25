@@ -15,10 +15,11 @@ import { isVerified } from './Verified';
 import { Avatar, Sheet, T } from './ui';
 import { Icon } from './Icon';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export type Post = { id: string; author_id: string; content?: string | null; image?: string | null; created: number; like_count: number; comment_count: number; liked?: boolean | number };
 
-export const REPORT_REASONS: [string, string][] = [['spam', 'Spam'], ['harassment', 'Belästigung oder Mobbing'], ['hate', 'Hass oder Hetze'], ['violence', 'Gewalt oder Drohung'], ['sexual', 'Sexuelle Inhalte'], ['other', 'Etwas anderes']];
+export const REPORT_REASONS: [string, string][] = [['spam', t("Spam")], ['harassment', t("Belästigung oder Mobbing")], ['hate', t("Hass oder Hetze")], ['violence', t("Gewalt oder Drohung")], ['sexual', t("Sexuelle Inhalte")], ['other', t("Etwas anderes")]];
 export const postLink = (id: string) => `${SITE}/post/${id}`;
 
 export function PostCard({ post, onChange, onRemove, onOpen, onNote }: { post: Post; onChange?: (p: Post) => void; onRemove?: () => void; onOpen?: () => void; onNote?: (t: string) => void }) {
@@ -38,46 +39,46 @@ export function PostCard({ post, onChange, onRemove, onOpen, onNote }: { post: P
   };
   const share = async () => {
     const url = postLink(post.id);
-    if (Platform.OS === 'web') { await Clipboard.setStringAsync(url).catch(() => {}); onNote?.('Link kopiert'); return; }
+    if (Platform.OS === 'web') { await Clipboard.setStringAsync(url).catch(() => {}); onNote?.(t("Link kopiert")); return; }
     Share.share({ message: url, url }).catch(() => {});
   };
   const del = async () => {
-    try { await api('DELETE', '/api/posts/' + post.id); onRemove?.(); onNote?.('Beitrag gelöscht'); } catch (e) { onNote?.(errText(e)); }
+    try { await api('DELETE', '/api/posts/' + post.id); onRemove?.(); onNote?.(t("Beitrag gelöscht")); } catch (e) { onNote?.(errText(e)); }
   };
   return (
     <View style={s.card}>
       <View style={s.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Profil von ${u.display}`} onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Profil von {0}", { 0: u.display })} onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })}>
           <Avatar user={u} size={42} />
         </Pressable>
         <View style={{ flex: 1, minWidth: 0 }}>
           <NameText name={u.display} styleId={(u as any).name_style} style={s.name} verified={isVerified(u)} onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })} />
           <Pressable onPress={onOpen} disabled={!onOpen}><T style={s.time}>{timeLabel(post.created)}</T></Pressable>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Mehr" hitSlop={10} onPress={() => setMenu(true)} style={s.more}><Icon name="more" size={18} color={C.muted} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Mehr")} hitSlop={10} onPress={() => setMenu(true)} style={s.more}><Icon name="more" size={18} color={C.muted} /></Pressable>
       </View>
       {post.content ? <Pressable onPress={onOpen} onLongPress={() => setMenu(true)} disabled={!onOpen}><RichText text={post.content} meName={me?.username} style={s.body} onLink={(l: string) => openLink(router, l)} /></Pressable> : null}
       {img ? <Pressable onPress={onOpen} onLongPress={() => setMenu(true)} disabled={!onOpen}><Image source={img} style={s.img} contentFit="cover" transition={150} /></Pressable> : null}
       <View style={s.actions}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Gefällt mir" onPress={like} style={s.act}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Gefällt mir")} onPress={like} style={s.act}>
           <Icon name="heart" size={18} color={post.liked ? C.accent2 : C.muted} />
           <T style={[s.count, post.liked ? { color: C.accent2 } : null]}>{post.like_count || ''}</T>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Kommentare" onPress={onOpen} style={s.act}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Kommentare")} onPress={onOpen} style={s.act}>
           <Icon name="comment" size={18} color={C.muted} />
           <T style={s.count}>{post.comment_count || ''}</T>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Teilen" onPress={share} style={s.act}>
-          <Icon name="link" size={17} color={C.muted} /><T style={s.count}>Teilen</T>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Teilen")} onPress={share} style={s.act}>
+          <Icon name="link" size={17} color={C.muted} /><T style={s.count}>{t("Teilen")}</T>
         </Pressable>
       </View>
       <Sheet open={menu} onClose={() => setMenu(false)} items={[
-        { label: 'Link kopieren', icon: 'link', onPress: async () => { await Clipboard.setStringAsync(postLink(post.id)).catch(() => {}); onNote?.('Link kopiert'); } },
-        mine || (getState().me as any)?.is_admin ? { label: 'Löschen', icon: 'trash', danger: true, onPress: del } : null,
-        !mine ? { label: 'Melden', icon: 'flag', danger: true, onPress: () => setReport(true) } : null,
+        { label: t("Link kopieren"), icon: 'link', onPress: async () => { await Clipboard.setStringAsync(postLink(post.id)).catch(() => {}); onNote?.(t("Link kopiert")); } },
+        mine || (getState().me as any)?.is_admin ? { label: t("Löschen"), icon: 'trash', danger: true, onPress: del } : null,
+        !mine ? { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setReport(true) } : null,
       ]} />
-      <Sheet open={report} onClose={() => setReport(false)} title="Warum meldest du diesen Beitrag?" items={REPORT_REASONS.map(([k, l]) => ({ label: l, onPress: async () => {
-        try { await api('POST', '/api/reports', { type: 'post', id: post.id, reason: k }); onNote?.('Danke – wir sehen uns die Meldung an.'); } catch (e) { onNote?.(errText(e)); }
+      <Sheet open={report} onClose={() => setReport(false)} title={t("Warum meldest du diesen Beitrag?")} items={REPORT_REASONS.map(([k, l]) => ({ label: l, onPress: async () => {
+        try { await api('POST', '/api/reports', { type: 'post', id: post.id, reason: k }); onNote?.(t("Danke – wir sehen uns die Meldung an.")); } catch (e) { onNote?.(errText(e)); }
       } }))} />
     </View>
   );

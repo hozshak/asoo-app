@@ -16,6 +16,7 @@ import { RTCVideo } from '@/components/RTCVideo';
 import { Avatar, Glow, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { C } from '@/lib/theme';
+import { t as tr } from '@/lib/i18n';
 
 type Tile = { key: string; uid: string; me: boolean; video: any | null; screen: boolean; muted: boolean; deaf: boolean; speaking: boolean; connecting: boolean };
 const RING_MS = 60000;
@@ -58,11 +59,11 @@ export default function CallScreen() {
         {st.error ? (
           <Animated.View entering={FadeInDown.duration(220)} style={s.errCard}>
             <View style={s.errIcon}><Icon name="hang" size={26} color="#fff" stroke={2.4} /></View>
-            <T style={s.errTitle}>Gespräch beendet</T>
+            <T style={s.errTitle}>{tr("Gespräch beendet")}</T>
             <T style={s.errText}>{st.error}</T>
-            <Pressable accessibilityRole="button" onPress={() => { voice.clearError(); close(); }} style={s.errBtn}><T style={{ fontWeight: '800' }}>Schließen</T></Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { voice.clearError(); close(); }} style={s.errBtn}><T style={{ fontWeight: '800' }}>{tr("Schließen")}</T></Pressable>
           </Animated.View>
-        ) : <T style={{ color: C.muted }}>Kein Anruf</T>}
+        ) : <T style={{ color: C.muted }}>{tr("Kein Anruf")}</T>}
       </View>
     );
   }
@@ -105,9 +106,9 @@ export default function CallScreen() {
     haptic();
     if (st.sharing) { voice.setScreen(null); return; }
     const opts: [string, ScreenQuality | null][] = [['720p – spart Daten', '720'], ['1080p – Full HD', '1080'], ['Volle Auflösung', 'max'], ['Abbrechen', null]];
-    ActionSheetIOS.showActionSheetWithOptions({ title: 'Bildschirm teilen', message: 'Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden hier oder über den roten Balken oben.', options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
+    ActionSheetIOS.showActionSheetWithOptions({ title: tr("Bildschirm teilen"), message: tr("Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden hier oder über den roten Balken oben."), options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
       const q = opts[i]?.[1];
-      if (q) captureScreen(picker.current, q).then((stream) => voice.setScreen(stream)).catch(() => Alert.alert('Bildschirm teilen', 'Das hat nicht geklappt. Bitte versuch es noch einmal.'));
+      if (q) captureScreen(picker.current, q).then((stream) => voice.setScreen(stream)).catch(() => Alert.alert(tr("Bildschirm teilen"), tr("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
     });
   };
   const hang = () => { if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); voice.leave(); };
@@ -118,18 +119,18 @@ export default function CallScreen() {
       <ScreenPicker pickRef={picker} />
       {/* Kopf: verkleinern, Name, Dauer; bei Anrufen rechts zum Chat */}
       <View style={[s.head, { paddingTop: ins.top + 6 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Verkleinern" hitSlop={10} onPress={() => { haptic(); close(); }} style={s.headBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("Verkleinern")} hitSlop={10} onPress={() => { haptic(); close(); }} style={s.headBtn}>
           <Icon name="chevron" size={18} color={C.text} stroke={2.6} />
         </Pressable>
         <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
             <Icon name={isCall ? (st.video ? 'video' : 'phone') : 'volume'} size={15} color={C.muted} />
-            <T style={s.title} numberOfLines={1}>{meta?.title || 'Anruf'}</T>
+            <T style={s.title} numberOfLines={1}>{meta?.title || tr("Anruf")}</T>
           </View>
-          <T style={[s.sub, st.quality === 'bad' && { color: C.warn }]} numberOfLines={1}>{st.quality === 'bad' ? 'Verbindung schwach …' : subtitle}</T>
+          <T style={[s.sub, st.quality === 'bad' && { color: C.warn }]} numberOfLines={1}>{st.quality === 'bad' ? tr("Verbindung schwach …") : subtitle}</T>
         </View>
         {isCall ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Zum Chat" hitSlop={10} onPress={() => { haptic(); router.replace({ pathname: '/chat/[id]', params: { id: st.room! } }); }} style={s.headBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel={tr("Zum Chat")} hitSlop={10} onPress={() => { haptic(); router.replace({ pathname: '/chat/[id]', params: { id: st.room! } }); }} style={s.headBtn}>
             <Icon name="comment" size={18} color={C.text} />
           </Pressable>
         ) : <View style={s.headBtn}><Icon name="users" size={17} color={C.muted} /></View>}
@@ -142,7 +143,7 @@ export default function CallScreen() {
           {st.localCam ? <LinearGradient colors={['rgba(7,7,13,0.55)', 'rgba(7,7,13,0.85)']} style={StyleSheet.absoluteFill} /> : null}
           <Pulse on={ringing}><Avatar user={partner || (dm ? { id: dm.id, username: '', display: meta?.title || '' } : null)} size={120} frame={false} /></Pulse>
           <T style={s.ringName} numberOfLines={1}>{meta?.title}</T>
-          <T style={s.ringText}>{ringing ? 'Klingelt …' : st.met ? 'Du bist allein im Anruf.' : 'Niemand hat abgenommen. Du bist allein im Anruf.'}</T>
+          <T style={s.ringText}>{ringing ? tr("Klingelt …") : st.met ? tr("Du bist allein im Anruf.") : tr("Niemand hat abgenommen. Du bist allein im Anruf.")}</T>
         </View>
       ) : focused ? (
         <View style={{ position: 'absolute', left: 10, right: 10, top, bottom }}>
@@ -168,17 +169,17 @@ export default function CallScreen() {
         {st.sharing ? (
           <Animated.View entering={FadeIn.duration(180)} style={s.shareBar}>
             <Icon name="screen" size={17} color={C.ok} />
-            <T style={{ flex: 1, fontWeight: '700' }} numberOfLines={1}>Du teilst deinen Bildschirm</T>
-            <Pressable accessibilityRole="button" onPress={share} style={s.shareStop}><T style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Beenden</T></Pressable>
+            <T style={{ flex: 1, fontWeight: '700' }} numberOfLines={1}>{tr("Du teilst deinen Bildschirm")}</T>
+            <Pressable accessibilityRole="button" onPress={share} style={s.shareStop}><T style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>{tr("Beenden")}</T></Pressable>
           </Animated.View>
         ) : null}
         <View style={s.bar}>
-          <Ctl icon={st.video ? 'video' : 'videoOff'} label={st.video ? 'Kamera aus' : 'Kamera an'} on={st.video} onPress={() => { haptic(); voice.toggleCamera(); }} />
-          <Ctl icon={st.muted || st.noMic || st.smute ? 'micOff' : 'mic'} label={st.muted ? 'Mikro an' : 'Stumm'} off={st.muted || st.noMic || st.smute} onPress={() => { haptic(); voice.toggleMute(); }} />
-          <Ctl icon={st.deaf || st.sdeaf ? 'headOff' : 'head'} label={st.deaf ? 'Ton an' : 'Ton aus'} off={st.deaf || st.sdeaf} onPress={() => { haptic(); voice.toggleDeaf(); }} />
-          {Platform.OS !== 'web' ? <Ctl icon={st.speaker ? 'volume' : 'ear'} label={st.speaker ? 'Hörmuschel' : 'Lautsprecher'} on={st.speaker} onPress={() => { haptic(); voice.toggleSpeaker(); }} /> : null}
-          {Platform.OS === 'ios' ? <Ctl icon="screen" label={st.sharing ? 'Teilen beenden' : 'Bildschirm teilen'} on={st.sharing} onPress={share} /> : null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Auflegen" onPress={hang} style={({ pressed }) => [s.ctl, s.hang, pressed && { opacity: 0.8 }]}>
+          <Ctl icon={st.video ? 'video' : 'videoOff'} label={st.video ? tr("Kamera aus") : tr("Kamera an")} on={st.video} onPress={() => { haptic(); voice.toggleCamera(); }} />
+          <Ctl icon={st.muted || st.noMic || st.smute ? 'micOff' : 'mic'} label={st.muted ? tr("Mikro an") : tr("Stumm")} off={st.muted || st.noMic || st.smute} onPress={() => { haptic(); voice.toggleMute(); }} />
+          <Ctl icon={st.deaf || st.sdeaf ? 'headOff' : 'head'} label={st.deaf ? tr("Ton an") : tr("Ton aus")} off={st.deaf || st.sdeaf} onPress={() => { haptic(); voice.toggleDeaf(); }} />
+          {Platform.OS !== 'web' ? <Ctl icon={st.speaker ? 'volume' : 'ear'} label={st.speaker ? tr("Hörmuschel") : tr("Lautsprecher")} on={st.speaker} onPress={() => { haptic(); voice.toggleSpeaker(); }} /> : null}
+          {Platform.OS === 'ios' ? <Ctl icon="screen" label={st.sharing ? tr("Teilen beenden") : tr("Bildschirm teilen")} on={st.sharing} onPress={share} /> : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={tr("Auflegen")} onPress={hang} style={({ pressed }) => [s.ctl, s.hang, pressed && { opacity: 0.8 }]}>
             <Icon name="hang" size={24} color="#fff" stroke={2.4} />
           </Pressable>
         </View>
@@ -200,11 +201,11 @@ function Ctl({ icon, label, on, off, onPress }: { icon: IconName; label: string;
 function TileBox({ t, w, h, front, video, onPress }: { t: Tile; w: number; h: number; front: boolean; video: boolean; onPress: () => void }) {
   return (
     <View style={{ width: w, height: h }}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t.me ? 'Du' : userOf(t.uid).display} onPress={onPress} style={StyleSheet.absoluteFill}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t.me ? tr("Du") : userOf(t.uid).display} onPress={onPress} style={StyleSheet.absoluteFill}>
         <TileView t={t} w={w} h={h} front={front} />
       </Pressable>
       {t.me && video ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Kamera wechseln" hitSlop={8} onPress={() => { haptic(); voice.flipCamera(); }} style={s.flip}><Icon name="flip" size={17} color="#fff" /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("Kamera wechseln")} hitSlop={8} onPress={() => { haptic(); voice.flipCamera(); }} style={s.flip}><Icon name="flip" size={17} color="#fff" /></Pressable>
       ) : null}
     </View>
   );
@@ -225,9 +226,9 @@ function TileView({ t, w, h, front }: { t: Tile; w: number; h: number; front: bo
       )}
       <View style={s.label}>
         {t.screen ? <Icon name="screen" size={13} color="#fff" /> : t.deaf ? <Icon name="headOff" size={13} color={C.danger} /> : t.muted ? <Icon name="micOff" size={13} color={C.danger} /> : null}
-        <T style={s.labelText} numberOfLines={1}>{t.screen ? `Bildschirm von ${u.display}` : t.me ? `${u.display} (du)` : u.display}</T>
+        <T style={s.labelText} numberOfLines={1}>{t.screen ? tr("Bildschirm von {0}", { 0: u.display }) : t.me ? tr("{0} (du)", { 0: u.display }) : u.display}</T>
       </View>
-      {t.connecting && !t.me ? <View style={s.conn}><T style={s.connText}>Verbinde …</T></View> : null}
+      {t.connecting && !t.me ? <View style={s.conn}><T style={s.connText}>{tr("Verbinde …")}</T></View> : null}
     </Animated.View>
   );
 }

@@ -13,6 +13,7 @@ import { signOut } from '@/lib/session';
 import { isSharing, onScreenShare, startScreenShare, stopScreenShare, type ScreenQuality } from '@/lib/screenshare';
 import { C } from '@/lib/theme';
 import { T } from './ui';
+import { t, LANG } from '@/lib/i18n';
 
 // Typen von react-native-webview passen mit ref nicht zu React 19 – zur Laufzeit ein normales Bauteil
 const WV = WebView as unknown as React.ComponentType<any>;
@@ -21,7 +22,9 @@ const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, 
 // Genau die eigene Adresse – „startsWith“ hätte auch z. B. https://zuno-app.altraex.workers.dev.fremd.de durchgelassen
 const ownUrl = (u?: string) => { try { return !!u && new URL(u).origin === ORIGIN; } catch { return false; } };
 // Was die App der Web-Seite anbietet (dort erscheinen dann passende Knöpfe, z. B. „Bildschirm teilen“ am iPhone)
-const CAPS = Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;';
+// Sprache der App gilt auch in der eingebetteten Web-App (sonst stünde dort die Sprache vom Konto oder Englisch)
+const LANG_JS = `window.__asooLang=${JSON.stringify(LANG)};try{localStorage.setItem('zuno.lang',${JSON.stringify(LANG)})}catch(e){};`;
+const CAPS = LANG_JS + (Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;');
 const PICK = Platform.OS === 'ios' ? (ScreenCapturePickerView as unknown as React.ComponentType<any>) : null;
 
 export function WebHost() {
@@ -46,11 +49,11 @@ export function WebHost() {
   const toggleShare = () => {
     if (isSharing()) { stopScreenShare(); return; }
     const room = getHost().voice?.room;
-    if (!room) { Alert.alert('Bildschirm teilen', 'Tritt zuerst einem Sprachraum oder Anruf bei.'); return; }
+    if (!room) { Alert.alert(t("Bildschirm teilen"), t("Tritt zuerst einem Sprachraum oder Anruf bei.")); return; }
     const opts: [string, ScreenQuality | null][] = [['720p – spart Daten', '720'], ['1080p – Full HD', '1080'], ['Volle Auflösung', 'max'], ['Abbrechen', null]];
-    ActionSheetIOS.showActionSheetWithOptions({ title: 'Bildschirm teilen', message: 'Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden über den roten Balken oben oder das Kontrollzentrum.', options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
+    ActionSheetIOS.showActionSheetWithOptions({ title: t("Bildschirm teilen"), message: t("Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden über den roten Balken oben oder das Kontrollzentrum."), options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
       const q = opts[i]?.[1];
-      if (q) startScreenShare(room, picker.current, q).catch(() => Alert.alert('Bildschirm teilen', 'Das hat nicht geklappt. Bitte versuch es noch einmal.'));
+      if (q) startScreenShare(room, picker.current, q).catch(() => Alert.alert(t("Bildschirm teilen"), t("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
     });
   };
   if (!started || !source.current) return null;
@@ -92,7 +95,7 @@ export function WebHost() {
           onContentProcessDidTerminate={() => ref.current?.reload()}
         />
         {PICK ? <PICK ref={picker} style={s.picker} /> : null}
-        {busy ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>Wird geladen …</T></View> : null}
+        {busy ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>{t("Wird geladen …")}</T></View> : null}
       </SafeAreaView>
     </View>
   );

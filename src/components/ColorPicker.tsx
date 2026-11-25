@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, T, tick } from './ui';
 import { Icon } from './Icon';
 import { C, F } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 // ---------- Farbrechnung ----------
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -28,10 +29,10 @@ const onColor = (hex: string) => { const n = parseInt(hex.slice(1), 16); return 
 
 /** Paletten: ToLobby-Farben, kräftig, pastell, dunkel/edel */
 export const PALETTE: [string, string[]][] = [
-  ['ToLobby', ['#8468ff', '#b260ff', '#ff5c9a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#ff4d5e']],
-  ['Kräftig', ['#5865f2', '#00c2a8', '#e04dff', '#ff3d3d', '#ffd400', '#1fd655', '#0096ff', '#ff7ab6']],
-  ['Pastell', ['#b8a6ff', '#ffb3d1', '#a8e0ff', '#a8f0d0', '#ffe2a8', '#ffc2b0', '#d9c2ff', '#c8f0ff']],
-  ['Edel', ['#d4af37', '#c0c5ce', '#b76e79', '#0f7a47', '#1b3a6b', '#5a1a2b', '#2b2d42', '#f5f0e6']],
+  [t("ToLobby"), ['#8468ff', '#b260ff', '#ff5c9a', '#2ec5ff', '#3ddc97', '#ffb02e', '#ff6b3d', '#ff4d5e']],
+  [t("Kräftig"), ['#5865f2', '#00c2a8', '#e04dff', '#ff3d3d', '#ffd400', '#1fd655', '#0096ff', '#ff7ab6']],
+  [t("Pastell"), ['#b8a6ff', '#ffb3d1', '#a8e0ff', '#a8f0d0', '#ffe2a8', '#ffc2b0', '#d9c2ff', '#c8f0ff']],
+  [t("Edel"), ['#d4af37', '#c0c5ce', '#b76e79', '#0f7a47', '#1b3a6b', '#5a1a2b', '#2b2d42', '#f5f0e6']],
 ];
 
 // zuletzt benutzte Farben (bleiben auf dem Gerät)
@@ -80,42 +81,42 @@ export function ColorPicker({ open, value, title = 'Farbe wählen', onClose, onP
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <View style={s.wrap}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("Schließen")} />
         <View style={[s.sheet, { paddingBottom: ins.bottom + 14 }]}>
           <View style={s.grab} />
           <View style={s.head}>
             <T style={s.title}>{title}</T>
-            <Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={10} onPress={onClose} style={s.x}><Icon name="x" size={18} color={C.text2} stroke={2.4} /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Schließen")} hitSlop={10} onPress={onClose} style={s.x}><Icon name="x" size={18} color={C.text2} stroke={2.4} /></Pressable>
           </View>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Sättigung × Helligkeit */}
-            <View ref={sv.ref} {...sv.handlers} style={[s.sv, { backgroundColor: hsvToHex(hsv[0], 1, 1) }]} accessibilityLabel="Sättigung und Helligkeit">
+            <View ref={sv.ref} {...sv.handlers} style={[s.sv, { backgroundColor: hsvToHex(hsv[0], 1, 1) }]} accessibilityLabel={t("Sättigung und Helligkeit")}>
               <LinearGradient colors={['#ffffff', 'rgba(255,255,255,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
               <LinearGradient colors={['rgba(0,0,0,0)', '#000000']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
               <View pointerEvents="none" style={[s.knob, { left: `${hsv[1] * 100}%`, top: `${(1 - hsv[2]) * 100}%`, backgroundColor: hex }]} />
             </View>
             {/* Farbton */}
-            <View ref={hue.ref} {...hue.handlers} style={s.hue} accessibilityLabel="Farbton">
+            <View ref={hue.ref} {...hue.handlers} style={s.hue} accessibilityLabel={t("Farbton")}>
               <LinearGradient colors={['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff', '#ff0000']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[StyleSheet.absoluteFill, { borderRadius: 13 }]} />
               <View pointerEvents="none" style={[s.hueKnob, { left: `${(hsv[0] / 360) * 100}%`, backgroundColor: hsvToHex(hsv[0], 1, 1) }]} />
             </View>
             {/* vorher / neu + Hex */}
             <View style={s.row}>
               <View style={s.compare}>
-                <Pressable accessibilityLabel="Vorherige Farbe" onPress={() => setHex(start)} style={[s.half, { backgroundColor: start, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }]}><T style={[s.halfT, { color: onColor(start) }]}>Vorher</T></Pressable>
-                <View style={[s.half, { backgroundColor: hex, borderTopRightRadius: 12, borderBottomRightRadius: 12 }]}><T style={[s.halfT, { color: onColor(hex) }]}>Neu</T></View>
+                <Pressable accessibilityLabel={t("Vorherige Farbe")} onPress={() => setHex(start)} style={[s.half, { backgroundColor: start, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }]}><T style={[s.halfT, { color: onColor(start) }]}>{t("Vorher")}</T></Pressable>
+                <View style={[s.half, { backgroundColor: hex, borderTopRightRadius: 12, borderBottomRightRadius: 12 }]}><T style={[s.halfT, { color: onColor(hex) }]}>{t("Neu")}</T></View>
               </View>
               <View style={s.hexBox}>
                 <T style={s.hash}>#</T>
-                <TextInput accessibilityLabel="Farbcode" value={text.replace('#', '').toUpperCase()} onChangeText={typed} autoCapitalize="characters" autoCorrect={false} maxLength={6} style={s.hexIn} placeholder="8468FF" placeholderTextColor={C.faint} />
+                <TextInput accessibilityLabel={t("Farbcode")} value={text.replace('#', '').toUpperCase()} onChangeText={typed} autoCapitalize="characters" autoCorrect={false} maxLength={6} style={s.hexIn} placeholder="8468FF" placeholderTextColor={C.faint} />
               </View>
             </View>
-            {recent.length ? <><T style={s.cap}>Zuletzt benutzt</T><View style={s.dots}>{recent.map((c) => <Dot key={c} c={c} on={c === hex} onPress={() => setHex(c)} />)}</View></> : null}
+            {recent.length ? <><T style={s.cap}>{t("Zuletzt benutzt")}</T><View style={s.dots}>{recent.map((c) => <Dot key={c} c={c} on={c === hex} onPress={() => setHex(c)} />)}</View></> : null}
             {PALETTE.map(([name, list]) => (
               <View key={name}><T style={s.cap}>{name}</T><View style={s.dots}>{list.map((c) => <Dot key={c} c={c} on={c === hex} onPress={() => setHex(c)} />)}</View></View>
             ))}
           </ScrollView>
-          <Btn title="Farbe übernehmen" icon="check" onPress={done} style={{ marginTop: 14 }} />
+          <Btn title={t("Farbe übernehmen")} icon="check" onPress={done} style={{ marginTop: 14 }} />
         </View>
       </View>
     </Modal>
@@ -153,7 +154,7 @@ export function ColorRow({ value, presets, onChange, title, none }: { value?: st
         ) : null}
         {presets.map((c) => <Dot key={c} c={c} on={!none?.on && v === c} onPress={() => onChange(c)} />)}
         {/* Eigene Farbe: Regenbogen-Ring mit Plus – oder die gewählte eigene Farbe */}
-        <Pressable accessibilityRole="button" accessibilityLabel="Eigene Farbe wählen" onPress={() => { tick(); setOpen(true); }} style={[s.ring, own && { borderColor: C.text }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Eigene Farbe wählen")} onPress={() => { tick(); setOpen(true); }} style={[s.ring, own && { borderColor: C.text }]}>
           <View style={s.inner}>
             {own ? <View style={[StyleSheet.absoluteFill, { backgroundColor: v! }]} /> : <LinearGradient colors={['#ff5c8a', '#ffb02e', '#3ddc97', '#2ec5ff', '#8468ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
             <Icon name={own ? 'edit' : 'plus'} size={15} color={own ? onColor(v!) : '#fff'} stroke={2.6} />

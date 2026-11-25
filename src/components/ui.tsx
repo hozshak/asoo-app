@@ -14,6 +14,7 @@ import { mediaSource } from '@/lib/api';
 import { frameOf, frameMin, frameAnim } from '@/lib/frames';
 import type { Server, User } from '@/lib/store';
 import { Icon, type IconName } from './Icon';
+import { t } from '@/lib/i18n';
 
 /** Text in der Schrift der Web-App. fontWeight wird auf den passenden Cairo-Schnitt abgebildet. */
 export function T({ style, ...p }: TextProps) {
@@ -156,7 +157,7 @@ export function Sheet({ open, onClose, title, items, header }: { open: boolean; 
   const ins = useSafeAreaInsets();
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Schließen" />
+      <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel={t("Schließen")} />
       <Glass style={[s.sheet, { paddingBottom: ins.bottom + 12 }]} intensity={50} tint="rgba(19,20,32,0.86)">
         <View style={s.grab} />
         {header}
@@ -231,7 +232,7 @@ export function TopBar({ title, right, onBack }: { title: React.ReactNode; right
   return (
     <View style={[s.topBar, { paddingTop: ins.top }]}>
       <View style={s.topRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Zurück" hitSlop={8} onPress={onBack} style={({ pressed }) => [s.topBack, pressed && { backgroundColor: C.accentSoft }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Zurück")} hitSlop={8} onPress={onBack} style={({ pressed }) => [s.topBack, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="back" size={22} color={C.text} stroke={2.4} />
         </Pressable>
         <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>{typeof title === 'string' ? <T style={s.topTitle} numberOfLines={1}>{title}</T> : title}</View>
@@ -252,7 +253,7 @@ export function TopIcon({ icon, label, color = C.text2, onPress }: { icon: IconN
 export function SheetHead({ title, onClose, right }: { title: string; onClose: () => void; right?: React.ReactNode }) {
   return (
     <View style={s.sheetHead}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Schließen" hitSlop={10} onPress={onClose} style={s.sheetX}><Icon name="x" size={18} color={C.text2} stroke={2.4} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Schließen")} hitSlop={10} onPress={onClose} style={s.sheetX}><Icon name="x" size={18} color={C.text2} stroke={2.4} /></Pressable>
       <T style={s.sheetHeadTitle} numberOfLines={1}>{title}</T>
       <View style={{ minWidth: 34, alignItems: 'flex-end' }}>{right}</View>
     </View>

@@ -26,7 +26,7 @@ import { Icon } from '@/components/Icon';
 import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { useHost } from '@/lib/webhost';
 import { joinCall, leaveForWeb, nativeCalls, useVoice } from '@/lib/calls';
-import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifSrc, gifUrl, type Poll } from '@/components/ChatExtras';
+import { FileCard, GifPicker, PollCard, PollComposer, StickerPicker, VoiceMsg, VoiceRecorder, attKind, gifSrc, gifUrl, type Poll, type Sticker } from '@/components/ChatExtras';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
 import { t, LOCALE } from '@/lib/i18n';
@@ -69,6 +69,7 @@ export default function Chat() {
   const [plus, setPlus] = useState(false); // Plus-Menü (Bild, Datei, Umfrage)
   const [pollOpen, setPollOpen] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
+  const [stickerOpen, setStickerOpen] = useState(false);
   const [recording, setRecording] = useState(false);
   const lastTyping = useRef(0);
   const other = dm && dm.kind === 'dm' ? dm.members.find((u) => u.id !== me?.id) : null;
@@ -141,6 +142,13 @@ export default function Chat() {
     const nonce = 'n' + Date.now().toString(36);
     addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: url, created: Date.now(), attachments: [], reactions: [], kind: 'default', pending: true });
     try { const d = await api<any>('POST', `/api/channels/${id}/messages`, { content: url, nonce }); replaceMsg(id, nonce, { ...d.message, nonce }); }
+    catch (e) { markFailed(id, nonce); setErr(errText(e)); }
+  };
+  // Server-Sticker (nur in Server-Kanälen; der Server prüft, dass er zu diesem Server gehört)
+  const sendSticker = async (st: Sticker) => {
+    const nonce = 'n' + Date.now().toString(36);
+    addPending(id, { id: nonce, nonce, ch: id, author_id: me!.id, content: '', created: Date.now(), attachments: [{ key: st.key, type: st.type, name: st.name, w: 320, h: 320, sticker: st.id }], reactions: [], kind: 'default', pending: true });
+    try { const d = await api<any>('POST', `/api/channels/${id}/messages`, { sticker: st.id, nonce }); replaceMsg(id, nonce, { ...d.message, nonce }); }
     catch (e) { markFailed(id, nonce); setErr(errText(e)); }
   };
   const sendPoll = async (poll: { q: string; options: string[]; multi: boolean }) => {
@@ -263,6 +271,7 @@ export default function Chat() {
             {/* wie bei Discord: ohne Text stehen GIF und Sprachnachricht direkt neben dem Feld, mit Text der Senden-Knopf */}
             {!text.trim() && !editing ? <>
               <Press label={t("GIF")} onPress={() => setGifOpen(true)} style={s.side}><T style={s.gifTxt}>{t("GIF")}</T></Press>
+              {sid ? <Press label={t("Sticker")} onPress={() => setStickerOpen(true)} style={s.side}><Icon name="sticker" size={21} color={C.text2} /></Press> : null}
               <Press label={t("Sprachnachricht aufnehmen")} onPress={() => setRecording(true)} style={s.side}><Icon name="mic" size={21} color={C.text2} /></Press>
             </> : <Press label={t("Senden")} onPress={sendMsg} disabled={!canSend} style={[s.send, canSend && s.sendGlow]}>
               <LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -279,11 +288,13 @@ export default function Chat() {
         { label: t("Foto oder Bild"), icon: 'image', onPress: sendImage },
         { label: t("Datei"), icon: 'folder', onPress: sendFile },
         { label: t("GIF"), icon: 'smile', onPress: () => setGifOpen(true) },
+        ...(sid ? [{ label: t("Sticker"), icon: 'sticker' as const, onPress: () => setStickerOpen(true) }] : []),
         { label: t("Sprachnachricht"), icon: 'mic', onPress: () => setRecording(true) },
         { label: t("Umfrage"), icon: 'check', onPress: () => setPollOpen(true) },
       ]} />
       <PollComposer open={pollOpen} onClose={() => setPollOpen(false)} onSend={sendPoll} />
       <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
+      <StickerPicker open={stickerOpen} onClose={() => setStickerOpen(false)} sid={sid} onPick={sendSticker} />
       <Sheet open={!!reportFor} onClose={() => setReportFor(null)} title={t("Warum meldest du das?")} items={REASONS.map(([k, l]) => ({ label: l, onPress: () => report(reportFor!, k) }))} />
       <ImageViewer src={big} onClose={() => setBig(null)} />
     </View>
@@ -334,6 +345,8 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
           {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
           {m.edited ? <T style={s.edited}>{t("(bearbeitet)")}</T> : null}
           {m.attachments?.map((a, i) => {
+            // Server-Sticker: freistehend, ohne Rahmen
+            if (a.sticker) { const ss = mediaSource(a.key); return ss ? <Image key={i} source={ss} style={{ width: 150, height: 150, marginTop: 4, opacity: m.pending ? 0.6 : 1 }} contentFit="contain" autoplay accessibilityLabel={a.name} /> : null; }
             const kind = attKind(a);
             if (kind === 'voice') return <VoiceMsg key={i} a={a} dim={m.pending} />;
             if (kind !== 'image') return <FileCard key={i} a={a} />;

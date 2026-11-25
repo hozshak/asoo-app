@@ -10,7 +10,8 @@ import { Icon } from './Icon';
 import { C, R } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-export type Att = { key: string; type?: string; size?: number; name?: string; w?: number; h?: number; voice?: boolean; dur?: number; local?: string; spoiler?: boolean };
+export type Att = { key: string; type?: string; size?: number; name?: string; w?: number; h?: number; voice?: boolean; dur?: number; local?: string; spoiler?: boolean; sticker?: string };
+export type Sticker = { id: string; name: string; key: string; type: string };
 export type Poll = { q: string; multi: boolean; options: { t: string; n: number }[]; voters: number; mine: number[] };
 
 /** Welche Art Anhang? Alte Nachrichten kennen nur Bilder (ohne Typ). */
@@ -202,6 +203,39 @@ export function gifUrl(text?: string) {
 }
 
 /** GIF-Auswahl: ohne Suchwort die beliebtesten, antippen = senden. */
+/** Server-Sticker: nur die des Servers, in dem man gerade schreibt (Web: stickers.js) */
+export function StickerPicker({ open, onClose, sid, onPick }: { open: boolean; onClose: () => void; sid: string | null; onPick: (s: Sticker) => void }) {
+  const [list, setList] = useState<Sticker[] | null>(null);
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    if (!open || !sid) return;
+    setList(null); setMsg('');
+    api<any>('GET', `/api/servers/${sid}/stickers`).then((d) => { setList(d.stickers || []); if (!d.stickers?.length) setMsg(d.can_manage ? t("Dieser Server hat noch keine eigenen Sticker. Du kannst sie in der Web-Version unter Server-Einstellungen → Sticker hinzufügen.") : t("Dieser Server hat noch keine eigenen Sticker.")); })
+      .catch((e) => { setList([]); setMsg(errText(e)); });
+  }, [open, sid]);
+  return (
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={s.back} onPress={onClose} />
+      <Glass style={[s.sheet, { height: '56%' }]} intensity={50} tint="rgba(19,20,32,0.97)">
+        <View style={s.grab} />
+        <T style={{ fontSize: 17, fontWeight: '800', marginBottom: 8 }}>{t("Sticker")}</T>
+        {!list ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : msg ? <T style={{ color: C.muted, textAlign: 'center', marginTop: 24, paddingHorizontal: 12, lineHeight: 21 }}>{msg}</T> : (
+          <ScrollView contentContainerStyle={s.stkGrid}>
+            {list.map((st) => {
+              const src = mediaSource(st.key);
+              return (
+                <Pressable key={st.id} accessibilityLabel={st.name} onPress={() => { Haptics.selectionAsync().catch(() => {}); onClose(); onPick(st); }} style={({ pressed }) => [s.stkItem, pressed && { backgroundColor: C.bg3 }]}>
+                  {src ? <Image source={src} style={{ width: '100%', height: '100%' }} contentFit="contain" autoplay /> : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+      </Glass>
+    </Modal>
+  );
+}
+
 export function GifPicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (url: string) => void }) {
   const [q, setQ] = useState('');
   const [list, setList] = useState<{ id: string; preview: string; url: string }[] | null>(null);
@@ -239,6 +273,8 @@ export function GifPicker({ open, onClose, onPick }: { open: boolean; onClose: (
 }
 
 const s = StyleSheet.create({
+  stkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 30 },
+  stkItem: { width: '23.5%', aspectRatio: 1, borderRadius: 12, padding: 6 },
   gifGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 6, paddingBottom: 30 },
   gifItem: { width: '32%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: C.bg3 },
   vm: { flexDirection: 'row', alignItems: 'center', gap: 10, width: 260, maxWidth: '100%', padding: 8, paddingRight: 12, borderRadius: 22, backgroundColor: C.bg3, borderWidth: 1, borderColor: C.line, marginTop: 6 },

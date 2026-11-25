@@ -87,7 +87,7 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
     ]],
     ['Mehr', [
       { icon: 'user', label: 'So sehen dich andere', keys: 'profil ansehen', onPress: () => router.push({ pathname: '/user/[id]', params: { id: me.id } }) },
-      { icon: 'pad', label: 'Mitspieler finden', sub: 'Leute zum Zocken finden und matchen', keys: 'gamer match duo team spieler suchen', onPress: () => router.push('/match') },
+      { icon: 'pad', label: 'Mitspieler-Match', sub: 'Leute zum Zocken finden und matchen', keys: 'gamer match duo team spieler suchen', onPress: () => router.push('/match') },
       { icon: 'sparkle', label: 'Feed', keys: 'beiträge posts', onPress: () => router.push('/feed') },
       { icon: 'compass', label: 'Server entdecken', keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
       ...(me.is_admin ? [{ icon: 'shield' as IconName, label: 'Admin-Bereich', keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),

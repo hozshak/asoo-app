@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { api, errText } from '@/lib/api';
 import { setState, useStore } from '@/lib/store';
+import { matchNew } from '@/lib/match';
 import { toggleVoice, useHost } from '@/lib/webhost';
 import { useVoice, voice as appVoice } from '@/lib/calls';
 import { Avatar, Badge, T } from './ui';
@@ -77,6 +78,7 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
   const muted = appCall ? appMuted : webMuted;
   const deaf = appCall ? appDeaf : webDeaf;
   const notif = useStore((s) => s.notifUnread);
+  const matchCount = matchNew(useStore((s) => s.match));
   const router = useRouter();
   const ins = useSafeAreaInsets();
   const [sheet, setSheet] = useState(false);
@@ -115,6 +117,11 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
             <Icon name={deaf ? 'headOff' : 'head'} size={20} color={deaf ? C.danger : C.text2} />
           </Pressable>
         </> : null}
+        {/* Mitspieler-Match: immer einen Tipp entfernt, mit Zähler für neue Likes und Matches */}
+        <Pressable accessibilityRole="button" accessibilityLabel={matchCount ? `Mitspieler-Match, ${matchCount} neu` : 'Mitspieler-Match'} hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
+          <Icon name="pad" size={23} color={C.text2} />
+          {matchCount ? <Badge n={matchCount} ring={HOME.bar} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={notif ? `Mitteilungen, ${notif} neu` : 'Mitteilungen'} hitSlop={4} onPress={() => router.push('/notifications')} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="bell" size={22} color={C.text2} />
           {notif ? <Badge n={notif} ring={HOME.bar} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}

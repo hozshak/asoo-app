@@ -187,11 +187,11 @@ function DmPanel() {
         </Pressable>
       </View>
       {/* „Mitspieler finden“ (Gamer-Matching): gut sichtbar über den Gesprächen, mit Zähler für neue Likes und Matches */}
-      <Pressable accessibilityRole="button" accessibilityLabel="Mitspieler finden" onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.matchCard, pressed && { opacity: 0.85 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Mitspieler-Match" onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} style={({ pressed }) => [s.matchCard, pressed && { opacity: 0.85 }]}>
         <LinearGradient colors={['rgba(132,104,255,0.22)', 'rgba(255,92,154,0.10)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View style={s.matchIc}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="pad" size={22} color="#fff" stroke={2.2} /></View></View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <T style={{ fontWeight: '800', fontSize: 15.5 }} numberOfLines={1}>Mitspieler finden</T>
+          <T style={{ fontWeight: '800', fontSize: 15.5 }} numberOfLines={1}>Mitspieler-Match</T>
           <T style={{ color: C.text2, fontSize: 12.5, marginTop: -2 }} numberOfLines={1}>{matchCount ? `${matchCount} neu · Likes & Matches` : match.has ? 'Karten ansehen, Likes und Matches' : 'Finde Leute zum Zocken'}</T>
         </View>
         {matchCount ? <Badge n={matchCount} /> : <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View>}

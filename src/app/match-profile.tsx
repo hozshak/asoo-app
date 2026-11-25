@@ -91,7 +91,7 @@ export default function MatchProfileScreen() {
   };
   const del = () => {
     const go = async () => { try { await deleteProfile(); if (router.canGoBack()) router.back(); else router.replace('/match'); } catch (e) { setNote(matchErr(e)); } };
-    const text = 'Deine Karte, deine Likes und deine Matches bei „Mitspieler finden“ werden gelöscht. Deine Freunde und Chats bleiben.';
+    const text = 'Deine Karte, deine Likes und deine Matches bei „Mitspieler-Match“ werden gelöscht. Deine Freunde und Chats bleiben.';
     if (Platform.OS === 'web') { if (confirm('Gamer-Profil löschen?\n\n' + text)) go(); return; }
     Alert.alert('Gamer-Profil löschen?', text, [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Löschen', style: 'destructive', onPress: go }]);
   };

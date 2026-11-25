@@ -82,7 +82,7 @@ export default function Me() {
               </View>
             </View> : null}
 
-            <RowCard label="Mitspieler finden" icon="pad" sub={match.has ? 'Leute zum Zocken – Likes, Matches, dein Gamer-Profil' : 'Finde Leute zum Zocken – erst anonym, bei einem Match mit Namen'} badge={matchNew(match)} onPress={() => router.push('/match')} />
+            <RowCard label="Mitspieler-Match" icon="pad" sub={match.has ? 'Leute zum Zocken – Likes, Matches, dein Gamer-Profil' : 'Finde Leute zum Zocken – erst anonym, bei einem Match mit Namen'} badge={matchNew(match)} onPress={() => router.push('/match')} />
             <RowCard label="Freunde" sub={friends ? `${friends} ${friends === 1 ? 'Freund' : 'Freunde'}` : undefined} badge={requests} onPress={() => router.push('/friends')} />
             <RowCard label="So sehen dich andere" icon="user" onPress={() => router.push({ pathname: '/user/[id]', params: { id: me.id } })} />
           </View>

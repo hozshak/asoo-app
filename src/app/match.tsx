@@ -1,4 +1,4 @@
-// „Mitspieler finden“ – Karten-Stapel: anonyme Karten (ohne Namen), nach rechts wischen = Like, nach links = überspringen,
+// „Mitspieler-Match“ – Karten-Stapel: anonyme Karten (ohne Namen), nach rechts wischen = Like, nach links = überspringen,
 // darunter die Knöpfe (Zurückholen, Überspringen, Like, Boost). Gegenseitiges Like = Match (Feier → Chat).
 // Ohne Gamer-Profil: Begrüßung mit Knopf zur Einrichtung. Server: /api/match/* (lib/match.ts).
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -72,8 +72,8 @@ export default function Match() {
   const [self, setSelf] = useState<MatchSelf | null>(null);
   const [deck, setDeck] = useState<MatchCard[]>([]);
   const [loading, setLoading] = useState(false);
-  const [info, setInfo] = useState({ more: false, filtered: false });
-  const [filter, setFilter] = useState<{ game: string; platform: string }>({ game: '', platform: '' });
+  const [info, setInfo] = useState({ more: false, filtered: false, online: 0 });
+  const [filter, setFilter] = useState<{ game: string; platform: string; online?: boolean }>({ game: '', platform: '', online: false });
   const [canUndo, setCanUndo] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [games, setGames] = useState(false);
@@ -86,13 +86,13 @@ export default function Match() {
   useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(''), 3200); return () => clearTimeout(t); }, [note]);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
 
-  const fetchDeck = useCallback(async (f: { game: string; platform: string }, have: MatchCard[] = []) => {
+  const fetchDeck = useCallback(async (f: { game: string; platform: string; online?: boolean }, have: MatchCard[] = []) => {
     setLoading(true);
     try {
       const d = await loadDeck(f, have.map((c) => c.pid!).filter(Boolean));
       const known = new Set(have.map((c) => c.pid));
       setDeck([...have, ...d.cards.filter((c) => !known.has(c.pid))]);
-      setInfo({ more: d.more, filtered: d.filtered });
+      setInfo({ more: d.more, filtered: d.filtered, online: d.online || 0 });
     } catch (e) { say(matchErr(e)); } finally { setLoading(false); }
   }, []);
   // beim Öffnen und bei der Rückkehr (aus dem Profil, den Listen): eigenes Profil frisch laden; Stapel nur, wenn er leer ist
@@ -139,7 +139,7 @@ export default function Match() {
     try { const d = await undoPass(); setDeck((l) => [d.card, ...l.filter((c) => c.pid !== d.card.pid)]); } catch (e) { say(matchErr(e)); }
     setCanUndo(false);
   };
-  const pickFilter = (f: { game: string; platform: string }) => { setFilter(f); setDeck([]); fetchDeck(f, []); };
+  const pickFilter = (f: { game: string; platform: string; online?: boolean }) => { setFilter(f); setDeck([]); fetchDeck(f, []); };
   const doBoost = async () => {
     if (!self) return;
     buzz(true);
@@ -165,13 +165,18 @@ export default function Match() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg0 }}>
       <Glow />
-      <TopBar onBack={back} title={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Icon name="pad" size={20} color={C.accent} /><T style={{ fontSize: 17, fontWeight: '800' }} numberOfLines={1}>Mitspieler finden</T></View>}
+      <TopBar onBack={back} title={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Icon name="pad" size={20} color={C.accent} /><T style={{ fontSize: 17, fontWeight: '800' }} numberOfLines={1}>Mitspieler-Match</T></View>}
         right={self?.profile ? <>{likesBtn}{profileBtn}</> : undefined} />
       {!self ? <ActivityIndicator color={C.accent} style={{ marginTop: 60 }} />
-        : !self.profile ? <Intro onStart={() => router.push('/match-profile')} bottom={ins.bottom} />
+        : !self.profile ? <Intro onStart={() => router.push('/match-profile')} bottom={ins.bottom} online={self.online_now || 0} />
         : <View style={{ flex: 1 }}>
             {/* Filter: Spiel (Auswahl von unten) und Plattform */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={s.filters}>
+              {/* „Jetzt online“: Leute, mit denen man sofort loszocken kann – die stehen ohnehin weiter vorn */}
+              <Pressable accessibilityRole="button" accessibilityState={{ selected: !!filter.online }} onPress={() => { buzz(); pickFilter({ ...filter, online: !filter.online }); }} style={[s.chip, !!filter.online && s.chipOn]}>
+                <View style={s.liveDot} />
+                <T style={[s.chipText, !!filter.online && { color: '#c9bcff' }]}>Jetzt online{info.online ? ` · ${info.online}` : ''}</T>
+              </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel="Nach Spiel filtern" onPress={() => { buzz(); setGames(true); }} style={[s.chip, !!filter.game && s.chipOn]}>
                 <Icon name="filter" size={14} color={filter.game ? C.accent : C.text2} />
                 <T style={[s.chipText, !!filter.game && { color: '#c9bcff' }]} numberOfLines={1}>{filter.game || 'Alle Spiele'}</T>
@@ -238,7 +243,7 @@ const GameFilter = ({ label, on, onPress }: { label: string; on: boolean; onPres
   <Pressable accessibilityRole="button" onPress={onPress} style={[s.chip, on && s.chipOn, { height: 36 }]}><T style={[s.chipText, on && { color: '#c9bcff' }]}>{label}</T></Pressable>
 );
 
-function Intro({ onStart, bottom }: { onStart: () => void; bottom: number }) {
+function Intro({ onStart, bottom, online = 0 }: { onStart: () => void; bottom: number; online?: number }) {
   const Point = ({ icon, title, text }: { icon: IconName; title: string; text: string }) => (
     <View style={s.point}>
       <View style={s.pointIc}><Icon name={icon} size={19} color={C.accent} /></View>
@@ -251,6 +256,7 @@ function Intro({ onStart, bottom }: { onStart: () => void; bottom: number }) {
         <Art />
         <T style={s.introTitle}>Finde Leute zum Zocken</T>
         <T style={s.introText}>Sag, was du spielst und wann du Zeit hast – wir zeigen dir Leute, die dazu passen.</T>
+        {online ? <View style={s.liveRow}><View style={s.liveDot} /><T style={{ fontWeight: '800', color: C.text2 }}>{online} Gamer sind gerade online</T></View> : null}
       </Animated.View>
       <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 22 }}>
         <Point icon="user" title="Erst einmal anonym" text="Andere sehen dein Profilbild, Banner und deine Spiele – aber nicht deinen Namen." />
@@ -263,6 +269,8 @@ function Intro({ onStart, bottom }: { onStart: () => void; bottom: number }) {
 }
 
 const s = StyleSheet.create({
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3ddc97', shadowColor: '#3ddc97', shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: 'rgba(61,220,151,0.10)', borderWidth: 1, borderColor: 'rgba(61,220,151,0.30)' },
   topBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)' },
   topBadge: { position: 'absolute', right: -6, top: -6 },
   filters: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8, gap: 7, alignItems: 'center' },

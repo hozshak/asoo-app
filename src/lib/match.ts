@@ -1,4 +1,4 @@
-// „Mitspieler finden“ (Gamer-Matching): Gamer-Profil, anonyme Karten, Like/Überspringen, Match, „Mag dich“, Besucher, Boost.
+// „Mitspieler-Match“ (Gamer-Matching, früher „Mitspieler finden“): Gamer-Profil, anonyme Karten, Like/Überspringen, Match, „Mag dich“, Besucher, Boost.
 // Server: zuno-app/src/worker.js (Abschnitt „src/api/match.js“). Vor einem Match kennt die App weder Namen noch
 // Nutzer-Kennung – nur die zufällige Karten-Kennung `pid`.
 import { useSyncExternalStore } from 'react';
@@ -16,7 +16,7 @@ export type MatchCard = {
 export type MatchProfile = { games: string[]; platforms: string[]; langs: string[]; looking: string[]; times: number; tz: number; style: string; mic: boolean; about: string; visible: boolean; created?: number };
 export type MatchSelf = {
   profile: MatchProfile | null; preview: MatchCard | null; badge: MatchBadge;
-  boost: { until: number; next: number; minutes: number }; likes_left: number; likes_day: number; hidden_cards: number;
+  boost: { until: number; next: number; minutes: number }; likes_left: number; likes_day: number; hidden_cards: number; online_now?: number;
   catalog: { games: string[]; platforms: string[]; looking: string[]; styles: string[]; langs: string[] };
 };
 export type MatchResult = { user: User; dm: DM };
@@ -83,9 +83,9 @@ export const loadSelf = async () => { const d = await api<MatchSelf>('GET', '/ap
 export const saveProfile = async (p: Omit<MatchProfile, 'tz' | 'created'>) => { const d = await api<MatchSelf>('PUT', '/api/match/me', { ...p, tz: -new Date().getTimezoneOffset() }); setBadge(d.badge); return d; };
 export const setVisible = async (on: boolean) => api<MatchSelf>('POST', '/api/match/visible', { on });
 export const deleteProfile = async () => { await api('DELETE', '/api/match/me'); setBadge(EMPTY_BADGE); };
-export const loadDeck = (f: { game?: string; platform?: string }, skip: string[] = []) => {
-  const q = [f.game ? 'game=' + encodeURIComponent(f.game) : '', f.platform ? 'platform=' + f.platform : '', skip.length ? 'skip=' + skip.join(',') : ''].filter(Boolean).join('&');
-  return api<{ cards: MatchCard[]; more: boolean; total: number; filtered: boolean }>('GET', '/api/match/deck' + (q ? '?' + q : ''));
+export const loadDeck = (f: { game?: string; platform?: string; online?: boolean }, skip: string[] = []) => {
+  const q = [f.game ? 'game=' + encodeURIComponent(f.game) : '', f.platform ? 'platform=' + f.platform : '', f.online ? 'online=1' : '', skip.length ? 'skip=' + skip.join(',') : ''].filter(Boolean).join('&');
+  return api<{ cards: MatchCard[]; more: boolean; total: number; online?: number; filtered: boolean }>('GET', '/api/match/deck' + (q ? '?' + q : ''));
 };
 export const viewCard = (pid: string) => api('POST', '/api/match/view', { pid }).catch(() => {});
 export const likeCard = (pid: string) => api<{ ok?: boolean; left?: number; match?: MatchResult }>('POST', '/api/match/like', { pid });

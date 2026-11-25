@@ -92,7 +92,7 @@ export default function Login() {
         return;
       }
       if (needMail && !code.trim()) throw new Error(codeSent ? 'Bitte gib den Code aus der Mail ein.' : 'Bitte lass dir zuerst einen Code an deine E-Mail schicken.');
-      const body = mode === 'login' ? { username: username.trim(), password, ...(verify ? { code: code.trim() } : {}) } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
+      const body = mode === 'login' ? { username: username.trim(), password, ...(verify && code.trim() ? { code: code.trim() } : {}) } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
       // Bot-Schutz: beim Registrieren die (meist schon fertig gerechnete) Aufgabe mitschicken
       const full = mode === 'register' ? { ...body, pow: await takePow() } : body;
       await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', full));
@@ -100,7 +100,7 @@ export default function Login() {
       if (e?.code === 'login_verify') {
         setVerify(e.data?.email || '');
         if (e.data?.dev_code) setCode(e.data.dev_code);
-        setInfo(t("Du meldest dich von einem neuen Gerät oder Ort an. Wir haben dir einen Code an {e} geschickt.", { e: e.data?.email || '' }));
+        setInfo(t("Du meldest dich von einem neuen Gerät oder Ort an. Wir haben dir eine E-Mail an {e} geschickt: Klicke dort auf „IP autorisieren“ und tippe danach hier auf „Anmelden“. Oder gib den Code aus der Mail ein.", { e: e.data?.email || '' }));
         return;
       } setErr(e instanceof Error && !(e as any).code && /^Bitte /.test(e.message) ? e.message : errText(e)); } finally { setBusy(false); }
   };

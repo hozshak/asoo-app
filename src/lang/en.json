@@ -238,7 +238,7 @@
  "Du hast niemanden blockiert.": "You haven’t blocked anyone.",
  "Du hast noch keine Freunde hinzugefügt – teile einfach den Link.": "You haven't added any friends yet – just share the link.",
  "Du kannst nur mit einer neuen Einladung wieder beitreten.": "You can only rejoin with a new invite.",
- "Du meldest dich von einem neuen Gerät oder Ort an. Wir haben dir einen Code an {e} geschickt.": "You're signing in from a new device or location. We sent a code to {e}.",
+ "Du meldest dich von einem neuen Gerät oder Ort an. Wir haben dir eine E-Mail an {e} geschickt: Klicke dort auf „IP autorisieren“ und tippe danach hier auf „Anmelden“. Oder gib den Code aus der Mail ein.": "You're signing in from a new device or location. We sent an email to {e}: click “Authorize IP” there, then tap “Sign in” here. Or enter the code from the email.",
  "Du teilst deinen Bildschirm": "You are sharing your screen",
  "Du: ": "You: ",
  "Duo-Partner": "A duo partner",

@@ -13,6 +13,7 @@ import { Avatar, Glass, T } from './ui';
 import { Icon } from './Icon';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
+import { startRingtone, stopRingtone } from '@/lib/ringtone';
 
 export function CallBar() {
   const web = useHost((s) => s.voice);
@@ -56,18 +57,19 @@ export function IncomingCall() {
   const webRing = useHost((s) => s.ring);
   const appRing = useCalls((c) => c.ring);
   const ring = appRing || webRing;
-  // Vibrieren, solange es klingelt (wie ein Anruf)
+  // Klingelton und Vibrieren, solange es klingelt (wie ein Anruf)
   useEffect(() => {
     if (!ring) return;
+    startRingtone();
     const buzz = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     buzz();
     const t = setInterval(buzz, 1600);
-    return () => clearInterval(t);
+    return () => { clearInterval(t); stopRingtone(); };
   }, [ring?.dm]);
   if (!ring) return null;
   const u = { ...userOf(ring.from), display: ring.name, avatar: ring.avatar ?? userOf(ring.from).avatar };
-  const decline = () => (appRing ? declineRing() : declineCall());
-  const answer = () => (appRing ? answerRing() : answerCall(ring.dm));
+  const decline = () => { stopRingtone(); appRing ? declineRing() : declineCall(); };
+  const answer = () => { stopRingtone(); appRing ? answerRing() : answerCall(ring.dm); };
   return (
     <Modal visible transparent animationType="fade" onRequestClose={decline}>
       <View style={s.back}>

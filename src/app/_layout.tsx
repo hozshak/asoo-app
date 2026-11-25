@@ -14,7 +14,7 @@ import { registerPush, onPushTap, chatFromUrl, startBadge } from '@/lib/push';
 import { C, F } from '@/lib/theme';
 import { LANG, onLangChange } from '@/lib/i18n';
 import { prewarmWeb } from '@/lib/webhost';
-import { loadCallMode } from '@/lib/calls';
+import { loadCallMode, ringFromPush } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
 import { GlobalScreenPicker } from '@/components/ScreenPicker';
 import { CropHost } from '@/components/CropHost';
@@ -66,8 +66,8 @@ export default function Root() {
   useEffect(() => { if (!me) return; const t = setTimeout(prewarmWeb, 1500); return () => clearTimeout(t); }, [me?.id]);
   // Tippen auf eine Mitteilung: merken und erst öffnen, wenn alles bereit ist (wichtig, wenn die App ganz zu war)
   const navReady = !!useRootNavigationState()?.key;
-  const [pushUrl, setPushUrl] = useState<{ url: string | null } | null>(null);
-  useEffect(() => onPushTap((url) => setPushUrl({ url })), []);
+  const [pushUrl, setPushUrl] = useState<{ url: string | null; kind?: string | null; action?: string } | null>(null);
+  useEffect(() => onPushTap((url, tap) => { if (tap.action !== 'decline') setPushUrl({ url, kind: tap.kind, action: tap.action }); }), []);
   const pushDone = useRef<object | null>(null);
   useEffect(() => {
     if (!pushUrl || pushDone.current === pushUrl || !booted || !fonts || !me || !navReady) return;
@@ -77,7 +77,11 @@ export default function Root() {
       pushDone.current = pushUrl;
       try {
         const ch = chatFromUrl(url);
-        if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
+        // Anruf: „Annehmen“ in der Mitteilung → gleich beitreten; sonst Chat öffnen und weiter klingeln, falls er noch läuft
+        if (ch && pushUrl.kind === 'call') {
+          if (pushUrl.action === 'answer') ringFromPush(ch, true);
+          else { router.push({ pathname: '/chat/[id]', params: { id: ch } }); ringFromPush(ch); }
+        } else if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
         else if (/^\/match\b/.test(url || '')) router.push(/tab=/.test(url || '') ? '/match-likes' : '/match'); // „Jemand mag dein Mitspieler-Profil“
         else if (/^\/(notifications|activity)\b/.test(url || '')) router.push('/notifications');
       } catch { /* Ziel nicht erreichbar – die App bleibt auf der Startseite */ }

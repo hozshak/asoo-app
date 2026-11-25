@@ -97,6 +97,19 @@ function onRing(m: any, retried = false) {
   set({ ring: { dm: dm.id, from: m.from, name: u.display, avatar: u.avatar || null, title: dmTitle(dm, s.me?.id) } });
   ringTimer = setTimeout(stopRing, 60000);
 }
+/**
+ * App wurde über eine Anruf-Mitteilung geöffnet: Läuft der Anruf noch (jemand anderes ist im Gespräch), klingelt es in
+ * der App weiter (Fenster „ruft dich an“). answer = in der Mitteilung schon „Annehmen“ gedrückt → gleich beitreten.
+ */
+export async function ringFromPush(dm: string, answer = false) {
+  if (!dm || voice.get().room === dm) return;
+  let s = getState();
+  if (!s.dms.some((d) => d.id === dm)) { try { await bootstrap(); } catch {} s = getState(); }
+  const me = s.me?.id;
+  const others = (s.voice?.[dm] || []).filter((m) => m.uid !== me);
+  if (answer) { joinCall(dm); return; }
+  if (others.length) onRing({ dm, from: others[0].uid });
+}
 onLive((m: any) => {
   if (m.t === 'ring') onRing(m);
   else if (m.t === 'voice' && ex.ring && m.room === ex.ring.dm) {

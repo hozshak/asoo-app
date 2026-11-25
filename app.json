@@ -58,7 +58,10 @@
       [
         "expo-notifications",
         {
-          "color": "#7c5cff"
+          "color": "#7c5cff",
+          "sounds": [
+            "./assets/sounds/ring.wav"
+          ]
         }
       ],
       "@config-plugins/react-native-webrtc",

@@ -6,6 +6,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { api } from './api';
 import { getState, subscribeStore } from './store';
+import { t } from './i18n';
 
 let current: string | null = null;
 
@@ -21,6 +22,11 @@ export async function registerPush() {
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
     if (status !== 'granted') return null;
+    // Anruf-Mitteilungen bekommen zwei Knöpfe (lange drücken bzw. herunterziehen): Annehmen öffnet die App und tritt bei
+    Notifications.setNotificationCategoryAsync('call', [
+      { identifier: 'answer', buttonTitle: t("Annehmen"), options: { opensAppToForeground: true } },
+      { identifier: 'decline', buttonTitle: t("Ablehnen"), options: { opensAppToForeground: false, isDestructive: true } },
+    ]).catch(() => {});
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     const { data } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
     current = data;
@@ -46,13 +52,16 @@ export function chatFromUrl(url?: string | null) {
  * Dasselbe Tippen kann doppelt ankommen (Ereignis + „letzte Antwort“) – nur einmal ausführen.
  */
 const seen = new Set<string>();
-export const onPushTap = (fn: (url: string | null) => void) => {
+export type PushTap = { kind: string | null; action: string; ref: string | null };
+export const onPushTap = (fn: (url: string | null, tap: PushTap) => void) => {
   const take = (r: Notifications.NotificationResponse | null) => {
     if (!r) return;
     const id = r.notification.request.identifier + ':' + r.actionIdentifier;
     if (seen.has(id)) return;
     seen.add(id);
-    fn((r.notification.request.content.data as any)?.url ?? null);
+    const d = (r.notification.request.content.data as any) || {};
+    const action = r.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER ? 'open' : r.actionIdentifier;
+    fn(d.url ?? null, { kind: d.kind ?? null, action, ref: d.ref ?? null });
     Notifications.clearLastNotificationResponseAsync?.().catch(() => {});
   };
   const sub = Notifications.addNotificationResponseReceivedListener(take);

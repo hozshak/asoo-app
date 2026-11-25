@@ -18,6 +18,7 @@ import { inviteCodes, openLink } from '@/lib/links';
 import { InviteCard } from '@/components/InviteCard';
 import { NameText } from '@/components/NameText';
 import { isVerified } from '@/components/Verified';
+import { ImageViewer } from '@/components/ImageViewer';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
 import { Avatar, Glass, Glow, Press, Sheet, T, TopBar, TopIcon, type SheetItem } from '@/components/ui';
@@ -275,9 +276,7 @@ export default function Chat() {
       <PollComposer open={pollOpen} onClose={() => setPollOpen(false)} onSend={sendPoll} />
       <GifPicker open={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
       <Sheet open={!!reportFor} onClose={() => setReportFor(null)} title="Warum meldest du das?" items={REASONS.map(([k, l]) => ({ label: l, onPress: () => report(reportFor!, k) }))} />
-      <Modal visible={!!big} transparent animationType="fade" onRequestClose={() => setBig(null)}>
-        <Pressable style={s.lightbox} onPress={() => setBig(null)}>{big ? <Image source={big.startsWith('http') ? { uri: big } : mediaSource(big)!} style={{ width: '100%', height: '80%' }} contentFit="contain" /> : null}</Pressable>
-      </Modal>
+      <ImageViewer src={big} onClose={() => setBig(null)} />
     </View>
   );
 }

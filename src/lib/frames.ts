@@ -46,7 +46,7 @@ const ALIAS: Record<string, string> = { 'gold-wings': 'gold', 'gold-stars': 'gol
 /** Rahmen zu einer gespeicherten Kennung (auch alte Kennungen) */
 export const frameOf = (id?: string | null): Frame | null => (id ? FRAMES[id] || FRAMES[ALIAS[id]] || null : null);
 /** Ab welcher Größe ein Rahmen gezeigt wird (sonst wird er zu klein): breite Rahmen erst ab 72 px, sonst ab 36 px. */
-export const frameMin = (f: Frame) => (f.w > 2.1 ? 72 : 36);
+export const frameMin = (f: Frame) => (f.w > 2.1 ? 72 : 30); // wie im Web: schlanke Rahmen schon ab 30 px (Chat-Kopfzeile, Listen)
 // Beim Entwickeln im Browser liegen die bewegten Bilder beim lokalen Asoo-Server (der Entwicklungs-Proxy reicht nur /api und /media durch)
 const STATIC = BASE || (Platform.OS === 'web' && __DEV__ ? 'http://localhost:8796' : 'https://zuno-app.altraex.workers.dev');
 /** Adresse des bewegten Bildes eines Rahmens */

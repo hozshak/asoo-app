@@ -202,7 +202,7 @@ export default function Chat() {
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
         title={
           <Pressable accessibilityRole="button" disabled={!other} onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={18} color={C.muted} /> : other ? <Avatar user={other} size={30} status frame={false} /> : null}
+            {info ? <Icon name={info.channel.type === 'text' ? 'hash' : info.channel.type === 'voice3d' ? 'cube' : info.channel.type === 'game' ? 'target' : 'volume'} size={18} color={C.muted} /> : other ? <View style={{ marginHorizontal: 5 }}><Avatar user={other} size={30} status /></View> : null}
             <T style={{ fontSize: 17, fontWeight: '800', flexShrink: 1 }} numberOfLines={1}>{title}</T>
           </Pressable>
         }

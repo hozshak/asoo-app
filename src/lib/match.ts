@@ -9,7 +9,7 @@ import { t } from './i18n';
 export type { MatchBadge };
 export type MatchGame = { n: string; c: boolean };
 export type MatchCard = {
-  pid: string | null; avatar: string | null; banner: string | null; banner_color: string | null; accent: string; deco: string; effect: string;
+  pid: string | null; avatar: string | null; banner: string | null; banner_color: string | null; accent: string; deco: string; effect: string; verified?: boolean;
   games: MatchGame[]; platforms: string[]; langs: string[]; style: string; mic: boolean; looking: string[]; about: string;
   times: number; overlap: number; score: number | null; boost: boolean; active: 'now' | 'today' | 'week' | 'old';
   at?: number; fresh?: boolean; liked?: boolean;

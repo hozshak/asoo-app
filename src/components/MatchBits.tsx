@@ -14,6 +14,7 @@ import { ACTIVE, DAYS, LANG_NAME, LOOKING, PLATFORM, REASONS, SLOTS, STYLE, agoS
 import { Avatar, Btn, Sheet, T } from './ui';
 import { Icon, type IconName } from './Icon';
 import { ProfileFx } from './ProfileFx';
+import { VerifiedMark } from './Verified';
 import { C, GRAD, GRAD_POS, HOME } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -121,7 +122,10 @@ export function MatchCardView({ c, onMore, preview, style }: { c: MatchCard; onM
         <View style={s.who}>
           <View style={s.avRing}><CardAvatar c={c} size={88} /></View>
           <View style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
-            <T style={s.h} numberOfLines={1}>{preview ? t("So sehen dich andere") : t("Mitspieler")}</T>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <T style={[s.h, { flexShrink: 1 }]} numberOfLines={1}>{preview ? t("So sehen dich andere") : t("Mitspieler")}</T>
+              {c.verified ? <VerifiedMark size={17} /> : null}
+            </View>
             <View style={s.tags}>
               <Tag label={STYLE[c.style] || STYLE.both} />
               <Tag icon={c.mic ? 'mic' : 'micOff'} label={c.mic ? t("Mit Mikro") : t("Ohne Mikro")} />

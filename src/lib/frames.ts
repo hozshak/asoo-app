@@ -37,6 +37,11 @@ export const FRAMES: Record<string, Frame> = {
   diamant: sq('diamant', 'Diamant', 1.36, require('../../assets/frames/diamant.webp')),
 };
 /** Frühere Rahmen → passender neuer (wie FRAME_ALIAS in zuno-app/public/js/frames.js) */
+// Passform: Das Loch in den Rahmen-Bildern ist 2–8 % größer als das Profilbild – es blieb ein dunkler Spalt. Je Rahmen
+// ausgemessen (Innenkante des Rahmens) und so verkleinert, dass er das Profilbild knapp überdeckt (Innenkante bei 49 %).
+const FIT: Record<string, number> = { aurum: 0.951, platin: 0.951, rose: 0.961, holo: 0.965, obsidian: 0.976, kristall: 0.968, neonduo: 0.968, nebula: 0.961, perle: 0.965, smaragd: 0.957, lorbeer: 0.959, carbon: 0.972, prisma: 0.961, neon: 0.925, gold: 0.961, ember: 0.951, frost: 0.942, galaxy: 0.966, sakura: 0.957, cyber: 0.957, pulse: 0.948, shadow: 0.966, diamant: 0.916 };
+for (const [id, k] of Object.entries(FIT)) { const f = FRAMES[id]; if (f) { f.w *= k; f.h *= k; f.x *= k; f.y *= k; } }
+
 const ALIAS: Record<string, string> = { 'gold-wings': 'gold', 'gold-stars': 'gold', 'gold-hex': 'gold', diamond: 'diamant', bronze: 'ember', lava: 'ember', moonlight: 'galaxy', arcade: 'cyber', aurora: 'prisma', inferno: 'ember', laser: 'cyber', laurel: 'gold', angel: 'gold', amor: 'pulse', volt: 'neon', neko: 'sakura', ocean: 'frost', glow: 'prisma', ring: 'prisma', wings: 'gold', crown: 'gold', flames: 'ember', hearts: 'pulse', stars: 'galaxy', halo: 'gold', leaves: 'sakura' };
 /** Rahmen zu einer gespeicherten Kennung (auch alte Kennungen) */
 export const frameOf = (id?: string | null): Frame | null => (id ? FRAMES[id] || FRAMES[ALIAS[id]] || null : null);

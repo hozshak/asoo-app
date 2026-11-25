@@ -1,8 +1,10 @@
 // Sprachen der App – wie in der Web-App: Deutsch ist der Grundtext im Code, t('…') liefert die Übersetzung.
-// Die App nimmt die Sprache des iPhones (auch die Sprache, die man in den iPhone-Einstellungen nur für ToLobby wählt).
+// Die App nimmt die Sprache des iPhones (auch die Sprache, die man in den iPhone-Einstellungen nur für ToLobby wählt) –
+// außer man wählt in den Einstellungen der App selbst eine (Schlüssel asoo.lang, setLang).
 // Fehlt eine Übersetzung, erscheint Englisch, fehlt auch die, der deutsche Grundtext.
 // Übersetzungen: src/lang/<code>.json (Schlüssel = deutscher Text). Neue Texte: node scripts/i18n-extract.mjs
 import { NativeModules, Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 import en from '../lang/en.json';
 import ar from '../lang/ar.json';
@@ -42,10 +44,38 @@ function pick(): Lang {
   }
   return 'en';
 }
-export const LANG: Lang = pick();
+// In der App gewählte Sprache (null = wie das iPhone). SecureStore liest auch ohne „await“ – die Sprache steht beim Start fest.
+const KEY = 'asoo.lang';
+function chosen(): Lang | null {
+  try {
+    const v = Platform.OS === 'web' ? (globalThis as any).localStorage?.getItem(KEY) : SecureStore.getItem(KEY);
+    return v && (LANGS as readonly string[]).includes(v) ? (v as Lang) : null;
+  } catch { return null; }
+}
+const LOCALES = { de: 'de-DE', en: 'en-GB', ar: 'ar', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', ku: 'ku', nl: 'nl-NL', pl: 'pl-PL', pt: 'pt-PT', ru: 'ru-RU', tr: 'tr-TR' } as Record<Lang, string>;
+export let LANG: Lang = chosen() || pick();
 /** Gebietsschema für Datum und Zahlen (toLocaleDateString …) */
-export const LOCALE = ({ de: 'de-DE', en: 'en-GB', ar: 'ar', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', ku: 'ku', nl: 'nl-NL', pl: 'pl-PL', pt: 'pt-PT', ru: 'ru-RU', tr: 'tr-TR' } as Record<Lang, string>)[LANG];
-export const isRTL = LANG === 'ar';
+export let LOCALE = LOCALES[LANG];
+export let isRTL = LANG === 'ar';
+/** Namen der Sprachen in ihrer eigenen Sprache (für die Auswahl). */
+export const LANG_NAMES: Record<Lang, string> = { de: 'Deutsch', en: 'English', ar: 'العربية', es: 'Español', fr: 'Français', it: 'Italiano', ku: 'Kurdî', nl: 'Nederlands', pl: 'Polski', pt: 'Português', ru: 'Русский', tr: 'Türkçe' };
+/** Gewählte Sprache oder 'auto' (wie das iPhone). */
+export const langChoice = (): Lang | 'auto' => chosen() || 'auto';
+/** Sprache, die das iPhone vorgibt (für „Wie das iPhone“). */
+export const deviceLang = (): Lang => pick();
+const langSubs = new Set<() => void>();
+export function onLangChange(fn: () => void) { langSubs.add(fn); return () => { langSubs.delete(fn); }; }
+/** Sprache wechseln ('auto' = wie das iPhone). Die App baut sich danach neu auf (_layout.tsx). */
+export function setLang(l: Lang | 'auto') {
+  try {
+    if (Platform.OS === 'web') { if (l === 'auto') (globalThis as any).localStorage?.removeItem(KEY); else (globalThis as any).localStorage?.setItem(KEY, l); }
+    else if (l === 'auto') SecureStore.deleteItemAsync(KEY).catch(() => {}); else SecureStore.setItem(KEY, l);
+  } catch {}
+  LANG = l === 'auto' ? pick() : l;
+  LOCALE = LOCALES[LANG];
+  isRTL = LANG === 'ar';
+  langSubs.forEach((f) => f());
+}
 
 /** Übersetzt einen deutschen Grundtext. {name} im Text wird durch vars.name ersetzt. */
 export function t(de: string, vars?: Record<string, string | number | null | undefined>): string {

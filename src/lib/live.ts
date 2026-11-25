@@ -108,7 +108,8 @@ function apply(m: any) {
       return;
     }
     case 'msg_edit': setState((st) => { const cur = st.messages[m.m.ch]; if (!cur) return; return { messages: { ...st.messages, [m.m.ch]: { ...cur, list: cur.list.map((x) => (x.id === m.m.id ? { ...x, ...m.m, reactions: x.reactions } : x)) } } }; }); return;
-    case 'msg_del': setState((st) => { const cur = st.messages[m.ch]; if (!cur) return; return { messages: { ...st.messages, [m.ch]: { ...cur, list: cur.list.filter((x) => x.id !== m.id) } } }; }); return;
+    // gelöscht: nicht einfach verschwinden lassen – an derselben Stelle steht „Nachricht gelöscht“ (wie bei WhatsApp)
+    case 'msg_del': setState((st) => { const cur = st.messages[m.ch]; if (!cur) return; return { messages: { ...st.messages, [m.ch]: { ...cur, list: cur.list.map((x) => (x.id === m.id ? { ...x, deleted: true, content: '', attachments: [], reactions: [], poll: undefined, reply: null } : x)) } } }; }); return;
     case 'react': setState((st) => {
       const cur = st.messages[m.ch]; if (!cur) return;
       const mine = m.uid === st.me?.id;

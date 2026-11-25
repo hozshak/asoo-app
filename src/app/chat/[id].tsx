@@ -330,7 +330,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
   const mentioned = mentionsMe(m.content, sid) || (m.reply && m.reply.author_id === me?.id && m.author_id !== me?.id);
   const color = roleColor(sid, m.author_id);
   return (
-    <Pressable onLongPress={onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+    <Pressable onLongPress={m.deleted ? undefined : onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
       {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || t("Bild")}</T></View> : null}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
@@ -339,11 +339,12 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
             <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} verified={isVerified(u)} />
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
-          {m.kind === 'poll' && m.poll ? <PollCard id={m.id} poll={m.poll} pending={m.pending} onChange={(p) => onPoll(m.id, p)} />
+          {m.deleted ? <View style={s.deletedRow}><Icon name="trash" size={13} color={C.faint} /><T style={s.deleted}>{t("Nachricht gelöscht")}</T></View>
+            : m.kind === 'poll' && m.poll ? <PollCard id={m.id} poll={m.poll} pending={m.pending} onChange={(p) => onPoll(m.id, p)} />
             : gifUrl(m.content) ? <Pressable onPress={() => onImage(gifSrc(gifUrl(m.content)))}><Image source={{ uri: gifSrc(gifUrl(m.content)) }} style={{ width: 220, height: 180, borderRadius: 14, marginTop: 6 }} contentFit="cover" autoplay /></Pressable>
             : m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
           {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
-          {m.edited ? <T style={s.edited}>{t("(bearbeitet)")}</T> : null}
+          {m.edited && !m.deleted ? <T style={s.edited}>{t("(bearbeitet)")}</T> : null}
           {m.attachments?.map((a, i) => {
             // Server-Sticker: freistehend, ohne Rahmen
             if (a.sticker) { const ss = mediaSource(a.key); return ss ? <Image key={i} source={ss} style={{ width: 150, height: 150, marginTop: 4, opacity: m.pending ? 0.6 : 1 }} contentFit="contain" autoplay accessibilityLabel={a.name} /> : null; }
@@ -372,7 +373,9 @@ const s = StyleSheet.create({
   name: { fontWeight: '700', fontSize: 15.5, flexShrink: 1 },
   time: { color: C.faint, fontSize: 12 },
   body: { color: C.text2, fontSize: 16, lineHeight: 23, fontFamily: F.regular },
-  edited: { color: C.faint, fontSize: 11 },
+  edited: { color: C.text2, fontSize: 12, marginTop: 1 },
+  deletedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start', borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.04)' },
+  deleted: { color: C.faint, fontSize: 14, fontStyle: 'italic' },
   failed: { color: C.danger, fontSize: 12 },
   replyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 26, marginBottom: 3 },
   replyHook: { width: 26, height: 10, borderLeftWidth: 2, borderTopWidth: 2, borderColor: C.bg5, borderTopLeftRadius: 8, marginTop: 8 },

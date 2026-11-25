@@ -4,6 +4,7 @@
 // Datenkanal Nr. 7 („room“), Generationen-Nummer `g` je Verbindung, wer später kam, bietet an.
 // Die Technik (WebRTC, Mikrofon, Lautsprecher) kommt von außen: am iPhone react-native-webrtc (voice.native.ts), in der
 // Entwicklungs-Vorschau im Browser dessen eigenes WebRTC (voice.ts) – so lässt sich der Kern am PC gegen die Web-App testen.
+import { AppState } from 'react-native';
 import { api } from './api';
 import * as live from './live';
 import { getState } from './store';
@@ -35,7 +36,9 @@ export type Deps = {
   tuneScreen?: (pc: any) => void;
 };
 type Peer = { cid: string; uid: string; pc: any; gen: number; polite: boolean; makingOffer: boolean; ignoreOffer: boolean; streams: Map<string, any>;
-  dc: any; info?: Member; badSince: number; tries: number; triedAt: number; askedAt: number; iceTried: boolean; heard: number; queue: Promise<void>; audioOn: boolean };
+  dc: any; info?: Member; badSince: number; tries: number; triedAt: number; askedAt: number; iceTried: boolean; heard: number; queue: Promise<void>; audioOn: boolean;
+  /** Neu aushandeln steht noch aus (z. B. Kamera an, aber das Angebot konnte gerade nicht raus) */
+  needNeg?: boolean };
 
 const STEREO = ';stereo=1;sprop-stereo=1;maxaveragebitrate=192000;useinbandfec=1';
 /** Stereo in hoher Qualität erlauben – wie tuneSdp in der Web-App (sonst macht die Gegenseite Mono daraus). */
@@ -112,25 +115,26 @@ export function createVoice(deps: Deps) {
     if (cam) for (const tr of cam.getVideoTracks()) pc.addTrack(tr, cam);
     if (scr) { for (const tr of scr.getVideoTracks()) pc.addTrack(tr, scr); deps.prepScreen?.(pc); }
     pc.addEventListener('signalingstatechange', () => { if (alive() && scr && pc.signalingState === 'stable') deps.tuneScreen?.(pc); });
-    pc.addEventListener('negotiationneeded', async () => {
-      if (!alive()) return;
-      try {
-        p.makingOffer = true;
-        const d = await pc.createOffer();
-        if (pc.signalingState !== 'stable') return; // inzwischen kam ein Angebot der Gegenseite
-        await pc.setLocalDescription({ type: d.type, sdp: tuneSdp(d.sdp) });
-        if (alive()) live.send({ t: 'rtc', to: cid, data: { desc: plain(pc.localDescription), g: gen } });
-      } catch {} finally { p.makingOffer = false; }
-    });
+    pc.addEventListener('negotiationneeded', () => negotiate(p));
     pc.addEventListener('icecandidate', (e: any) => { if (e.candidate && alive()) live.send({ t: 'rtc', to: cid, data: { cand: candJson(e.candidate), g: gen } }); });
     pc.addEventListener('track', (e: any) => {
       if (!alive()) return;
       const stream = e.streams?.[0];
       if (!stream) return;
+      const fresh = !p.streams.has(stream.id);
       p.streams.set(stream.id, stream);
+      if (fresh) {
+        // kommt eine Spur später in denselben Stream oder endet eine, neu zeichnen
+        const again = () => { if (alive()) emit(); };
+        stream.addEventListener?.('addtrack', again); stream.addEventListener?.('removetrack', again);
+      }
+      e.track.addEventListener?.('unmute', () => { if (alive()) emit(); });
+      e.track.addEventListener?.('ended', () => { if (alive()) emit(); });
       if (e.track.kind === 'audio' && !p.audioOn && !(stream.getVideoTracks && stream.getVideoTracks().length)) { p.audioOn = true; deps.playAudio?.(cid, stream); }
       applyDeaf();
       emit();
+      // Sicherheitsnetz: manche Geräte hängen die Spur erst kurz nach dem Ereignis an
+      setTimeout(() => { if (alive()) emit(); }, 400);
     });
     pc.addEventListener('connectionstatechange', () => {
       if (!alive()) return;
@@ -139,6 +143,33 @@ export function createVoice(deps: Deps) {
     });
     peers.set(cid, p);
     return p;
+  }
+  /**
+   * Neu aushandeln (Angebot an die Gegenseite) – nach Kamera/Bildschirm an oder aus und bei „negotiationneeded“.
+   * Läuft in der Warteschlange der Verbindung. Ist gerade ein Austausch im Gang, bleibt needNeg stehen und wird nach der
+   * Antwort nachgeholt (handleSignal) – vorher ging das Angebot in diesem Fall verloren.
+   */
+  function negotiate(p: Peer) {
+    const pc = p.pc, alive = () => peers.get(p.cid) === p;
+    p.needNeg = true;
+    p.queue = p.queue.then(async () => {
+      if (!alive() || !p.needNeg || pc.signalingState !== 'stable') return;
+      p.needNeg = false;
+      p.makingOffer = true;
+      try {
+        const d = await pc.createOffer();
+        if (pc.signalingState !== 'stable') { p.needNeg = true; return; } // inzwischen kam ein Angebot der Gegenseite
+        await pc.setLocalDescription({ type: d.type, sdp: tuneSdp(d.sdp) });
+        if (alive()) live.send({ t: 'rtc', to: p.cid, data: { desc: plain(pc.localDescription), g: p.gen } });
+      } catch { p.needNeg = true; } finally { p.makingOffer = false; }
+    }).catch(() => {});
+  }
+  /** Fingerabdruck der empfangenen Videospuren – ändert er sich, neu zeichnen (falls kein Ereignis kam). */
+  let vidSig = '';
+  function videoSig() {
+    let k = '';
+    for (const p of peers.values()) for (const s of p.streams.values()) for (const tr of (s.getVideoTracks ? s.getVideoTracks() : [])) k += p.cid + s.id + tr.id + (tr.readyState || '') + ';';
+    return k;
   }
   function closePeer(p: Peer) { try { p.pc.close(); } catch {} deps.stopAudio?.(p.cid); }
   function rebuild(p: Peer) {
@@ -184,6 +215,8 @@ export function createVoice(deps: Deps) {
   /** Wer spricht? Aus den Verbindungs-Werten (audioLevel) – geht am iPhone und im Browser gleich. */
   async function measure() {
     if (!st.room) return;
+    const vs = videoSig();
+    if (vs !== vidSig) { vidSig = vs; emit(); }
     const next: Record<string, boolean> = {};
     for (const p of peers.values()) {
       try {
@@ -249,13 +282,18 @@ export function createVoice(deps: Deps) {
       const collision = data.desc.type === 'offer' && (p.makingOffer || pc.signalingState !== 'stable');
       p.ignoreOffer = !p.polite && collision;
       if (p.ignoreOffer) return;
+      // höflich und eigenes Angebot unterwegs: es wird zurückgenommen – danach erneut anbieten (sonst fehlt z. B. die Kamera)
+      if (collision) p.needNeg = true;
       const desc = { type: data.desc.type, sdp: tuneSdp(data.desc.sdp) };
+      if (collision && pc.signalingState === 'have-local-offer') { try { await pc.setLocalDescription({ type: 'rollback' }); } catch {} }
       await pc.setRemoteDescription(deps.RTCSessionDescription ? new deps.RTCSessionDescription(desc) : desc);
       if (data.desc.type === 'offer' && alive()) {
         const a = await pc.createAnswer();
         await pc.setLocalDescription({ type: a.type, sdp: tuneSdp(a.sdp) });
         if (alive()) live.send({ t: 'rtc', to: from, data: { desc: plain(pc.localDescription), g: p.gen } });
       }
+      // Austausch fertig: was in der Zwischenzeit liegen blieb (Kamera/Bildschirm an/aus), jetzt aushandeln
+      if (alive() && p.needNeg && pc.signalingState === 'stable') setTimeout(() => { if (alive()) negotiate(p); }, 0);
     } else if (data.cand) {
       try { await pc.addIceCandidate(deps.RTCIceCandidate ? new deps.RTCIceCandidate(data.cand) : data.cand); } catch {}
     }
@@ -283,6 +321,20 @@ export function createVoice(deps: Deps) {
   }
 
   // ---------- nach außen ----------
+  AppState.addEventListener('change', async (state) => {
+    if (state !== 'active' || !st.room) return;
+    emit(); // Bilder neu zeichnen
+    const old = cam?.getVideoTracks?.()[0];
+    if (!cam || !old || old.readyState !== 'ended') return;
+    try {
+      const fresh = await deps.getUserMedia({ audio: false, video: { facingMode: st.front ? 'user' : 'environment', width: 640, height: 480, frameRate: 24 } });
+      const tr = fresh.getVideoTracks()[0];
+      if (!tr || !st.room) { for (const x of fresh.getTracks()) { try { x.stop(); } catch {} } return; }
+      for (const p of peers.values()) for (const s of p.pc.getSenders()) if (s.track === old || (s.track && s.track.id === old.id)) { try { await s.replaceTrack(tr); } catch {} }
+      cam = fresh; st = { ...st, localCam: fresh };
+      pushState(); emit();
+    } catch {}
+  });
   const api_ = {
     get: () => st,
     subscribe(fn: () => void) { subs.add(fn); return () => { subs.delete(fn); }; },
@@ -339,9 +391,12 @@ export function createVoice(deps: Deps) {
       } else {
         try { cam = await deps.getUserMedia({ audio: false, video: { facingMode: st.front ? 'user' : 'environment', width: 640, height: 480, frameRate: 24 } }); }
         catch { emit({ error: 'Kein Kamera-Zugriff.' }); return; }
+        if (!st.room) { for (const tr of cam.getTracks()) { try { tr.stop(); } catch {} } cam = null; return; } // inzwischen aufgelegt
         for (const p of peers.values()) for (const tr of cam.getVideoTracks()) { try { p.pc.addTrack(tr, cam); } catch {} }
         st = { ...st, video: true, localCam: cam };
       }
+      // nicht nur auf „negotiationneeded“ warten – selbst neu aushandeln, damit die Gegenseite das Bild sofort bekommt
+      for (const p of peers.values()) negotiate(p);
       pushState(); emit();
     },
     flipCamera() {
@@ -365,6 +420,7 @@ export function createVoice(deps: Deps) {
         for (const p of peers.values()) { for (const tr of scr.getVideoTracks()) { try { p.pc.addTrack(tr, scr); } catch {} } deps.prepScreen?.(p.pc); }
         scr.getVideoTracks()[0]?.addEventListener?.('ended', () => { if (scr === stream) api_.setScreen(null); });
       }
+      for (const p of peers.values()) negotiate(p);
       pushState(); emit({ sharing: !!scr });
     },
     clearError() { if (st.error) emit({ error: null }); },

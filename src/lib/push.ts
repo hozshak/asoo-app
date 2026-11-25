@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { api } from './api';
+import { getState, subscribeStore } from './store';
 
 let current: string | null = null;
 
@@ -38,9 +39,48 @@ export function chatFromUrl(url?: string | null) {
   const m = /\/channels\/([^/?]+)\/([^/?]+)/.exec(url || '');
   return m ? m[2] : null;
 }
+/**
+ * Tippen auf eine Mitteilung. War die App ganz zu, startet iOS sie und meldet das Tippen sehr früh – oft bevor die
+ * Seiten aufgebaut sind. Deshalb nur merken; _layout.tsx führt es aus, sobald Anmeldung, Daten und Navigation stehen
+ * (sonst lief router.push ins Leere und die App blieb auf dem Ladebild stehen).
+ * Dasselbe Tippen kann doppelt ankommen (Ereignis + „letzte Antwort“) – nur einmal ausführen.
+ */
+const seen = new Set<string>();
 export const onPushTap = (fn: (url: string | null) => void) => {
-  const sub = Notifications.addNotificationResponseReceivedListener((r) => fn((r.notification.request.content.data as any)?.url ?? null));
+  const take = (r: Notifications.NotificationResponse | null) => {
+    if (!r) return;
+    const id = r.notification.request.identifier + ':' + r.actionIdentifier;
+    if (seen.has(id)) return;
+    seen.add(id);
+    fn((r.notification.request.content.data as any)?.url ?? null);
+    Notifications.clearLastNotificationResponseAsync?.().catch(() => {});
+  };
+  const sub = Notifications.addNotificationResponseReceivedListener(take);
   // App wurde durch Tippen auf eine Mitteilung gestartet
-  Notifications.getLastNotificationResponseAsync().then((r) => { if (r) fn((r.notification.request.content.data as any)?.url ?? null); }).catch(() => {});
+  Notifications.getLastNotificationResponseAsync().then(take).catch(() => {});
   return () => sub.remove();
 };
+
+/**
+ * Zahl am App-Symbol: ungelesene Direktnachrichten und Erwähnungen (wie bei Discord/WhatsApp), solange die App läuft.
+ * Kommt eine Mitteilung, während die App zu ist, setzt der Server die Zahl mit (pushApps, „badge“).
+ */
+let lastBadge = -1;
+function badgeNow() {
+  const s = getState();
+  if (!s.me) return 0;
+  let n = 0;
+  for (const v of Object.values(s.mentions || {})) n += v || 0;
+  return Math.min(n, 999);
+}
+export function startBadge() {
+  if (Platform.OS === 'web') return () => {};
+  const upd = () => {
+    const n = badgeNow();
+    if (n === lastBadge) return;
+    lastBadge = n;
+    Notifications.setBadgeCountAsync(n).catch(() => {});
+  };
+  upd();
+  return subscribeStore(upd);
+}

@@ -11,7 +11,7 @@ export type Server = { id: string; name: string; icon?: string | null; icon_emoj
 /** Letzte Nachricht einer Unterhaltung (Vorschau in der Liste): a = Absender, c = Text, att = hat Bild, k = Art, t = Zeit */
 export type LastMsg = { a: string; c: string; att: boolean; k: string; t: number };
 export type DM = { id: string; kind: 'dm' | 'group'; name?: string | null; owner_id?: string | null; last_at: number; last?: LastMsg | null; members: User[] };
-export type Msg = { id: string; ch: string; author_id: string; content: string; created: number; edited?: number | null; reply_to?: string | null; reply?: any; attachments: { key: string; w?: number; h?: number; name?: string; spoiler?: boolean; local?: string; type?: string; size?: number; voice?: boolean; dur?: number; sticker?: string }[]; poll?: { q: string; multi: boolean; options: { t: string; n: number }[]; voters: number; mine: number[] }; reactions: { emoji: string; count: number; me: boolean }[]; kind: string; pinned?: boolean; nonce?: string; pending?: boolean; failed?: boolean };
+export type Msg = { id: string; ch: string; author_id: string; content: string; created: number; edited?: number | null; deleted?: boolean; reply_to?: string | null; reply?: any; attachments: { key: string; w?: number; h?: number; name?: string; spoiler?: boolean; local?: string; type?: string; size?: number; voice?: boolean; dur?: number; sticker?: string }[]; poll?: { q: string; multi: boolean; options: { t: string; n: number }[]; voters: number; mine: number[] }; reactions: { emoji: string; count: number; me: boolean }[]; kind: string; pinned?: boolean; nonce?: string; pending?: boolean; failed?: boolean };
 export type Notif = { id: string; kind: string; actor?: User | null; ref?: string; url?: string; text?: string; created: number; read: number };
 
 export type State = {
@@ -47,6 +47,8 @@ export function setState(fn: (s: State) => Partial<State> | void) {
   state = patch ? { ...state, ...patch } : { ...state };
   for (const s of subs) s();
 }
+/** Änderungen außerhalb von React verfolgen (z. B. Zahl am App-Symbol). */
+export function subscribeStore(fn: () => void) { subs.add(fn); return () => { subs.delete(fn); }; }
 export function useStore<T>(sel: (s: State) => T): T {
   return useSyncExternalStore((cb) => { subs.add(cb); return () => subs.delete(cb); }, () => sel(state), () => sel(state));
 }

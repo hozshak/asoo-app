@@ -22,11 +22,11 @@ import { buyTip, loadTips, onTipError, onTipThanks, type Tip } from '@/lib/tips'
 import { setWebCalls, useCalls } from '@/lib/calls';
 import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { t } from '@/lib/i18n';
+import { t, LANGS, LANG_NAMES, langChoice, deviceLang, setLang, type Lang } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
-type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete' | 'mfa' | 'support';
-const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), mfa: t("Zwei-Faktor-Schutz (MFA)"), support: t("ToLobby unterstützen"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
+type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete' | 'mfa' | 'support' | 'lang';
+const titles = (): Record<Page, string> => ({ lang: t("App-Sprache"), profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), mfa: t("Zwei-Faktor-Schutz (MFA)"), support: t("ToLobby unterstützen"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") });
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -40,7 +40,7 @@ export default function Settings() {
   };
   const open = (p: Page) => router.push({ pathname: '/settings', params: { page: p } });
   const frameName = frameOf(me.deco)?.name || null;
-  const p = page && TITLES[page] ? page : null;
+  const p = page && titles()[page] ? page : null;
   if (!p) return <SettingsHome me={me} open={open} frameName={frameName} />;
   // Aussehen (Bild & Farben, Rahmen, Namens-Stil, Effekt): eine gemeinsame Seite mit Live-Vorschau
   if (p === 'look' || p === 'frame' || p === 'name' || p === 'effect') return <><Stack.Screen options={{ headerShown: false }} /><Studio tab={p} /></>;
@@ -48,12 +48,13 @@ export default function Settings() {
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <Glow />
-      <TopBar title={TITLES[p]} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <TopBar title={titles()[p]} onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {p === 'profile' ? <ProfilePage me={me} patch={patch} />
           : p === 'privacy' ? <PrivacySection patch={patch} say={setMsg} />
           : p === 'push' ? <PushSection say={setMsg} />
           : p === 'voice' ? <VoicePage />
+          : p === 'lang' ? <LangPage />
           : p === 'password' ? <PasswordPage say={setMsg} />
           : p === 'email' ? <EmailPage say={setMsg} />
           : p === 'mfa' ? <MfaPage say={setMsg} />
@@ -81,6 +82,7 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
       { icon: 'user', label: t("Profil"), sub: t("Name, Status-Text, Über mich"), keys: 'anzeigename bio pronomen', onPress: () => open('profile') },
       { icon: 'lock', label: t("Privatsphäre & Geräte"), sub: t("Wer schreiben darf, Blockierte, Geräte"), keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
       { icon: 'bell', label: t("Mitteilungen"), keys: 'push benachrichtigungen ton', onPress: () => open('push') },
+      { icon: 'globe', label: t("App-Sprache"), sub: langChoice() === 'auto' ? t("Wie das iPhone") + ' · ' + LANG_NAMES[deviceLang()] : LANG_NAMES[langChoice() as Lang], keys: 'sprache language dil لغة ziman langue idioma', onPress: () => open('lang') },
       { icon: 'phone', label: t("Sprache & Anrufe"), sub: webCalls ? t("Über die Web-Ansicht") : t("Direkt in der App"), keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
       { icon: 'at', label: t("E-Mail"), sub: me.email ? maskMail(me.email) : t("Noch nicht eingetragen"), keys: 'mail email passwort vergessen', onPress: () => open('email') },
       { icon: 'shield', label: t("Passwort ändern"), keys: 'sicherheit kennwort', onPress: () => open('password') },
@@ -311,6 +313,36 @@ function PasswordPage({ say }: { say: (t: string) => void }) {
   );
 }
 /** Anrufe und Sprachräume direkt in der App – oder (Ersatzweg) wie früher über die Web-Ansicht. */
+/** Sprache der App: „Wie das iPhone“ oder eine feste Sprache. Gilt auch für Mitteilungen vom Server (Konto-Sprache). */
+function LangPage() {
+  const cur = langChoice();
+  const choose = (l: Lang | 'auto') => {
+    if (l === cur) return;
+    const eff = l === 'auto' ? deviceLang() : l;
+    api('PATCH', '/api/me', { lang: eff }).catch(() => {});
+    setLang(l);
+  };
+  const row = (key: Lang | 'auto', label: string, sub: string | null, last: boolean) => (
+    <Pressable key={key} onPress={() => choose(key)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 16 }, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line }, pressed && { backgroundColor: 'rgba(255,255,255,0.04)' }]}>
+      <View style={{ flex: 1 }}>
+        <T style={{ fontWeight: '700', fontSize: 15.5 }}>{label}</T>
+        {sub ? <T style={{ color: C.muted, fontSize: 12.5 }}>{sub}</T> : null}
+      </View>
+      {cur === key ? <Icon name="check" size={20} color={C.accent} /> : null}
+    </Pressable>
+  );
+  return (
+    <>
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        {row('auto', t("Wie das iPhone"), LANG_NAMES[deviceLang()], false)}
+        {LANGS.map((l, i) => row(l, LANG_NAMES[l], null, i === LANGS.length - 1))}
+      </Card>
+      <T style={{ color: C.muted, fontSize: 12.5, marginTop: 10, paddingHorizontal: 4 }}>
+        {t("Die App baut sich in der neuen Sprache neu auf. Mitteilungen kommen ebenfalls in dieser Sprache.")}</T>
+    </>
+  );
+}
+
 function VoicePage() {
   const webCalls = useCalls((c) => c.webCalls);
   return (

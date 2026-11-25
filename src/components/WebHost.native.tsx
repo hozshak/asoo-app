@@ -24,8 +24,8 @@ const ORIGIN = (BASE || 'https://zuno-app.altraex.workers.dev').replace(/\/+$/, 
 const ownUrl = (u?: string) => { try { return !!u && new URL(u).origin === ORIGIN; } catch { return false; } };
 // Was die App der Web-Seite anbietet (dort erscheinen dann passende Knöpfe, z. B. „Bildschirm teilen“ am iPhone)
 // Sprache der App gilt auch in der eingebetteten Web-App (sonst stünde dort die Sprache vom Konto oder Englisch)
-const LANG_JS = `window.__asooLang=${JSON.stringify(LANG)};try{localStorage.setItem('zuno.lang',${JSON.stringify(LANG)})}catch(e){};`;
-const CAPS = LANG_JS + (Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;');
+const langJs = () => `window.__asooLang=${JSON.stringify(LANG)};try{localStorage.setItem('zuno.lang',${JSON.stringify(LANG)})}catch(e){};`;
+const caps = () => langJs() + (Platform.OS === 'ios' ? 'window.__asooCaps={screen:true};true;' : 'window.__asooCaps={};true;');
 const PICK = Platform.OS === 'ios' ? (ScreenCapturePickerView as unknown as React.ComponentType<any>) : null;
 
 export function WebHost() {
@@ -75,7 +75,7 @@ export function WebHost() {
         <WV
           ref={ref}
           source={source.current}
-          injectedJavaScriptBeforeContentLoaded={CAPS}
+          injectedJavaScriptBeforeContentLoaded={caps()}
           style={{ flex: 1, backgroundColor: C.bg0 }}
           onMessage={onMessage}
           mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"

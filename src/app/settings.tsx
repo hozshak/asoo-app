@@ -226,7 +226,7 @@ function MfaPage({ say }: { say: (t: string) => void }) {
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { say(errText(e)); } setBusy(false); };
   const start = () => run(async () => { setSetup(await api<any>('POST', '/api/me/mfa/setup', { password: pw })); setPw(''); });
   const enable = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/enable', { code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...r.user } })); setBackup(r.backup); setSetup(null); setCode(''); });
-  const newCodes = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/backup', { password: pw }); setBackup(r.backup); setPw(''); });
+  const newCodes = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/backup', { password: pw, code: code.trim() }); setBackup(r.backup); setPw(''); setCode(''); });
   const off = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/disable', { password: pw, code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...r.user } })); setPw(''); setCode(''); say(t("Zwei-Faktor-Schutz ist aus.")); });
   const copy = async (v: string) => { try { const C2 = await import('expo-clipboard'); await C2.setStringAsync(v); say(t("Kopiert ✓")); } catch {} };
   return (
@@ -248,8 +248,8 @@ function MfaPage({ say }: { say: (t: string) => void }) {
       </> : me?.mfa ? <>
         <T style={{ fontWeight: '800', color: C.ok, marginTop: 6 }}>{t("Eingeschaltet")} ✓</T>
         <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" />
-        <Btn title={t("Neue Ersatz-Codes")} kind="secondary" busy={busy} onPress={newCodes} disabled={pw.length < 8} style={{ marginTop: 12 }} />
         <Field label={t("Code aus der App oder Ersatz-Code")} value={code} onChangeText={setCode} autoCapitalize="none" placeholder="123456" maxLength={12} />
+        <Btn title={t("Neue Ersatz-Codes")} kind="secondary" busy={busy} onPress={newCodes} disabled={pw.length < 8 || code.trim().length < 6} style={{ marginTop: 12 }} />
         <Btn title={t("Ausschalten")} kind="danger" busy={busy} onPress={off} disabled={pw.length < 8 || code.trim().length < 6} style={{ marginTop: 12 }} />
       </> : <>
         <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" />

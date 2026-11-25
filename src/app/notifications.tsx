@@ -17,6 +17,8 @@ const KIND: Record<string, [string, IconName, string]> = {
   // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „ToLobby“ davor)
   match: [t("und du passt zusammen – ihr könnt euch jetzt schreiben"), 'pad', C.accent], match_like: [t("– jemand mag dein Mitspieler-Profil"), 'pad', C.accent2],
   security: [t("Neue Anmeldung von einem neuen Gerät oder Ort. Warst du das nicht? Ändere dein Passwort und trag eine E-Mail ein."), 'shield', C.warn],
+  mfa_fail: [t("Jemand hat dein Passwort richtig eingegeben, aber einen falschen Zwei-Faktor-Code. Warst du das nicht? Ändere sofort dein Passwort."), 'shield', C.danger],
+  mfa_backup: [t("Für deinen Zwei-Faktor-Schutz wurden neue Ersatz-Codes erstellt. Die alten gelten nicht mehr."), 'lock', C.warn],
 };
 
 export default function Notifications() {

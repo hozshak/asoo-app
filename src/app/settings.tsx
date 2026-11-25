@@ -2,7 +2,7 @@
 // (/settings?page=…). Alles nativ: Profil, Bild/Banner/Farben, Rahmen, Namens-Stil, Effekt, Privatsphäre, Mitteilungen,
 // Passwort, Rechtliches, Konto löschen (Apple verlangt das Löschen in der App).
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { api, BASE, errText, saveToken } from '@/lib/api';
@@ -23,8 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
-type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete';
-const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
+type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete' | 'mfa';
+const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), mfa: t("Zwei-Faktor-Schutz (MFA)"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -54,6 +54,7 @@ export default function Settings() {
           : p === 'voice' ? <VoicePage />
           : p === 'password' ? <PasswordPage say={setMsg} />
           : p === 'email' ? <EmailPage say={setMsg} />
+          : p === 'mfa' ? <MfaPage say={setMsg} />
           : p === 'legal' ? <LegalPage />
           : <DeletePage say={setMsg} />}
       </ScrollView>
@@ -80,6 +81,7 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
       { icon: 'phone', label: t("Sprache & Anrufe"), sub: webCalls ? t("Über die Web-Ansicht") : t("Direkt in der App"), keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
       { icon: 'at', label: t("E-Mail"), sub: me.email ? maskMail(me.email) : t("Noch nicht eingetragen"), keys: 'mail email passwort vergessen', onPress: () => open('email') },
       { icon: 'shield', label: t("Passwort ändern"), keys: 'sicherheit kennwort', onPress: () => open('password') },
+      { icon: 'lock', label: t("Zwei-Faktor-Schutz (MFA)"), sub: me.mfa ? t("Eingeschaltet") : t("Aus"), keys: 'mfa 2fa authenticator sicherheit code', onPress: () => open('mfa') },
     ]],
     [t("Aussehen"), [
       { icon: 'cube', label: t("3D-Avatar"), sub: t("Figur und Farben"), keys: 'figur 3d', onPress: () => router.push('/avatar3d') },
@@ -210,6 +212,49 @@ function EmailPage({ say }: { say: (t: string) => void }) {
             <Btn title={t("Bestätigen")} busy={busy} onPress={confirm} disabled={code.trim().length < 6} style={{ marginTop: 14 }} />
             <Btn title={t("Code noch einmal schicken")} kind="ghost" small onPress={send} style={{ marginTop: 6 }} />
           </>}
+    </Glass>
+  );
+}
+/** Zwei-Faktor-Schutz: Schlüssel in die Authenticator-App übernehmen (Link oder Abtippen), Code bestätigen, Ersatz-Codes sichern */
+function MfaPage({ say }: { say: (t: string) => void }) {
+  const me = useStore((s) => s.me) as any;
+  const [pw, setPw] = useState('');
+  const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null);
+  const [code, setCode] = useState('');
+  const [backup, setBackup] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { say(errText(e)); } setBusy(false); };
+  const start = () => run(async () => { setSetup(await api<any>('POST', '/api/me/mfa/setup', { password: pw })); setPw(''); });
+  const enable = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/enable', { code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...r.user } })); setBackup(r.backup); setSetup(null); setCode(''); });
+  const newCodes = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/backup', { password: pw }); setBackup(r.backup); setPw(''); });
+  const off = () => run(async () => { const r = await api<any>('POST', '/api/me/mfa/disable', { password: pw, code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...r.user } })); setPw(''); setCode(''); say(t("Zwei-Faktor-Schutz ist aus.")); });
+  const copy = async (v: string) => { try { const C2 = await import('expo-clipboard'); await C2.setStringAsync(v); say(t("Kopiert ✓")); } catch {} };
+  return (
+    <Glass style={s.card} intensity={20}>
+      <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginBottom: 6 }}>{t("Beim Anmelden brauchst du zusätzlich einen 6-stelligen Code aus einer Authenticator-App (z. B. Google Authenticator, Microsoft Authenticator, Authy). Selbst wer dein Passwort kennt, kommt dann nicht rein.")}</T>
+      {backup ? <>
+        <T style={{ fontWeight: '800', marginTop: 8 }}>{t("Deine Ersatz-Codes")}</T>
+        <T style={{ color: C.muted, fontSize: 13, lineHeight: 18, marginTop: 4 }}>{t("Schreib dir diese Ersatz-Codes auf oder speichere sie. Wenn du dein Handy verlierst, kommst du nur damit wieder in dein Konto. Jeder Code gilt genau einmal.")}</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>{backup.map((c) => <T key={c} style={{ width: '47%', textAlign: 'center', paddingVertical: 9, borderRadius: 10, backgroundColor: C.bg1, fontSize: 16, letterSpacing: 1 }}>{c}</T>)}</View>
+        <Btn title={t("Kopieren")} kind="secondary" onPress={() => copy(backup.join('\n'))} style={{ marginTop: 12 }} />
+        <Btn title={t("Fertig")} onPress={() => setBackup(null)} style={{ marginTop: 8 }} />
+      </> : setup ? <>
+        <T style={{ fontWeight: '800', marginTop: 8 }}>{t("1. Schlüssel in die Authenticator-App übernehmen")}</T>
+        <Btn title={t("In Authenticator-App öffnen")} onPress={() => Linking.openURL(setup.uri).catch(() => say(t("Keine Authenticator-App gefunden – gib den Schlüssel von Hand ein.")))} style={{ marginTop: 10 }} />
+        <T style={{ color: C.muted, fontSize: 13, marginTop: 10 }}>{t("Oder gib diesen Schlüssel in der App ein:")}</T>
+        <Pressable onPress={() => copy(setup.secret)} style={{ marginTop: 6, padding: 12, borderRadius: 10, backgroundColor: C.bg1 }}><T style={{ fontSize: 15, letterSpacing: 1 }}>{setup.secret.replace(/(.{4})/g, '$1 ').trim()}</T><T style={{ color: C.accent, fontSize: 12, marginTop: 4 }}>{t("Tippen zum Kopieren")}</T></Pressable>
+        <Field label={t("2. Code aus der App")} value={code} onChangeText={(v: string) => setCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" textContentType="oneTimeCode" placeholder="123456" maxLength={6} />
+        <Btn title={t("Einschalten")} busy={busy} onPress={enable} disabled={code.length < 6} style={{ marginTop: 14 }} />
+      </> : me?.mfa ? <>
+        <T style={{ fontWeight: '800', color: C.ok, marginTop: 6 }}>{t("Eingeschaltet")} ✓</T>
+        <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" />
+        <Btn title={t("Neue Ersatz-Codes")} kind="secondary" busy={busy} onPress={newCodes} disabled={pw.length < 8} style={{ marginTop: 12 }} />
+        <Field label={t("Code aus der App oder Ersatz-Code")} value={code} onChangeText={setCode} autoCapitalize="none" placeholder="123456" maxLength={12} />
+        <Btn title={t("Ausschalten")} kind="danger" busy={busy} onPress={off} disabled={pw.length < 8 || code.trim().length < 6} style={{ marginTop: 12 }} />
+      </> : <>
+        <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" />
+        <Btn title={t("Einschalten")} busy={busy} onPress={start} disabled={pw.length < 8} style={{ marginTop: 14 }} />
+      </>}
     </Glass>
   );
 }

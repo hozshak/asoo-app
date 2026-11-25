@@ -62,7 +62,10 @@ export default function Login() {
   useEffect(() => { api<{ mail?: boolean }>('GET', '/api/me').then((d) => setMailOn(!!d.mail)).catch(() => {}); }, []);
   // Anmeldung von neuem Gerät/Ort: Server schickt einen Code per E-Mail (verify = Hinweis auf die Adresse)
   const [verify, setVerify] = useState<string | null>(null);
-  const switchMode = (m: typeof mode) => { setMode(m); setErr(''); setInfo(''); setCode(''); setCodeSent(false); setVerify(null); };
+  // Zwei-Faktor: Code aus der Authenticator-App (oder Ersatz-Code)
+  const [mfaNeeded, setMfaNeeded] = useState(false);
+  const [mfa, setMfa] = useState('');
+  const switchMode = (m: typeof mode) => { setMode(m); setErr(''); setInfo(''); setCode(''); setCodeSent(false); setVerify(null); setMfaNeeded(false); setMfa(''); };
   const signedIn = async (d: { token?: string; device?: string }) => {
     if (!d.token) throw new Error('kein Schlüssel');
     if (d.device) await saveDevice(d.device);
@@ -88,15 +91,22 @@ export default function Login() {
     setErr(''); setBusy(true);
     try {
       if (mode === 'forgot') {
-        await signedIn(await api<{ token?: string }>('POST', '/api/auth/reset', { login: username.trim(), code: code.trim(), password }));
+        const rr = await api<{ token?: string; need_login?: boolean }>('POST', '/api/auth/reset', { login: username.trim(), code: code.trim(), password });
+        if (rr.need_login) { switchMode('login'); setInfo(t("Passwort geändert. Melde dich jetzt mit dem neuen Passwort und deinem Zwei-Faktor-Code an.")); return; }
+        await signedIn(rr);
         return;
       }
       if (needMail && !code.trim()) throw new Error(codeSent ? 'Bitte gib den Code aus der Mail ein.' : 'Bitte lass dir zuerst einen Code an deine E-Mail schicken.');
-      const body = mode === 'login' ? { username: username.trim(), password, ...(verify && code.trim() ? { code: code.trim() } : {}) } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
+      const body = mode === 'login' ? { username: username.trim(), password, ...(verify && code.trim() ? { code: code.trim() } : {}), ...(mfaNeeded && mfa.trim() ? { mfa: mfa.trim() } : {}) } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
       // Bot-Schutz: beim Registrieren die (meist schon fertig gerechnete) Aufgabe mitschicken
       const full = mode === 'register' ? { ...body, pow: await takePow() } : body;
       await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', full));
     } catch (e: any) {
+      if (e?.code === 'mfa_required' || (e?.code === 'bad_mfa' && !mfaNeeded)) {
+        setMfaNeeded(true);
+        setInfo(t("Gib den 6-stelligen Code aus deiner Authenticator-App ein – oder einen Ersatz-Code."));
+        return;
+      }
       if (e?.code === 'login_verify') {
         setVerify(e.data?.email || '');
         if (e.data?.dev_code) setCode(e.data.dev_code);
@@ -163,6 +173,10 @@ export default function Login() {
                 {mode !== 'forgot' || codeSent ? <>
                   <T style={s.label}>{mode === 'forgot' ? t("Neues Passwort") : t("Passwort")}</T>
                   {field('p', { value: password, onChangeText: setPassword, secureTextEntry: true, textContentType: mode === 'login' ? 'password' : 'newPassword', autoComplete: mode === 'login' ? 'password' : 'new-password', placeholder: mode === 'login' ? '••••••••' : t("mindestens 8 Zeichen"), onSubmitEditing: submit })}
+                </> : null}
+                {mode === 'login' && mfaNeeded ? <>
+                  <T style={s.label}>{t("Zwei-Faktor-Code")}</T>
+                  {field('m', { value: mfa, onChangeText: (v: string) => setMfa(v.slice(0, 12)), keyboardType: 'default', autoCapitalize: 'none', autoCorrect: false, textContentType: 'oneTimeCode', autoComplete: 'one-time-code', placeholder: '123456', maxLength: 12, onSubmitEditing: submit })}
                 </> : null}
                 {mode === 'login' ? <T style={s.forgot} onPress={() => switchMode('forgot')}>{t("Passwort vergessen?")}</T> : null}
                 {mode === 'register' ? <>

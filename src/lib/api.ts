@@ -119,6 +119,8 @@ const MSG: Record<string, string> = {
   need_password: t("Bitte gib dein Passwort ein."),
   bot_check: t("Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuch es noch einmal."),
   login_verify: t("Bitte bestätige die Anmeldung mit dem Code aus deiner E-Mail."),
+  mfa_required: t("Bitte gib den Code aus deiner Authenticator-App ein."),
+  bad_mfa: t("Der Code stimmt nicht."),
   email_banned: t("Diese E-Mail-Adresse ist gesperrt."),
   user_not_found: t("Nutzer nicht gefunden."),
   forbidden: t("Dafür fehlen dir die Rechte."),

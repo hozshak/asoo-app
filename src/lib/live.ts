@@ -134,6 +134,8 @@ function apply(m: any) {
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
+    // Mitteilungs-Stufe eines Servers geändert (auch von einem anderen Gerät)
+    case 'server_notify': setState((st) => ({ servers: st.servers.map((sv) => (sv.id === m.server ? { ...sv, notify: m.notify, notify_raw: m.notify_raw } : sv)) })); return;
     // „Mitspieler finden“: Zähler der Einstiege; bei einem Match die Feier zeigen (ab jetzt mit Namen)
     case 'match_badge': case 'match_like': setBadge(m.badge); return;
     case 'match': setBadge(m.badge); if (m.user && m.dm) showParty({ user: m.user, dm: m.dm }); return;

@@ -14,7 +14,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { MeBar } from '@/components/MeBar';
 import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
-import { bootstrap, can, dmTitle, getState, markRead, userOf, useStore, type Channel, type Server } from '@/lib/store';
+import { bootstrap, can, dmTitle, getState, markRead, setState, userOf, useStore, type Channel, type Server } from '@/lib/store';
 import { openWeb, webAction } from '@/lib/web';
 import { joinCall, leaveForWeb, nativeRoom } from '@/lib/calls';
 import { matchNew } from '@/lib/match';
@@ -33,6 +33,15 @@ export default function Home() {
   useEffect(() => { if (want.server) setSel(want.server); }, [want.server, want.t]);
   // lange drücken auf einen Server: Menü wie in der Web-App
   const [menuFor, setMenuFor] = useState<Server | null>(null);
+  // Mitteilungen je Server (wie bei Discord): Standard, alle Nachrichten, nur @Erwähnungen, nichts
+  const [notifFor, setNotifFor] = useState<Server | null>(null);
+  const setNotify = async (sv: Server, level: 'all' | 'mentions' | 'none' | null) => {
+    try {
+      const d = await api<any>('PUT', `/api/servers/${sv.id}/notify`, { level });
+      setState((st) => ({ servers: st.servers.map((x) => (x.id === sv.id ? { ...x, notify: d.notify, notify_raw: d.notify_raw } : x)) }));
+      setNote('Gespeichert ✓'); setTimeout(() => setNote(''), 1600);
+    } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3000); }
+  };
   const [note, setNote] = useState('');
   const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
   const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
@@ -86,11 +95,15 @@ export default function Home() {
       <Sheet open={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor?.name} items={menuFor ? [
         { label: 'Als gelesen markieren', icon: 'check', onPress: () => markServerRead(menuFor) },
         { label: 'Leute einladen', icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
+        { label: 'Mitteilungen', icon: 'bell', onPress: () => setNotifFor(menuFor) },
         menuAdmin ? { label: 'Server-Bild ändern', icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
         menuAdmin ? { label: 'Banner ändern', icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
         menuAdmin ? { label: 'Server-Einstellungen', icon: 'gear', onPress: () => router.push({ pathname: '/server-settings', params: { sid: menuFor.id } }) } : null,
         menuFor.role !== 'owner' ? { label: 'Server verlassen', icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
       ] : []} />
+      <Sheet open={!!notifFor} onClose={() => setNotifFor(null)} title={notifFor ? `Mitteilungen · ${notifFor.name}` : undefined} items={notifFor ? ([
+        [null, 'Standard (bis 50 Mitglieder alles)'], ['all', 'Alle Nachrichten'], ['mentions', 'Nur @Erwähnungen'], ['none', 'Nichts'],
+      ] as const).map(([k, label]) => ({ label, icon: (notifFor.notify_raw ?? null) === k ? 'check' : 'bell', onPress: () => setNotify(notifFor, k) })) : []} />
     </View>
   );
 }
@@ -100,7 +113,7 @@ function RailItem({ active, unread, badge, hot = true, onPress, onLong, label, c
     <View style={{ width: 72, alignItems: 'center' }}>
       {active ? <Animated.View entering={FadeIn} style={[s.pip, { height: 40 }]} /> : unread ? <View style={[s.pip, { height: 8, backgroundColor: C.text }]} /> : null}
       <Press onPress={onPress} onLongPress={onLong} label={label} scale={0.92}>{children}</Press>
-      {badge ? <Badge n={badge} style={[{ position: 'absolute', right: 8, bottom: -4 }, !hot && { backgroundColor: C.accent }]} /> : null}
+      {badge ? <Badge n={badge} ring={HOME.rail} style={[{ position: 'absolute', right: 8, bottom: -4 }, !hot && { backgroundColor: C.accent }]} /> : null}
     </View>
   );
 }

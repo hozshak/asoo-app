@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, GRAD, GRAD_POS, R, F, fontFor, statusColor } from '@/lib/theme';
+import { C, GRAD, GRAD_POS, HOME, R, F, fontFor, statusColor } from '@/lib/theme';
 import { mediaSource } from '@/lib/api';
 import { frameOf, frameMin, frameAnim } from '@/lib/frames';
 import type { Server, User } from '@/lib/store';
@@ -141,8 +141,13 @@ export function ServerIcon({ server, size = 48, active = false }: { server: Serv
   );
 }
 
-export const Badge = ({ n, style }: { n: number; style?: StyleProp<ViewStyle> }) => (
-  <View style={[s.badge, style]}><T style={s.badgeText}>{n > 99 ? '99+' : String(n)}</T></View>
+/**
+ * Roter Zähler. Die Zahl steht in der iPhone-Systemschrift (wie die Zähler von iOS): Cairo hat sehr hohe Ober-/Unterlängen und
+ * wurde im kleinen Kreis oben und unten abgeschnitten. `ring` = Farbe des Rands, passend zum Hintergrund darunter – ein
+ * fremder dunkler Rand ließ den Zähler wie ausgeschnitten aussehen.
+ */
+export const Badge = ({ n, style, ring = HOME.panel }: { n: number; style?: StyleProp<ViewStyle>; ring?: string }) => (
+  <View style={[s.badge, { borderColor: ring }, style]}><RNText allowFontScaling={false} style={s.badgeText}>{n > 99 ? '99+' : String(n)}</RNText></View>
 );
 
 export type SheetItem = { label: string; icon?: IconName; danger?: boolean; onPress: () => void } | null | false;
@@ -265,8 +270,8 @@ const s = StyleSheet.create({
   btnShine: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.22)', borderRadius: R.md },
   btnShadow: { shadowColor: '#8468ff', shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   activeGlow: { shadowColor: '#8468ff', shadowOpacity: 0.8, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
-  badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6, backgroundColor: C.accent2, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800', lineHeight: 14 },
+  badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.accent2, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg0 },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: '700', textAlign: 'center', includeFontPadding: false, fontVariant: ['tabular-nums'] },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 10, paddingTop: 8, borderBottomWidth: 0 },
   grab: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.bg5, marginBottom: 8 },

@@ -117,7 +117,7 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
         </> : null}
         <Pressable accessibilityRole="button" accessibilityLabel={notif ? `Mitteilungen, ${notif} neu` : 'Mitteilungen'} hitSlop={4} onPress={() => router.push('/notifications')} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>
           <Icon name="bell" size={22} color={C.text2} />
-          {notif ? <Badge n={notif} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
+          {notif ? <Badge n={notif} ring={HOME.bar} style={{ position: 'absolute', right: 0, top: 0 }} /> : null}
         </Pressable>
         {/* ganz rechts: Einstellungen (wie das Zahnrad bei Discord) */}
         <Pressable accessibilityRole="button" accessibilityLabel="Einstellungen" hitSlop={4} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/settings'); }} style={({ pressed }) => [s.btn, pressed && { backgroundColor: C.accentSoft }]}>

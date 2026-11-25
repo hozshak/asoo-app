@@ -109,6 +109,7 @@ const MSG: Record<string, string> = {
   quota: t("Dein Speicherplatz ist voll."),
   bad_password: t("Das Passwort ist falsch."),
   need_password: t("Bitte gib dein Passwort ein."),
+  bot_check: t("Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuch es noch einmal."),
   email_banned: t("Diese E-Mail-Adresse ist gesperrt."),
   user_not_found: t("Nutzer nicht gefunden."),
   forbidden: t("Dafür fehlen dir die Rechte."),

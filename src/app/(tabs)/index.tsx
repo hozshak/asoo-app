@@ -47,6 +47,15 @@ export default function Home() {
       setNote(t("Gespeichert ✓")); setTimeout(() => setNote(''), 1600);
     } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3000); }
   };
+  // Server stummschalten (wie Discord): für eine Zeit oder bis man es aufhebt
+  const [silenceFor, setSilenceFor] = useState<Server | null>(null);
+  const silence = async (sv: Server, minutes: number | null) => {
+    try {
+      const d = await api<any>('PUT', `/api/servers/${sv.id}/silence`, { minutes });
+      setState((st) => ({ servers: st.servers.map((x) => (x.id === sv.id ? { ...x, silenced_until: d.silenced_until } : x)) }));
+      setNote(d.silenced_until ? t("{0} ist stummgeschaltet.", { 0: sv.name }) : t("Stummschaltung aufgehoben.")); setTimeout(() => setNote(''), 1800);
+    } catch (e) { setNote(errText(e)); setTimeout(() => setNote(''), 3000); }
+  };
   const [note, setNote] = useState('');
   const serverMenu = (sv: Server) => { Haptics.selectionAsync().catch(() => {}); setMenuFor(sv); };
   const pickImage = async (sv: Server, kind: 'icon' | 'banner') => {
@@ -86,7 +95,8 @@ export default function Home() {
             const ment = sv.channels.reduce((n, c) => n + (mentions[c.id] || 0), 0);
             // Zahl = neue Nachrichten im ganzen Server; rot, wenn dich jemand erwähnt hat
             const count = sv.channels.reduce((n, c) => n + (unread[c.id] || 0), 0);
-            return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} radius={16} /></RailItem>;
+            const sil = isSilenced(sv);
+            return <RailItem key={sv.id} active={sel === sv.id} unread={has && !sil} badge={sil ? ment : count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><View style={sil && sel !== sv.id ? { opacity: 0.42 } : null}><ServerIcon server={sv} size={48} active={sel === sv.id} radius={16} /></View></RailItem>;
           })}
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten) und Server entdecken, beide grün */}
           <RailItem active={false} onPress={() => router.push('/server-new')} label={t("Server hinzufügen")}><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
@@ -103,17 +113,24 @@ export default function Home() {
         { label: t("Als gelesen markieren"), icon: 'check', onPress: () => markServerRead(menuFor) },
         { label: t("Leute einladen"), icon: 'userPlus', onPress: () => router.push({ pathname: '/server-invite', params: { sid: menuFor.id } }) },
         { label: t("Mitteilungen"), icon: 'bell', onPress: () => setNotifFor(menuFor) },
+        isSilenced(menuFor) ? { label: t("Stummschaltung aufheben"), icon: 'bell', onPress: () => silence(menuFor, 0) } : { label: t("Server stummschalten"), icon: 'bellOff', onPress: () => setSilenceFor(menuFor) },
         menuAdmin ? { label: t("Server-Bild ändern"), icon: 'image', onPress: () => pickImage(menuFor, 'icon') } : null,
         menuAdmin ? { label: t("Banner ändern"), icon: 'image', onPress: () => pickImage(menuFor, 'banner') } : null,
         menuAdmin ? { label: t("Server-Einstellungen"), icon: 'gear', onPress: () => router.push({ pathname: '/server-settings', params: { sid: menuFor.id } }) } : null,
         menuFor.role !== 'owner' ? { label: t("Server verlassen"), icon: 'logout', danger: true, onPress: () => leave(menuFor) } : null,
       ] : []} />
+      <Sheet open={!!silenceFor} onClose={() => setSilenceFor(null)} title={silenceFor ? t("{0} stummschalten", { 0: silenceFor.name }) : undefined} items={silenceFor ? ([
+        [15, t("Für 15 Minuten")], [60, t("Für 1 Stunde")], [480, t("Für 8 Stunden")], [1440, t("Für 24 Stunden")], [10080, t("Für 7 Tage")], [null, t("Bis ich es wieder einschalte")],
+      ] as const).map(([min, label]) => ({ label, icon: 'clock' as const, onPress: () => silence(silenceFor, min) })) : []} />
       <Sheet open={!!notifFor} onClose={() => setNotifFor(null)} title={notifFor ? t("Mitteilungen · {0}", { 0: notifFor.name }) : undefined} items={notifFor ? ([
-        [null, 'Standard (bis 50 Mitglieder alles)'], ['all', 'Alle Nachrichten'], ['mentions', 'Nur @Erwähnungen'], ['none', 'Nichts'],
+        [null, t("Standard (bis 50 Mitglieder alles)")], ['all', t("Alle Nachrichten")], ['mentions', t("Nur @Erwähnungen")], ['none', t("Nichts")],
       ] as const).map(([k, label]) => ({ label, icon: (notifFor.notify_raw ?? null) === k ? 'check' : 'bell', onPress: () => setNotify(notifFor, k) })) : []} />
     </View>
   );
 }
+
+/** vom Mitglied selbst stummgeschaltet? -1 = bis man es aufhebt */
+const isSilenced = (sv?: Server | null) => !!sv && (sv.silenced_until === -1 || (sv.silenced_until || 0) > Date.now());
 
 function RailItem({ active, unread, badge, hot = true, onPress, onLong, label, children }: { active: boolean; unread?: boolean; badge?: number; hot?: boolean; onPress: () => void; onLong?: () => void; label: string; children: React.ReactNode }) {
   return (

@@ -8,13 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import * as WebBrowser from 'expo-web-browser';
 import { api, errText, saveToken, BASE } from '@/lib/api';
+import { prepPow, takePow } from '@/lib/pow';
 import { bootstrap } from '@/lib/store';
 import { connect } from '@/lib/live';
 import { Btn, Glass, T } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
 import { C, F, R } from '@/lib/theme';
-import { t } from '@/lib/i18n';
+import { t, LANG } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
 const ROOMS = [require('../../assets/rooms/lounge.webp'), require('../../assets/rooms/beach.webp'), require('../../assets/rooms/wedding.webp'), require('../../assets/rooms/orbit.webp'), require('../../assets/rooms/theater.webp'), require('../../assets/rooms/gaming.webp')];
@@ -77,6 +78,8 @@ export default function Login() {
     } catch (e) { setErr(errText(e)); } finally { setSending(false); }
   };
   const needMail = mode === 'register' && mailOn;
+  // Bot-Schutz schon beim Öffnen des Formulars im Hintergrund rechnen
+  useEffect(() => { if (mode === 'register') prepPow().catch(() => {}); }, [mode]);
   const submit = async () => {
     setErr(''); setBusy(true);
     try {
@@ -85,8 +88,10 @@ export default function Login() {
         return;
       }
       if (needMail && !code.trim()) throw new Error(codeSent ? 'Bitte gib den Code aus der Mail ein.' : 'Bitte lass dir zuerst einen Code an deine E-Mail schicken.');
-      const body = mode === 'login' ? { username: username.trim(), password } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: 'de', ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
-      await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', body));
+      const body = mode === 'login' ? { username: username.trim(), password } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
+      // Bot-Schutz: beim Registrieren die (meist schon fertig gerechnete) Aufgabe mitschicken
+      const full = mode === 'register' ? { ...body, pow: await takePow() } : body;
+      await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', full));
     } catch (e) { setErr(e instanceof Error && !(e as any).code && /^Bitte /.test(e.message) ? e.message : errText(e)); } finally { setBusy(false); }
   };
   const field = (key: string, props: any) => (

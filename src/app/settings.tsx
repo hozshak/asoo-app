@@ -11,6 +11,7 @@ import { disconnect } from '@/lib/live';
 import { unregisterPush } from '@/lib/push';
 import { Avatar, Btn, Card, Glass, Glow, MenuRow, Section, T, TopBar } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
+import { TipArt } from '@/components/TipArt';
 import { frameOf } from '@/lib/frames';
 import { NAME_STYLES } from '@/components/NameText';
 import { EFFECTS } from '@/components/ProfileFx';
@@ -272,7 +273,6 @@ function SupportPage({ say }: { say: (t: string) => void }) {
     const b = onTipError(() => { setBusy(null); say(t("Der Kauf hat nicht geklappt. Bitte versuch es noch einmal.")); });
     return () => { a(); b(); };
   }, []);
-  const ICON: Record<string, string> = { tolobby_tip_small: '☕', tolobby_tip_medium: '🍕', tolobby_tip_large: '🚀' };
   const NAME: Record<string, string> = { tolobby_tip_small: t("Kleines Danke"), tolobby_tip_medium: t("Großes Danke"), tolobby_tip_large: t("Riesiges Danke") };
   return (
     <Glass style={s.card} intensity={20}>
@@ -284,7 +284,7 @@ function SupportPage({ say }: { say: (t: string) => void }) {
         : tips.map((tp) => (
           <Pressable key={tp.id} accessibilityRole="button" disabled={!!busy} onPress={async () => { setBusy(tp.id); try { await buyTip(tp.id); } catch { setBusy(null); say(t("Der Kauf hat nicht geklappt. Bitte versuch es noch einmal.")); } }}
             style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: C.bg1, borderWidth: 1, borderColor: C.line }, pressed && { opacity: 0.8 }]}>
-            <T style={{ fontSize: 26 }}>{ICON[tp.id] || '💜'}</T>
+            <TipArt id={tp.id} size={46} />
             <T style={{ flex: 1, fontWeight: '800', fontSize: 16 }}>{NAME[tp.id] || tp.title}</T>
             <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: C.accent }}><T style={{ color: '#fff', fontWeight: '800' }}>{busy === tp.id ? '…' : tp.price}</T></View>
           </Pressable>

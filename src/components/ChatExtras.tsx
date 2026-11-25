@@ -195,11 +195,11 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
 }
 
 /** GIF über ToLobby laden (/gifp/…) – klappt auch in Netzen, die die GIF-Seiten sperren; die Nachricht behält die Original-Adresse. */
-export const gifSrc = (u?: string | null) => (u && /^https:\/\/(media\d*\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com|static\d*\.klipy\.com)\//.test(u) ? (BASE || '') + '/gifp/' + u.slice(8) : u || '');
+export const gifSrc = (u?: string | null) => (u && /^https:\/\/(media\d*\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com|static\d*\.klipy\.com)\/[A-Za-z0-9._~\/-]+$/.test(u) && !/\/\.|%/.test(u) ? (BASE || '') + '/gifp/' + u.slice(8) : u || '');
 /** Nachricht ist nur ein GIF-Link (Tenor/GIPHY)? Dann als Bild zeigen. */
 export function gifUrl(text?: string) {
   const s = String(text || '').trim();
-  return /^https:\/\/(media\d*\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com|static\d*\.klipy\.com)\/[^\s<>"']+$/.test(s) ? s : null;
+  return /^https:\/\/(media\d*\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com|static\d*\.klipy\.com)\/[A-Za-z0-9._~\/-]+$/.test(s) && !/\/\.|%/.test(s) ? s : null; // nur saubere Pfade: kein „/../api/…“ (der Browser würde sonst eine API-Adresse laden)
 }
 
 /** GIF-Auswahl: ohne Suchwort die beliebtesten, antippen = senden. */

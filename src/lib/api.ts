@@ -108,6 +108,8 @@ const MSG: Record<string, string> = {
   bad_type: t("Nur Bilder (PNG, JPG, WEBP, GIF) sind erlaubt."),
   quota: t("Dein Speicherplatz ist voll."),
   bad_password: t("Das Passwort ist falsch."),
+  need_password: t("Bitte gib dein Passwort ein."),
+  email_banned: t("Diese E-Mail-Adresse ist gesperrt."),
   user_not_found: t("Nutzer nicht gefunden."),
   forbidden: t("Dafür fehlen dir die Rechte."),
   not_found: t("Nicht gefunden."),

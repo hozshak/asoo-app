@@ -187,9 +187,10 @@ function EmailPage({ say }: { say: (t: string) => void }) {
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pw, setPw] = useState('');
   const send = async () => {
     setBusy(true);
-    try { await api('POST', '/api/me/email', { email: email.trim() }); setSent(true); say(t("Code gesendet – schau in dein Postfach.")); } catch (e) { say(errText(e)); }
+    try { await api('POST', '/api/me/email', { email: email.trim(), ...(me?.email ? { password: pw } : {}) }); setSent(true); say(t("Code gesendet – schau in dein Postfach.")); } catch (e) { say(errText(e)); }
     setBusy(false);
   };
   const confirm = async () => {
@@ -202,7 +203,8 @@ function EmailPage({ say }: { say: (t: string) => void }) {
       <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginBottom: 4 }}>{t("Damit kannst du dein Passwort zurücksetzen, falls du es vergisst. Deine E-Mail sieht niemand.")}</T>
       {me?.email ? <T style={{ fontWeight: '700', marginTop: 6 }}>{t("Eingetragen:")}{' '}{maskMail(me.email)} ✓</T> : null}
       <Field label={me?.email ? t("Neue E-Mail") : t("E-Mail")} value={email} onChangeText={(v: string) => { setEmail(v); setSent(false); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" placeholder={t("name@beispiel.de")} />
-      {!sent ? <Btn title={t("Code schicken")} busy={busy} onPress={send} disabled={!/^\S+@\S+\.\S+$/.test(email.trim())} style={{ marginTop: 14 }} />
+      {me?.email && !sent ? <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" /> : null}
+      {!sent ? <Btn title={t("Code schicken")} busy={busy} onPress={send} disabled={!/^\S+@\S+\.\S+$/.test(email.trim()) || (!!me?.email && pw.length < 8)} style={{ marginTop: 14 }} />
         : <>
             <Field label={t("Code aus der E-Mail")} value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" maxLength={8} placeholder="123456" />
             <Btn title={t("Bestätigen")} busy={busy} onPress={confirm} disabled={code.trim().length < 6} style={{ marginTop: 14 }} />

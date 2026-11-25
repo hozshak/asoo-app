@@ -78,7 +78,7 @@ export function WebHost() {
           injectedJavaScriptBeforeContentLoaded={CAPS}
           style={{ flex: 1, backgroundColor: C.bg0 }}
           onMessage={onMessage}
-          mediaCapturePermissionGrantType="grant"
+          mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
           allowsFullscreenVideo

@@ -17,6 +17,7 @@ import { loadCallMode } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
 import { GlobalScreenPicker } from '@/components/ScreenPicker';
 import { CropHost } from '@/components/CropHost';
+import { startTips } from '@/lib/tips';
 import { CallBar, IncomingCall } from '@/components/CallBar';
 import { MatchParty } from '@/components/MatchBits';
 
@@ -26,6 +27,8 @@ export default function Root() {
   const [booted, setBooted] = useState(false);
   const [fonts] = useFonts({ Cairo_400Regular, Cairo_500Medium, Cairo_600SemiBold, Cairo_700Bold, Cairo_800ExtraBold });
   const me = useStore((s) => s.me);
+  // Trinkgeld-Käufe (Apple): Verbindung früh öffnen, damit nachgelieferte Käufe abgeschlossen werden
+  useEffect(() => { if (me) startTips(); }, [!!me]);
   const segs = useSegments();
   const router = useRouter();
   useEffect(() => {

@@ -69,7 +69,8 @@
           "microphonePermission": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": false

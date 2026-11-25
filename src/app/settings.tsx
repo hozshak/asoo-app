@@ -17,14 +17,15 @@ import { EFFECTS } from '@/components/ProfileFx';
 import { Studio } from '@/components/Studio';
 import { PrivacySection, PushSection } from '@/components/SettingsMore';
 import { signOut } from '@/lib/session';
+import { buyTip, loadTips, onTipError, onTipThanks, type Tip } from '@/lib/tips';
 import { setWebCalls, useCalls } from '@/lib/calls';
 import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '@/lib/i18n';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
-type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete' | 'mfa';
-const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), mfa: t("Zwei-Faktor-Schutz (MFA)"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
+type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete' | 'mfa' | 'support';
+const TITLES: Record<Page, string> = { profile: t("Profil"), look: t("Bild, Banner & Farben"), frame: t("Profilrahmen"), name: t("Namens-Stil"), effect: t("Profil-Effekt"), privacy: t("Privatsphäre & Geräte"), push: t("Mitteilungen"), voice: t("Sprache & Anrufe"), password: t("Passwort"), mfa: t("Zwei-Faktor-Schutz (MFA)"), support: t("ToLobby unterstützen"), email: t("E-Mail"), legal: t("Rechtliches"), delete: t("Konto löschen") };
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -55,6 +56,7 @@ export default function Settings() {
           : p === 'password' ? <PasswordPage say={setMsg} />
           : p === 'email' ? <EmailPage say={setMsg} />
           : p === 'mfa' ? <MfaPage say={setMsg} />
+          : p === 'support' ? <SupportPage say={setMsg} />
           : p === 'legal' ? <LegalPage />
           : <DeletePage say={setMsg} />}
       </ScrollView>
@@ -96,6 +98,7 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
       { icon: 'sparkle', label: t("Feed"), keys: 'beiträge posts', onPress: () => router.push('/feed') },
       { icon: 'compass', label: t("Server entdecken"), keys: 'suchen beitreten', onPress: () => router.push({ pathname: '/server-new', params: { tab: 'discover' } }) },
       ...(me.is_admin ? [{ icon: 'shield' as IconName, label: t("Admin-Bereich"), keys: 'verwaltung', onPress: () => router.push('/admin') }] : []),
+      ...(Platform.OS === 'ios' ? [{ icon: 'heart' as IconName, label: t("ToLobby unterstützen"), sub: t("Freiwilliges Trinkgeld über Apple"), keys: 'trinkgeld spende support danke', onPress: () => open('support') }] : []),
       { icon: 'globe', label: t("Rechtliches"), sub: t("Regeln, Datenschutz, Impressum"), keys: 'agb', onPress: () => open('legal') },
     ]],
     ['', [
@@ -255,6 +258,38 @@ function MfaPage({ say }: { say: (t: string) => void }) {
         <Field label={t("Dein Passwort")} value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoCapitalize="none" />
         <Btn title={t("Einschalten")} busy={busy} onPress={start} disabled={pw.length < 8} style={{ marginTop: 14 }} />
       </>}
+    </Glass>
+  );
+}
+/** Freiwilliges Trinkgeld über Apple (In-App-Kauf). Schaltet nichts frei – ein Dankeschön an die Entwicklung. */
+function SupportPage({ say }: { say: (t: string) => void }) {
+  const [tips, setTips] = useState<Tip[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [thanked, setThanked] = useState(false);
+  useEffect(() => {
+    loadTips().then(setTips).catch(() => setTips([]));
+    const a = onTipThanks(() => { setBusy(null); setThanked(true); });
+    const b = onTipError(() => { setBusy(null); say(t("Der Kauf hat nicht geklappt. Bitte versuch es noch einmal.")); });
+    return () => { a(); b(); };
+  }, []);
+  const ICON: Record<string, string> = { tolobby_tip_small: '☕', tolobby_tip_medium: '🍕', tolobby_tip_large: '🚀' };
+  const NAME: Record<string, string> = { tolobby_tip_small: t("Kleines Danke"), tolobby_tip_medium: t("Großes Danke"), tolobby_tip_large: t("Riesiges Danke") };
+  return (
+    <Glass style={s.card} intensity={20}>
+      <T style={{ fontSize: 17, fontWeight: '800' }}>{t("Gefällt dir ToLobby?")}</T>
+      <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginTop: 6 }}>{t("ToLobby ist kostenlos und ohne Werbung. Mit einem Trinkgeld hilfst du, Server und Weiterentwicklung zu bezahlen. Es schaltet nichts frei – es ist einfach ein Dankeschön.")}</T>
+      {thanked ? <T style={{ marginTop: 16, fontSize: 16, fontWeight: '800', color: C.ok, textAlign: 'center' }}>{t("Danke für deine Unterstützung! 💜")}</T> : null}
+      {tips === null ? <T style={{ color: C.muted, marginTop: 16 }}>{t("Lädt …")}</T>
+        : !tips.length ? <T style={{ color: C.muted, marginTop: 16 }}>{t("Trinkgeld ist gerade nicht verfügbar. Bitte versuch es später noch einmal.")}</T>
+        : tips.map((tp) => (
+          <Pressable key={tp.id} accessibilityRole="button" disabled={!!busy} onPress={async () => { setBusy(tp.id); try { await buyTip(tp.id); } catch { setBusy(null); say(t("Der Kauf hat nicht geklappt. Bitte versuch es noch einmal.")); } }}
+            style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: C.bg1, borderWidth: 1, borderColor: C.line }, pressed && { opacity: 0.8 }]}>
+            <T style={{ fontSize: 26 }}>{ICON[tp.id] || '💜'}</T>
+            <T style={{ flex: 1, fontWeight: '800', fontSize: 16 }}>{NAME[tp.id] || tp.title}</T>
+            <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: C.accent }}><T style={{ color: '#fff', fontWeight: '800' }}>{busy === tp.id ? '…' : tp.price}</T></View>
+          </Pressable>
+        ))}
+      <T style={{ color: C.faint, fontSize: 12, lineHeight: 17, marginTop: 14 }}>{t("Bezahlt wird über dein Apple-Konto. Einmalig, kein Abo.")}</T>
     </Glass>
   );
 }

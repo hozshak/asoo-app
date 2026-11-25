@@ -23,7 +23,7 @@ export function LookSection({ patch, say }: { patch: Patch; say: (t: string) => 
   const [busy, setBusy] = useState<'' | 'avatar' | 'banner'>('');
   if (!me) return null;
   const pick = async (kind: 'avatar' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'avatar' ? tr("Profilbild ändern") : tr("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'avatar' ? tr("Profilbild ändern") : tr("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], round: kind === 'avatar', quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
     if (!r) return;
     setBusy(kind);
     try { const up = await upload(kind, r.uri, r.mime); await patch({ [kind]: up.key }, kind === 'avatar' ? 'Profilbild gespeichert ✓' : 'Banner gespeichert ✓'); }

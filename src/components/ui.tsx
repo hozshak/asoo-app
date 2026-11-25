@@ -123,11 +123,12 @@ function shade(hex: string) {
 }
 
 /** Server-Symbol: rund, beim aktiven Server abgerundetes Quadrat im Farbverlauf (wie die Leiste der Web-App). */
-export function ServerIcon({ server, size = 48, active = false }: { server: Server; size?: number; active?: boolean }) {
+export function ServerIcon({ server, size = 48, active = false, radius }: { server: Server; size?: number; active?: boolean; radius?: number }) {
   const src = mediaSource(server.icon);
   // immer rund (der gewählte Server leuchtet nur) – die eckigen Formen wirkten auf dem Handy wie abgeschnitten
-  const r = useSharedValue(size / 2);
-  useEffect(() => { r.value = size / 2; }, [size]);
+  // radius: in der linken Leiste abgerundete Quadrate wie im Web, sonst rund
+  const r = useSharedValue(radius ?? size / 2);
+  useEffect(() => { r.value = radius ?? size / 2; }, [size, radius]);
   const a = useAnimatedStyle(() => ({ borderRadius: r.value }));
   return (
     <Animated.View style={[{ width: size, height: size, overflow: 'hidden', borderWidth: 1, borderColor: active ? 'transparent' : C.line }, a, active && s.activeGlow]}>

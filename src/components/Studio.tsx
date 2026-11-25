@@ -44,7 +44,7 @@ export function Studio({ tab: first }: { tab: StudioTab }) {
     catch (e) { setState((s) => ({ me: { ...s.me!, ...before } })); setMsg(errText(e)); }
   };
   const pick = async (kind: 'avatar' | 'banner') => {
-    const r = await chooseImage({ title: kind === 'avatar' ? t("Profilbild ändern") : t("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
+    const r = await chooseImage({ title: kind === 'avatar' ? t("Profilbild ändern") : t("Banner ändern"), crop: kind === 'avatar' ? [1, 1] : [3, 1], round: kind === 'avatar', quality: 0.75, maxSide: kind === 'avatar' ? 1024 : 1600 });
     if (!r) return;
     setBusy(kind);
     try { const up = await upload(kind, r.uri, r.mime); const d = await api<any>('PATCH', '/api/me', { [kind]: up.key }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setMsg(kind === 'avatar' ? t("Profilbild gespeichert ✓") : t("Banner gespeichert ✓")); }

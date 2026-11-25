@@ -165,6 +165,14 @@ export default function Chat() {
   };
 
   const typers = Object.entries(typing || {}).filter(([uid, until]) => until > Date.now() && uid !== me?.id).map(([uid]) => userOf(uid).display);
+  // „… tippt“ läuft nach 8 s ab – dann neu zeichnen, sonst bliebe es stehen, bis etwas anderes passiert
+  const [, redraw] = useState(0);
+  useEffect(() => {
+    const next = Object.values(typing || {}).filter((until) => until > Date.now()).sort((a, b) => a - b)[0];
+    if (!next) return;
+    const tm = setTimeout(() => redraw((x) => x + 1), next - Date.now() + 50);
+    return () => clearTimeout(tm);
+  }, [typing, typers.length]);
   const menuItems: SheetItem[] = menu ? [
     !readOnly ? { label: t("Antworten"), icon: 'reply', onPress: () => { setReply(menu); setEditing(null); } } : null,
     menu.content ? { label: t("Text kopieren"), icon: 'copy', onPress: () => Clipboard.setStringAsync(plainText(menu.content, sid)) } : null,

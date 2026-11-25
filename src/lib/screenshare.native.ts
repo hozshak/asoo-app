@@ -53,6 +53,18 @@ async function tuneSender(p: Peer) {
 const subs = new Set<Listener>();
 export const onScreenShare = (fn: Listener) => { subs.add(fn); return () => { subs.delete(fn); }; };
 export const isSharing = () => !!S.stream;
+
+// Obergrenze vom Server (Admin-Bereich → Grenzen): normale Konten z. B. nur 720p, Admins und verifizierte Konten alles
+let allowed: ScreenQuality[] | null = null;
+export async function allowedQualities(): Promise<ScreenQuality[]> {
+  try {
+    const rc = await api<{ media?: { screen_res?: number } }>('GET', '/api/rtc-config');
+    const r = rc.media?.screen_res ?? 2160;
+    allowed = r >= 1440 ? ['720', '1080', 'max'] : r >= 1080 ? ['720', '1080'] : ['720'];
+  } catch { if (!allowed) allowed = ['720', '1080', 'max']; }
+  return allowed;
+}
+const capQ = (q: ScreenQuality): ScreenQuality => (!allowed || allowed.includes(q) ? q : allowed[allowed.length - 1]);
 const changed = () => subs.forEach((f) => f(!!S.stream));
 
 /** Gewählte Qualität für die Erweiterung hinterlegen (gemeinsamer App-Group-Ordner, liest SampleUploader.swift). */
@@ -70,13 +82,23 @@ function writeQuality(q: ScreenQuality) {
  * Nur die Bild-Quelle holen (für Anrufe in der App selbst, voicecore.ts setScreen): Auswahlfenster „Übertragung starten“
  * zeigen und den Bildschirm-Strom zurückgeben. Senden übernimmt dann die eigentliche Anruf-Verbindung.
  */
-export async function captureScreen(pickerRef: any, quality: ScreenQuality = '1080'): Promise<MediaStream> {
-  if (Platform.OS !== 'ios') throw new Error('nur iPhone');
-  writeQuality(quality);
-  S.q = quality;
-  const stream = await mediaDevices.getDisplayMedia({});
+let pending: MediaStream | null = null;
+/** iOS-Auswahlfenster zeigen – kurz warten, bis ein Aktionsblatt (Qualität) ganz geschlossen ist, sonst bleibt ein graues Fenster. */
+const showPicker = (pickerRef: any) => new Promise<void>((done) => setTimeout(() => {
   const tag = findNodeHandle(pickerRef);
   if (tag != null) NativeModules.ScreenCapturePickerViewManager?.show(tag);
+  done();
+}, 650));
+export async function captureScreen(pickerRef: any, quality: ScreenQuality = '1080'): Promise<MediaStream> {
+  if (Platform.OS !== 'ios') throw new Error('nur iPhone');
+  quality = capQ(quality);
+  writeQuality(quality);
+  S.q = quality;
+  // ein vorheriger, nie gestarteter Versuch blockiert sonst den neuen
+  if (pending) { try { pending.getTracks().forEach((tk) => tk.stop()); } catch {} pending = null; }
+  const stream = await mediaDevices.getDisplayMedia({});
+  pending = stream;
+  await showPicker(pickerRef);
   return stream;
 }
 /** Für Anrufe in der App: H.264 vorziehen (vor dem Angebot) und die Datenrate einstellen (nach dem Aushandeln). */
@@ -88,15 +110,17 @@ export const tuneScreen = (pc: any) => { tuneSender({ pc } as Peer); };
  * „Übertragung starten“ zeigt. room: der Sprachraum, in dem man gerade ist.
  */
 export async function startScreenShare(room: string, pickerRef: any, quality: ScreenQuality = '1080') {
+  quality = capQ(quality);
   if (Platform.OS !== 'ios') throw new Error('nur iPhone');
   if (S.stream) await stopScreenShare();
   writeQuality(quality);
   S.q = quality;
   try { S.ice = (await api<{ iceServers: any[] }>('GET', '/api/rtc-config')).iceServers || []; } catch { S.ice = [{ urls: 'stun:stun.cloudflare.com:3478' }]; }
   // Bild-Quelle anlegen (wartet auf die Erweiterung) und dann das iOS-Auswahlfenster zeigen
+  if (pending) { try { pending.getTracks().forEach((tk) => tk.stop()); } catch {} pending = null; }
   const stream = await mediaDevices.getDisplayMedia({});
-  const tag = findNodeHandle(pickerRef);
-  if (tag != null) NativeModules.ScreenCapturePickerViewManager?.show(tag);
+  pending = stream;
+  await showPicker(pickerRef);
   S.stream = stream; S.room = room; S.since = Date.now();
   const track = stream.getVideoTracks()[0];
   (track as any)?.addEventListener?.('ended', () => { stopScreenShare(); });

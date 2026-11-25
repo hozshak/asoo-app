@@ -10,8 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { setCallScreenOpen, useVoice, voice } from '@/lib/calls';
 import { getState, userOf, useStore } from '@/lib/store';
-import { captureScreen, type ScreenQuality } from '@/lib/screenshare';
-import { ScreenPicker } from '@/components/ScreenPicker';
+import { allowedQualities, captureScreen, type ScreenQuality } from '@/lib/screenshare';
+import { screenPickerRef } from '@/components/ScreenPicker';
 import { RTCVideo } from '@/components/RTCVideo';
 import { Avatar, Glow, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
@@ -33,7 +33,6 @@ export default function CallScreen() {
   const [now, setNow] = useState(Date.now());
   const [focus, setFocus] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const picker = useRef<any>(null);
   const wasIn = useRef(false);
   const close = useCallback(() => (router.canGoBack() ? router.back() : router.replace('/')), [router]);
 
@@ -97,18 +96,19 @@ export default function CallScreen() {
     const w = (areaW - 10) / 2; return { w, h: Math.min(w * 1.15, (areaH - 20) / 3) };
   };
 
-  const subtitle = !st.joined ? 'Verbinde …'
-    : ringing ? 'Klingelt …'
-    : isCall && alone ? (st.met ? 'Du bist allein im Anruf' : 'Niemand hat abgenommen')
-    : `${clock(now - st.since)} · ${st.members.length} ${st.members.length === 1 ? 'Person' : 'Personen'}`;
+  const subtitle = !st.joined ? tr('Verbinde …')
+    : ringing ? tr('Klingelt …')
+    : isCall && alone ? (st.met ? tr('Du bist allein im Anruf') : tr('Niemand hat abgenommen'))
+    : `${clock(now - st.since)} · ${st.members.length === 1 ? tr('1 Person') : tr('{0} Personen', { 0: st.members.length })}`;
 
-  const share = () => {
+  const share = async () => {
     haptic();
     if (st.sharing) { voice.setScreen(null); return; }
-    const opts: [string, ScreenQuality | null][] = [['720p – spart Daten', '720'], ['1080p – Full HD', '1080'], ['Volle Auflösung', 'max'], ['Abbrechen', null]];
+    const allow = await allowedQualities();
+    const opts = ([[tr('720p – spart Daten'), '720'], [tr('1080p – Full HD'), '1080'], [tr('Volle Auflösung'), 'max'], [tr('Abbrechen'), null]] as [string, ScreenQuality | null][]).filter(([, q]) => !q || allow.includes(q));
     ActionSheetIOS.showActionSheetWithOptions({ title: tr("Bildschirm teilen"), message: tr("Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden hier oder über den roten Balken oben."), options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
       const q = opts[i]?.[1];
-      if (q) captureScreen(picker.current, q).then((stream) => voice.setScreen(stream)).catch(() => Alert.alert(tr("Bildschirm teilen"), tr("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
+      if (q) captureScreen(screenPickerRef.current, q).then((stream) => voice.setScreen(stream)).catch(() => Alert.alert(tr("Bildschirm teilen"), tr("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
     });
   };
   const hang = () => { if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); voice.leave(); };
@@ -116,7 +116,6 @@ export default function CallScreen() {
   return (
     <View style={s.root}>
       <Glow />
-      <ScreenPicker pickRef={picker} />
       {/* Kopf: verkleinern, Name, Dauer; bei Anrufen rechts zum Chat */}
       <View style={[s.head, { paddingTop: ins.top + 6 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={tr("Verkleinern")} hitSlop={10} onPress={() => { haptic(); close(); }} style={s.headBtn}>

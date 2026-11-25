@@ -36,7 +36,7 @@ export default function Me() {
     try { const d = await api<any>('PATCH', '/api/me', body); setState((s) => ({ me: { ...s.me!, ...d.user } })); } catch (e) { setMsg(errText(e)); }
   };
   const pickAvatar = async () => {
-    const r = await chooseImage({ title: t("Profilbild ändern"), crop: [1, 1], maxSide: 768, onWork: () => setMsg(t("Bild wird vorbereitet …")) });
+    const r = await chooseImage({ title: t("Profilbild ändern"), crop: [1, 1], round: true, maxSide: 768, onWork: () => setMsg(t("Bild wird vorbereitet …")) });
     if (!r) return;
     setMsg(t("Profilbild wird hochgeladen …"));
     try { const up = await upload('avatar', r.uri, r.mime); await patch({ avatar: up.key }); setMsg(t("Profilbild gespeichert ✓")); } catch (e) { setMsg(errText(e)); }

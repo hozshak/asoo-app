@@ -12,6 +12,7 @@ import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-re
 import { Avatar, Badge, Empty, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { MeBar } from '@/components/MeBar';
+import { Logo } from '@/components/Logo';
 import { isVerified, VerifiedMark } from '@/components/Verified';
 import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
@@ -27,6 +28,8 @@ export default function Home() {
   const unread = useStore((s) => s.unread);
   const mentions = useStore((s) => s.mentions);
   const dmUnread = useStore((s) => s.dms.reduce((n, d) => n + (s.unread[d.id] || 0), 0));
+  const notifUnread = useStore((s) => s.notifUnread);
+  const railMatch = matchNew(useStore((s) => s.match));
   const [sel, setSel] = useState<string | null>(null); // null = Direktnachrichten
   const server = servers.find((x) => x.id === sel) || null;
   const router = useRouter();
@@ -70,22 +73,24 @@ export default function Home() {
     <View style={{ flex: 1, backgroundColor: HOME.rail }}>
       <SafeAreaView edges={['top']} style={{ flex: 1, flexDirection: 'row' }}>
         <ScrollView style={s.rail} contentContainerStyle={{ alignItems: 'center', paddingVertical: 12, gap: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-          <RailItem active={!sel} onPress={() => setSel(null)} label={t("Direktnachrichten")} badge={dmUnread}>
-            {!sel ? <View style={[s.dmBtn, s.dmOn]}><LinearGradient colors={GRAD as any} locations={GRAD_POS as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /><View><Icon name="comment" size={24} color="#fff" stroke={2.2} /></View></View>
-              : <View style={s.dmBtn}><Icon name="comment" size={24} color={C.text2} /></View>}
+          {/* gleiche Reihenfolge wie in der Web-App: Start, Feed, Mitspieler-Match, Mitteilungen – dann die Server */}
+          <RailItem active={!sel} onPress={() => setSel(null)} label={t("Start")} badge={dmUnread}>
+            <View style={[s.dmBtn, { borderWidth: 0 }, !sel && s.dmOn]}><Logo size={48} /></View>
           </RailItem>
+          <RailItem active={false} onPress={() => router.push('/feed')} label={t("Feed")}><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
+          <RailItem active={false} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} label={t("Mitspieler-Match")} badge={railMatch}><View style={s.dmBtn}><Icon name="pad" size={23} color={C.text2} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push('/notifications')} label={t("Mitteilungen")} badge={notifUnread}><View style={s.dmBtn}><Icon name="bell" size={22} color={C.text2} /></View></RailItem>
           <View style={s.railSep} />
           {servers.map((sv) => {
             const has = sv.channels.some((c) => unread[c.id]);
             const ment = sv.channels.reduce((n, c) => n + (mentions[c.id] || 0), 0);
             // Zahl = neue Nachrichten im ganzen Server; rot, wenn dich jemand erwähnt hat
             const count = sv.channels.reduce((n, c) => n + (unread[c.id] || 0), 0);
-            return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} /></RailItem>;
+            return <RailItem key={sv.id} active={sel === sv.id} unread={has} badge={count || ment} hot={ment > 0} onPress={() => setSel(sv.id)} onLong={() => serverMenu(sv)} label={sv.name}><ServerIcon server={sv} size={48} active={sel === sv.id} radius={16} /></RailItem>;
           })}
-          {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten), Server entdecken, Feed */}
-          <RailItem active={false} onPress={() => router.push('/server-new')} label={t("Server hinzufügen")}><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.accent} /></View></RailItem>
-          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label={t("Server entdecken")}><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.accent} /></View></RailItem>
-          <RailItem active={false} onPress={() => router.push('/feed')} label={t("Feed")}><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
+          {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten) und Server entdecken, beide grün */}
+          <RailItem active={false} onPress={() => router.push('/server-new')} label={t("Server hinzufügen")}><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
+          <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label={t("Server entdecken")}><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
         </ScrollView>
         <View style={s.panel}>
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
@@ -324,7 +329,7 @@ function ServerPanel({ server, onMenu }: { server: Server; onMenu: () => void })
 
 const s = StyleSheet.create({
   rail: { width: 72, flexGrow: 0 },
-  dmBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  dmBtn: { width: 48, height: 48, borderRadius: 16, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   dmOn: { borderColor: 'transparent', shadowColor: '#8468ff', shadowOpacity: 0.8, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   railSep: { width: 28, height: 1, backgroundColor: C.line },
   pip: { position: 'absolute', left: 0, top: '50%', marginTop: -20, width: 4, borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: C.accent },

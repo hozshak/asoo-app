@@ -1,14 +1,19 @@
 // Bild wählen: Erst fragen, woher (Kamera, Fotos, Dateien) – dann öffnet sich sofort das Passende. Vorher ging direkt
 // die Fotomediathek auf; das dauerte am iPhone spürbar und wirkte, als hinge die App.
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Alert, Image, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { t } from './i18n';
+import { requestCrop } from '@/components/CropHost';
 
 export type PickedImage = { uri: string; mime: string; width?: number; height?: number };
 type Source = 'camera' | 'library' | 'files';
-type Opts = { title?: string; crop?: [number, number]; quality?: number; maxSide?: number; onWork?: () => void };
+type Opts = { title?: string; crop?: [number, number]; round?: boolean; quality?: number; maxSide?: number; onWork?: () => void };
+/** Ausschnitt als Anteil (0…1) – so passt er auch, wenn zwei Stellen die Bildgröße leicht anders melden */
+type Frac = { x: number; y: number; w: number; h: number };
+
+const sizeOf = (uri: string) => new Promise<{ w: number; h: number } | null>((ok) => Image.getSize(uri, (w, h) => ok({ w, h }), () => ok(null)));
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -32,15 +37,25 @@ function askSource(title: string): Promise<Source | null> {
 export async function pickImage(o: Opts = {}): Promise<PickedImage | null> {
   const raw = await pickRaw(o);
   if (!raw || raw.mime === 'image/gif') return raw; // GIFs bleiben (sonst wären sie nicht mehr bewegt)
+  // Zuschneiden: selbst ausrichten (verschieben + zoomen) statt immer nur die Mitte zu nehmen
+  let frac: Frac | undefined;
+  if (o.crop) {
+    const sz = await sizeOf(raw.uri);
+    if (sz && sz.w && sz.h) {
+      const r = await requestCrop({ uri: raw.uri, w: sz.w, h: sz.h, aspect: o.crop[0] / o.crop[1], round: o.round, title: t('Bild ausrichten') });
+      if (!r) return null; // abgebrochen
+      frac = { x: r.originX / sz.w, y: r.originY / sz.h, w: r.width / sz.w, h: r.height / sz.h };
+    }
+  }
   o.onWork?.(); // ab hier sieht man „wird vorbereitet …“ statt eines stehenden Bildschirms
-  return (await shrink(raw, o.maxSide ?? 1600, o.crop)) || raw;
+  return (await shrink(raw, o.maxSide ?? 1600, o.crop, frac)) || raw;
 }
 
 /**
  * Verkleinern vor dem Hochladen: Handyfotos haben oft 4–8 MB – der Server nimmt fürs Profilbild höchstens 3 MB, und so
  * große Dateien brauchen im Mobilnetz lange. Längste Seite auf maxSide Pixel, als JPEG.
  */
-async function shrink(raw: PickedImage, maxSide: number, crop?: [number, number]): Promise<PickedImage | null> {
+async function shrink(raw: PickedImage, maxSide: number, crop?: [number, number], frac?: Frac): Promise<PickedImage | null> {
   try {
     const ctx = ImageManipulator.manipulate(raw.uri);
     // Größe ist meist schon bekannt (Bildauswahl liefert sie mit): dann gleich verkleinert zeichnen – das volle Bild
@@ -50,7 +65,11 @@ async function shrink(raw: PickedImage, maxSide: number, crop?: [number, number]
     if (!w || !hgt || crop) { const probe = await ctx.renderAsync(); w = probe.width; hgt = probe.height; }
     // Zuschneiden (z. B. quadratisch fürs Profilbild): mittig, selbst – die Bildauswahl mit eingebautem Zuschneiden
     // ist am iPhone die alte, langsame (öffnet die Fotos erst nach Sekunden)
-    if (crop) {
+    if (crop && frac) {
+      const cx = Math.max(0, Math.round(frac.x * w)), cy = Math.max(0, Math.round(frac.y * hgt));
+      const cw = Math.min(w - cx, Math.round(frac.w * w)), ch = Math.min(hgt - cy, Math.round(frac.h * hgt));
+      if (cw > 0 && ch > 0) { ctx.crop({ originX: cx, originY: cy, width: cw, height: ch }); w = cw; hgt = ch; }
+    } else if (crop) {
       const want = crop[0] / crop[1], cw = w / hgt > want ? Math.round(hgt * want) : w, ch = w / hgt > want ? hgt : Math.round(w / want);
       if (cw < w || ch < hgt) { ctx.crop({ originX: Math.round((w - cw) / 2), originY: Math.round((hgt - ch) / 2), width: cw, height: ch }); w = cw; hgt = ch; }
     }

@@ -10,10 +10,11 @@ import { useRouter } from 'expo-router';
 import { BASE, getToken } from '@/lib/api';
 import { attachInject, getHost, onWebMessage, useHost } from '@/lib/webhost';
 import { signOut } from '@/lib/session';
-import { isSharing, onScreenShare, startScreenShare, stopScreenShare, type ScreenQuality } from '@/lib/screenshare';
+import { allowedQualities, isSharing, onScreenShare, startScreenShare, stopScreenShare, type ScreenQuality } from '@/lib/screenshare';
 import { C } from '@/lib/theme';
 import { T } from './ui';
 import { t, LANG } from '@/lib/i18n';
+import { screenPickerRef } from '@/components/ScreenPicker';
 
 // Typen von react-native-webview passen mit ref nicht zu React 19 – zur Laufzeit ein normales Bauteil
 const WV = WebView as unknown as React.ComponentType<any>;
@@ -46,14 +47,15 @@ export function WebHost() {
   // Bildschirm teilen: Zustand an die Web-Seite melden (ihr Knopf leuchtet dann)
   const picker = useRef<any>(null);
   useEffect(() => onScreenShare((on) => ref.current?.injectJavaScript(`window.__asooScreen && window.__asooScreen(${on});true;`)), []);
-  const toggleShare = () => {
+  const toggleShare = async () => {
     if (isSharing()) { stopScreenShare(); return; }
     const room = getHost().voice?.room;
     if (!room) { Alert.alert(t("Bildschirm teilen"), t("Tritt zuerst einem Sprachraum oder Anruf bei.")); return; }
-    const opts: [string, ScreenQuality | null][] = [['720p – spart Daten', '720'], ['1080p – Full HD', '1080'], ['Volle Auflösung', 'max'], ['Abbrechen', null]];
+    const allow = await allowedQualities();
+    const opts = ([[t('720p – spart Daten'), '720'], [t('1080p – Full HD'), '1080'], [t('Volle Auflösung'), 'max'], [t('Abbrechen'), null]] as [string, ScreenQuality | null][]).filter(([, q]) => !q || allow.includes(q));
     ActionSheetIOS.showActionSheetWithOptions({ title: t("Bildschirm teilen"), message: t("Dein ganzer Bildschirm wird übertragen – auch wenn du die App verlässt. Beenden über den roten Balken oben oder das Kontrollzentrum."), options: opts.map((o) => o[0]), cancelButtonIndex: opts.length - 1 }, (i) => {
       const q = opts[i]?.[1];
-      if (q) startScreenShare(room, picker.current, q).catch(() => Alert.alert(t("Bildschirm teilen"), t("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
+      if (q) startScreenShare(room, screenPickerRef.current, q).catch(() => Alert.alert(t("Bildschirm teilen"), t("Das hat nicht geklappt. Bitte versuch es noch einmal.")));
     });
   };
   if (!started || !source.current) return null;
@@ -94,7 +96,6 @@ export function WebHost() {
           // stürzt der Inhalt ab (z. B. wenig Speicher), neu laden statt eines weißen Fensters
           onContentProcessDidTerminate={() => ref.current?.reload()}
         />
-        {PICK ? <PICK ref={picker} style={s.picker} /> : null}
         {busy ? <View style={[StyleSheet.absoluteFill, s.wait]} pointerEvents="none"><ActivityIndicator color={C.accent} size="large" /><T style={{ color: C.muted, marginTop: 10 }}>{t("Wird geladen …")}</T></View> : null}
       </SafeAreaView>
     </View>

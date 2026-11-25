@@ -13,6 +13,7 @@ import { toggleVoice, useHost } from '@/lib/webhost';
 import { useVoice, voice as appVoice } from '@/lib/calls';
 import { Avatar, Badge, T } from './ui';
 import { Icon } from './Icon';
+import { isVerified, VerifiedMark } from './Verified';
 import { C, HOME, statusColor } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -101,7 +102,8 @@ export function MeBar({ onNote }: { onNote?: (t: string) => void }) {
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t("Status ändern")} onPress={() => setSheet(true)} style={s.who}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <T style={s.name} numberOfLines={1}>{me.display}</T>
+            <T style={[s.name, { flexShrink: 1 }]} numberOfLines={1}>{me.display}</T>
+            {isVerified(me) ? <VerifiedMark size={15} /> : null}
             <Icon name="chevron" size={15} color={C.text2} stroke={2.4} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

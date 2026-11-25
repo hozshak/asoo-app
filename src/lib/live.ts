@@ -94,13 +94,16 @@ function apply(m: any) {
         const cur = st.messages[msg.ch];
         const messages = cur ? { ...st.messages, [msg.ch]: { ...cur, list: cur.list.some((x) => x.id === msg.id || (msg.nonce && x.nonce === msg.nonce)) ? cur.list.map((x) => (x.id === msg.id || (msg.nonce && x.nonce === msg.nonce) ? { ...msg, attachments: msg.attachments?.length ? msg.attachments : x.attachments } : x)) : [...cur.list, msg] } } : st.messages;
         const info = channelInfo(msg.ch);
+        // wer gerade etwas geschickt hat, tippt nicht mehr
+        const tp = st.typing[msg.ch];
+        const typing = tp && tp[msg.author_id] ? { ...st.typing, [msg.ch]: Object.fromEntries(Object.entries(tp).filter(([u]) => u !== msg.author_id)) } : st.typing;
         // Unterhaltungs-Liste: Vorschau der letzten Nachricht und nach oben (auch für eigene Nachrichten)
         const dms = info ? st.dms : st.dms.map((d) => (d.id === msg.ch ? { ...d, last_at: msg.created, last: { a: msg.author_id, c: (msg.content || '').slice(0, 120), att: !!msg.attachments?.length, k: msg.kind || 'default', t: msg.created } } : d)).sort((a, b) => b.last_at - a.last_at);
-        if (msg.author_id === st.me?.id || viewing === msg.ch || st.blocks.includes(msg.author_id)) return { messages, dms };
+        if (msg.author_id === st.me?.id || viewing === msg.ch || st.blocks.includes(msg.author_id)) return { messages, dms, typing };
         const unread = { ...st.unread, [msg.ch]: (st.unread[msg.ch] || 0) + 1 };
         const ment = mentionsMe(msg.content || '', info?.server.id) || !info; // Direktnachrichten zählen immer
         const mentions = ment ? { ...st.mentions, [msg.ch]: (st.mentions[msg.ch] || 0) + 1 } : st.mentions;
-        return { messages, unread, mentions, dms };
+        return { messages, unread, mentions, dms, typing };
       });
       return;
     }

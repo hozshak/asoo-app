@@ -15,6 +15,8 @@ import { C, F } from '@/lib/theme';
 import { prewarmWeb } from '@/lib/webhost';
 import { loadCallMode } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
+import { GlobalScreenPicker } from '@/components/ScreenPicker';
+import { CropHost } from '@/components/CropHost';
 import { CallBar, IncomingCall } from '@/components/CallBar';
 import { MatchParty } from '@/components/MatchBits';
 
@@ -92,6 +94,9 @@ export default function Root() {
         </Stack>
         {/* dauerhaftes Web-Fenster (3D, Anrufe, Feed …), darüber Anruf-Leiste und eingehende Anrufe */}
         {me ? <WebHost /> : null}
+        {/* der einzige „Übertragung starten“-Knopf (Bildschirm teilen) – muss im sichtbaren Fenster hängen */}
+        <GlobalScreenPicker />
+        <CropHost />
         {me ? <CallBar /> : null}
         {me ? <IncomingCall /> : null}
         {me ? <MatchParty /> : null}

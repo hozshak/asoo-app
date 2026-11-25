@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api, errText, mediaSource } from '@/lib/api';
-import { bootstrap, getState, putUsers, useStore } from '@/lib/store';
+import { bootstrap, getState, putUsers, setState, useStore } from '@/lib/store';
 import { joinCall, nativeCalls } from '@/lib/calls';
 import { openWeb } from '@/lib/web';
 import { openServer } from '@/components/InviteCard';
@@ -43,10 +43,12 @@ export default function Profile() {
   const [ask, setAsk] = useState<CallKind | null>(null);
   const [report, setReport] = useState(false);
   const [more, setMore] = useState(false);
+  const mutedByMe = useStore((s) => (s.userMutes || []).includes(String(id)));
   const load = async () => { try { const x = await api<any>('GET', `/api/users/${id}`); putUsers([x.user]); setD(x); } catch (e) { setMsg(errText(e)); } };
   useEffect(() => { load(); }, [id]);
   if (!d) return <View style={{ flex: 1, backgroundColor: C.bg1, alignItems: 'center', justifyContent: 'center' }}>{msg ? <T style={{ color: C.muted }}>{msg}</T> : <ActivityIndicator color={C.accent} />}</View>;
   const u = d.user, me = u.id === meId;
+  const muteUser = async (on: boolean) => { const r = await api<any>('PUT', `/api/users/${u.id}/mute`, { on }); setState(() => ({ userMutes: r.user_mutes || [] })); };
   const act = async (fn: () => Promise<unknown>, ok?: string) => { try { await fn(); await load(); if (ok) setMsg(ok); } catch (e) { setMsg(errText(e)); } };
   const banner = mediaSource(u.banner);
   const call = async (video = false) => {
@@ -102,6 +104,9 @@ export default function Profile() {
       <ProfileFx id={u.effect} />
       <Sheet open={more} onClose={() => setMore(false)} items={[
         d.friend === 'friends' ? { label: t("Freundschaft beenden"), icon: 'minusCircle', onPress: () => act(() => setFriend(u.id, false)) } : null,
+        // Stummschalten nur für mich (wie Discord): Stimme aus, keine Mitteilungen – Nachrichten bleiben lesbar
+        mutedByMe ? { label: t("Stummschaltung aufheben"), icon: 'volume', onPress: () => act(() => muteUser(false), t("Stummschaltung aufgehoben.")) }
+          : { label: t("Stummschalten (nur für mich)"), icon: 'bellOff', onPress: () => act(() => muteUser(true), t("{0} ist für dich stummgeschaltet.", { 0: u.display })) },
         !d.blocked ? { label: t("Blockieren"), icon: 'ban', danger: true, onPress: () => act(() => api('POST', `/api/users/${u.id}/block`, { on: true }).then(bootstrap), 'Blockiert. Ihr seht keine Nachrichten mehr voneinander.') } : null,
         { label: t("Melden"), icon: 'flag', danger: true, onPress: () => setReport(true) },
       ]} />

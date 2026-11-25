@@ -24,6 +24,8 @@ export type State = {
   mentions: Record<string, number>;
   friends: { friends: User[]; incoming: User[]; outgoing: User[] };
   blocks: string[];
+  /** für mich stummgeschaltete Personen (Stimme aus, keine Mitteilungen) */
+  userMutes?: string[];
   notifUnread: number;
   messages: Record<string, { list: Msg[]; hasMore: boolean; loaded: boolean }>;
   typing: Record<string, Record<string, number>>; // Kanal → Person → bis wann
@@ -73,7 +75,7 @@ export async function bootstrap() {
   users[d.user.id] = d.user;
   setState(() => ({
     ready: true, me: d.user, servers: d.servers.map(sortServer), dms: d.dms, users, unread: d.unread || {}, mentions: d.mentions || {},
-    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], notifUnread: d.notif_unread || 0, voice: d.voice || {}, match: d.match || NO_MATCH,
+    friends: d.friends || { friends: [], incoming: [], outgoing: [] }, blocks: d.blocks || [], userMutes: d.user_mutes || [], notifUnread: d.notif_unread || 0, voice: d.voice || {}, match: d.match || NO_MATCH,
   }));
   return d.user;
 }

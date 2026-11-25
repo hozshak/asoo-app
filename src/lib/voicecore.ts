@@ -90,10 +90,12 @@ export function createVoice(deps: Deps) {
     if (!st.room) return;
     live.send({ t: 'vstate', muted: st.muted || !mic, deaf: st.deaf, video: st.video, screen: !!scr, cam: cam ? cam.id : null, scr: scr ? scr.id : null });
   }
+  let lastMutes = '';
+  setInterval(() => { const k = (getState().userMutes || []).join(','); if (k !== lastMutes) { lastMutes = k; if (st.room) applyDeaf(); } }, 1000);
   function applyMic() { if (mic) for (const tr of mic.getAudioTracks()) tr.enabled = micLive(); }
   function applyDeaf() {
     for (const p of peers.values()) {
-      const on = !st.deaf && !st.sdeaf && !(p.info?.smute || p.info?.sdeaf);
+      const on = !st.deaf && !st.sdeaf && !(p.info?.smute || p.info?.sdeaf) && !(getState().userMutes || []).includes(p.uid);
       for (const s of p.streams.values()) for (const tr of s.getAudioTracks ? s.getAudioTracks() : []) tr.enabled = on;
     }
   }
@@ -320,6 +322,8 @@ export function createVoice(deps: Deps) {
       st = { ...st, deaf: st.muted ? false : st.deaf, muted: !st.muted };
       applyMic(); applyDeaf(); pushState(); deps.tone?.(st.muted ? 'mute' : 'unmute'); emit();
     },
+    /** nach „Nutzer stummschalten“: Stimmen neu ein-/ausschalten */
+    refreshAudio() { applyDeaf(); },
     toggleDeaf() {
       if (st.sdeaf) return;
       st = { ...st, deaf: !st.deaf };

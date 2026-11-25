@@ -17,6 +17,7 @@ import { openWeb, webAction } from '@/lib/web';
 import { inviteCodes, openLink } from '@/lib/links';
 import { InviteCard } from '@/components/InviteCard';
 import { NameText } from '@/components/NameText';
+import { isVerified } from '@/components/Verified';
 import { RichText, plainText, timeLabel, toRoleTags } from '@/lib/text';
 import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
 import { Avatar, Glass, Glow, Press, Sheet, T, TopBar, TopIcon, type SheetItem } from '@/components/ui';
@@ -316,7 +317,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
         <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
           {head ? <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-            <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} />
+            <NameText name={u.display} styleId={(u as any).name_style} color={color} style={s.name} onPress={() => onUser(m.author_id)} verified={isVerified(u)} />
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
           {m.kind === 'poll' && m.poll ? <PollCard id={m.id} poll={m.poll} pending={m.pending} onChange={(p) => onPoll(m.id, p)} />

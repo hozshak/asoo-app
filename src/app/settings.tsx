@@ -22,8 +22,8 @@ import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LEGAL = (p: string) => (BASE || 'https://zuno-app.altraex.workers.dev') + '/legal/' + p + '.html';
-type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'legal' | 'delete';
-const TITLES: Record<Page, string> = { profile: 'Profil', look: 'Bild, Banner & Farben', frame: 'Profilrahmen', name: 'Namens-Stil', effect: 'Profil-Effekt', privacy: 'Privatsphäre & Geräte', push: 'Mitteilungen', voice: 'Sprache & Anrufe', password: 'Passwort', legal: 'Rechtliches', delete: 'Konto löschen' };
+type Page = 'profile' | 'look' | 'frame' | 'name' | 'effect' | 'privacy' | 'push' | 'voice' | 'password' | 'email' | 'legal' | 'delete';
+const TITLES: Record<Page, string> = { profile: 'Profil', look: 'Bild, Banner & Farben', frame: 'Profilrahmen', name: 'Namens-Stil', effect: 'Profil-Effekt', privacy: 'Privatsphäre & Geräte', push: 'Mitteilungen', voice: 'Sprache & Anrufe', password: 'Passwort', email: 'E-Mail', legal: 'Rechtliches', delete: 'Konto löschen' };
 
 export default function Settings() {
   const { page } = useLocalSearchParams<{ page?: Page }>();
@@ -52,6 +52,7 @@ export default function Settings() {
           : p === 'push' ? <PushSection say={setMsg} />
           : p === 'voice' ? <VoicePage />
           : p === 'password' ? <PasswordPage say={setMsg} />
+          : p === 'email' ? <EmailPage say={setMsg} />
           : p === 'legal' ? <LegalPage />
           : <DeletePage say={setMsg} />}
       </ScrollView>
@@ -76,6 +77,7 @@ function SettingsHome({ me, open, frameName }: { me: any; open: (p: Page) => voi
       { icon: 'lock', label: 'Privatsphäre & Geräte', sub: 'Wer schreiben darf, Blockierte, Geräte', keys: 'datenschutz blockieren sitzungen', onPress: () => open('privacy') },
       { icon: 'bell', label: 'Mitteilungen', keys: 'push benachrichtigungen ton', onPress: () => open('push') },
       { icon: 'phone', label: 'Sprache & Anrufe', sub: webCalls ? 'Über die Web-Ansicht' : 'Direkt in der App', keys: 'telefonieren sprachraum mikrofon', onPress: () => open('voice') },
+      { icon: 'at', label: 'E-Mail', sub: me.email ? maskMail(me.email) : 'Noch nicht eingetragen', keys: 'mail email passwort vergessen', onPress: () => open('email') },
       { icon: 'shield', label: 'Passwort ändern', keys: 'sicherheit kennwort', onPress: () => open('password') },
     ]],
     ['Aussehen', [
@@ -176,6 +178,38 @@ function ProfilePage({ me, patch }: PP) {
   );
 }
 
+/** E-Mail eintragen oder ändern: Adresse eingeben → 6-stelligen Code aus der Mail eingeben (wie in der Web-App). */
+const maskMail = (e: string) => { const [a, b] = String(e).split('@'); return (a.length > 2 ? a.slice(0, 2) + '•'.repeat(Math.min(6, a.length - 2)) : a) + '@' + (b || ''); };
+function EmailPage({ say }: { say: (t: string) => void }) {
+  const me = useStore((s) => s.me) as any;
+  const [email, setEmail] = useState(me?.email || '');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try { await api('POST', '/api/me/email', { email: email.trim() }); setSent(true); say('Code gesendet – schau in dein Postfach.'); } catch (e) { say(errText(e)); }
+    setBusy(false);
+  };
+  const confirm = async () => {
+    setBusy(true);
+    try { const d = await api<any>('POST', '/api/me/email/confirm', { email: email.trim(), code: code.trim() }); setState((s) => ({ me: { ...s.me!, ...d.user } })); setSent(false); setCode(''); say('E-Mail gespeichert ✓'); } catch (e) { say(errText(e)); }
+    setBusy(false);
+  };
+  return (
+    <Glass style={s.card} intensity={20}>
+      <T style={{ color: C.muted, fontSize: 13.5, lineHeight: 19, marginBottom: 4 }}>Damit kannst du dein Passwort zurücksetzen, falls du es vergisst. Deine E-Mail sieht niemand.</T>
+      {me?.email ? <T style={{ fontWeight: '700', marginTop: 6 }}>Eingetragen: {maskMail(me.email)} ✓</T> : null}
+      <Field label={me?.email ? 'Neue E-Mail' : 'E-Mail'} value={email} onChangeText={(v: string) => { setEmail(v); setSent(false); }} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" placeholder="name@beispiel.de" />
+      {!sent ? <Btn title="Code schicken" busy={busy} onPress={send} disabled={!/^\S+@\S+\.\S+$/.test(email.trim())} style={{ marginTop: 14 }} />
+        : <>
+            <Field label="Code aus der E-Mail" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" maxLength={8} placeholder="123456" />
+            <Btn title="Bestätigen" busy={busy} onPress={confirm} disabled={code.trim().length < 6} style={{ marginTop: 14 }} />
+            <Btn title="Code noch einmal schicken" kind="ghost" small onPress={send} style={{ marginTop: 6 }} />
+          </>}
+    </Glass>
+  );
+}
 function PasswordPage({ say }: { say: (t: string) => void }) {
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');

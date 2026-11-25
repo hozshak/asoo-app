@@ -16,7 +16,7 @@ import { ColorRow, isHex } from '@/components/ColorPicker';
 import { C } from '@/lib/theme';
 
 type Model = { id: string; name: string; cat: 'anime' | 'real'; bottom?: boolean; fixed?: boolean };
-const CATS: [Model['cat'], string][] = [['anime', 'Anime'], ['real', 'Realistisch']];
+const CATS: [Model['cat'], string][] = [['anime', 'Anime'], ['real', 'Charaktere']];
 const MODELS: Model[] = [
   { id: 'shibu', name: 'Shibu', cat: 'anime', bottom: true }, { id: 'vita', name: 'Vita', cat: 'anime' }, { id: 'ren', name: 'Ren', cat: 'anime', bottom: true },
   { id: 'vivi', name: 'Vivi', cat: 'anime' }, { id: 'fumi', name: 'Fumi', cat: 'anime', bottom: true }, { id: 'rubin', name: 'Rubin', cat: 'anime' },

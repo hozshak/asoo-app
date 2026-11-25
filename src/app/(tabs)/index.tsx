@@ -12,6 +12,7 @@ import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-re
 import { Avatar, Badge, Empty, Press, Section, ServerIcon, Sheet, T } from '@/components/ui';
 import { Icon, type IconName } from '@/components/Icon';
 import { MeBar } from '@/components/MeBar';
+import { isVerified, VerifiedMark } from '@/components/Verified';
 import { plainText } from '@/lib/text';
 import { api, errText, mediaSource, upload } from '@/lib/api';
 import { bootstrap, can, dmTitle, getState, markRead, setState, userOf, useStore, type Channel, type Server } from '@/lib/store';
@@ -153,6 +154,7 @@ function DmPanel() {
   const me = useStore((s) => s.me);
   const unread = useStore((s) => s.unread);
   const requests = useStore((s) => s.friends.incoming.length); // offene Freundschaftsanfragen (früher in der Tab-Leiste)
+  const [mailHidden, setMailHidden] = useState(false);
   useStore((s) => s.users); // Namen in der Vorschau nachzeichnen
   const match = useStore((s) => s.match);
   const matchCount = matchNew(match);
@@ -196,6 +198,18 @@ function DmPanel() {
         </View>
         {matchCount ? <Badge n={matchCount} /> : <View style={{ transform: [{ rotate: '-90deg' }] }}><Icon name="chevron" size={14} color={C.text2} stroke={2.4} /></View>}
       </Pressable>
+      {!(me as any)?.email && !mailHidden ? (
+        <View style={s.mailCard}>
+          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/settings', params: { page: 'email' } })} style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, pressed && { opacity: 0.8 }]}>
+          <View style={s.mailIc}><Icon name="at" size={18} color={C.accent} /></View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <T style={{ fontWeight: '800', fontSize: 14.5 }} numberOfLines={1}>E-Mail hinzufügen</T>
+            <T style={{ color: C.muted, fontSize: 12.5, marginTop: -2 }} numberOfLines={2}>Damit du dein Passwort zurücksetzen kannst.</T>
+          </View>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ausblenden" hitSlop={10} onPress={() => setMailHidden(true)}><Icon name="x" size={16} color={C.muted} /></Pressable>
+        </View>
+      ) : null}
       {!dms.length ? <Empty icon="comment" title="Noch keine Gespräche" text="Unter „Freunde hinzufügen“ findest du Leute und kannst ihnen schreiben." /> : null}
       {dms.map((d, i) => {
         const other = d.kind === 'dm' ? d.members.find((u) => u.id !== me?.id) : null;
@@ -207,7 +221,7 @@ function DmPanel() {
               {other ? <Avatar user={other} size={46} status /> : <LinearGradient colors={GRAD as any} style={[s.group, { width: 46, height: 46, borderRadius: 23 }]}><Icon name="users" size={20} color="#fff" /></LinearGradient>}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <T style={[s.rowName, { flex: 1 }, n ? { color: C.text, fontWeight: '800' } : null]} numberOfLines={1}>{dmTitle(d, me?.id)}</T>
+                  <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }}><T style={[s.rowName, { flexShrink: 1 }, n ? { color: C.text, fontWeight: '800' } : null]} numberOfLines={1}>{dmTitle(d, me?.id)}</T>{other && isVerified(userOf(other.id)) ? <VerifiedMark size={14} /> : null}</View>
                   <T style={[s.when, n ? { color: C.text } : null]}>{ago(d.last?.t || d.last_at)}</T>
                 </View>
                 {pv ? <T style={[s.rowSub, n ? { color: C.text2, fontWeight: '700' } : null]} numberOfLines={1}>{pv}</T> : other?.custom_status ? <T style={s.rowSub} numberOfLines={1}>{other.custom_status}</T> : null}
@@ -336,6 +350,8 @@ const s = StyleSheet.create({
   toolWide: { flex: 1, height: 44, borderRadius: 22, backgroundColor: HOME.raised, borderWidth: 1, borderColor: HOME.edge, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   toolPlus: { width: 44, height: 44, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   rowPressed: { backgroundColor: HOME.raised },
+  mailCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 14, marginBottom: 10, padding: 12, borderRadius: 16, backgroundColor: HOME.raised, borderWidth: 1, borderColor: C.accentLine },
+  mailIc: { width: 36, height: 36, borderRadius: 12, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' },
   rowName: { color: C.text2, fontSize: 16, fontWeight: '600' },
   rowSub: { color: C.muted, fontSize: 13, marginTop: -2 },
   iconBubble: { width: 42, height: 42, borderRadius: 14, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, alignItems: 'center', justifyContent: 'center' },

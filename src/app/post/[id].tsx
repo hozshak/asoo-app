@@ -11,6 +11,7 @@ import { openLink } from '@/lib/links';
 import { Avatar, Empty, Glow, Sheet, T, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { NameText } from '@/components/NameText';
+import { isVerified } from '@/components/Verified';
 import { PostCard, REPORT_REASONS, type Post } from '@/components/PostCard';
 import { C, F } from '@/lib/theme';
 import { useComposerPad, useHeaderOffset } from '@/lib/keyboard';
@@ -77,7 +78,7 @@ export default function PostView() {
                   <Pressable onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })}><Avatar user={u} size={32} frame={false} /></Pressable>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.bubble}>
-                      <NameText name={u.display} styleId={(u as any).name_style} style={s.name} />
+                      <NameText name={u.display} styleId={(u as any).name_style} style={s.name} verified={isVerified(u)} />
                       <RichText text={c.content} meName={me?.username} style={s.text} onLink={(l: string) => openLink(router, l)} />
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 8, paddingTop: 3 }}>

@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mediaSource } from '@/lib/api';
 import { Avatar, T } from './ui';
 import { NameText } from './NameText';
+import { isVerified } from './Verified';
 import { Icon } from './Icon';
 import { C, statusColor } from '@/lib/theme';
 
@@ -43,10 +44,10 @@ export function ProfileHead({ u, status, topLeft, topRight, bannerRight, onAvata
         </View>
         {/* eigenes Profil: Name mit Pfeil, antippen = Status ändern (wie bei Discord) */}
         {onName ? <Pressable accessibilityRole="button" accessibilityLabel="Status ändern" onPress={onName} style={s.nameRow}>
-            <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} />
+            <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} verified={isVerified(u)} />
             <View style={{ marginTop: 12 }}><Icon name="chevron" size={18} color={C.text2} stroke={2.4} /></View>
           </Pressable>
-          : <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} />}
+          : <NameText name={u.display || u.username} styleId={u.name_style} style={s.name} verified={isVerified(u)} />}
         <T style={s.handle} numberOfLines={1}>@{u.username}{u.pronouns ? ' · ' + u.pronouns : ''}</T>
         <View style={s.statusLine}>
           <View style={[s.dot, { backgroundColor: st === 'invisible' ? C.faint : statusColor(st) }]} />

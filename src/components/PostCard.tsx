@@ -11,6 +11,7 @@ import { getState, userOf, useStore } from '@/lib/store';
 import { RichText, timeLabel } from '@/lib/text';
 import { openLink } from '@/lib/links';
 import { NameText } from './NameText';
+import { isVerified } from './Verified';
 import { Avatar, Sheet, T } from './ui';
 import { Icon } from './Icon';
 import { C } from '@/lib/theme';
@@ -50,7 +51,7 @@ export function PostCard({ post, onChange, onRemove, onOpen, onNote }: { post: P
           <Avatar user={u} size={42} />
         </Pressable>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <NameText name={u.display} styleId={(u as any).name_style} style={s.name} onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })} />
+          <NameText name={u.display} styleId={(u as any).name_style} style={s.name} verified={isVerified(u)} onPress={() => router.push({ pathname: '/user/[id]', params: { id: u.id } })} />
           <Pressable onPress={onOpen} disabled={!onOpen}><T style={s.time}>{timeLabel(post.created)}</T></Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Mehr" hitSlop={10} onPress={() => setMenu(true)} style={s.more}><Icon name="more" size={18} color={C.muted} /></Pressable>

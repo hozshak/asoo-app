@@ -9,6 +9,7 @@ import MaskedViewRaw from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
 import { T } from './ui';
+import { VerifiedMark } from './Verified';
 import { C } from '@/lib/theme';
 
 // die Typen des Pakets passen nicht zu React 19 – zur Laufzeit ist es ein normales Bauteil
@@ -45,7 +46,13 @@ export const NAME_STYLES: [string, string, string[], Kind][] = [
 const METAL_AT = [0, 0.34, 0.53, 0.7, 1] as const;
 const OUTER = ['flex', 'flexShrink', 'flexGrow', 'alignSelf', 'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical', 'maxWidth'];
 
-export function NameText({ name, styleId, style, color, numberOfLines = 1, onPress, live = false }: { name: string; styleId?: string | null; style?: StyleProp<TextStyle>; color?: string | null; numberOfLines?: number; onPress?: () => void; live?: boolean }) {
+/** Name im Namens-Stil; verified = blauer Haken dahinter (verifiziertes Konto). */
+export function NameText({ verified, ...p }: { name: string; styleId?: string | null; style?: StyleProp<TextStyle>; color?: string | null; numberOfLines?: number; onPress?: () => void; live?: boolean; verified?: boolean }) {
+  if (!verified) return <NameInner {...p} />;
+  const fs = (StyleSheet.flatten(p.style) as TextStyle | undefined)?.fontSize || 15;
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 }}><View style={{ flexShrink: 1, minWidth: 0 }}><NameInner {...p} /></View><VerifiedMark size={Math.round(fs * 0.95)} /></View>;
+}
+function NameInner({ name, styleId, style, color, numberOfLines = 1, onPress, live = false }: { name: string; styleId?: string | null; style?: StyleProp<TextStyle>; color?: string | null; numberOfLines?: number; onPress?: () => void; live?: boolean }) {
   const def = NAME_STYLES.find((x) => x[0] === (styleId || 'default')) || NAME_STYLES[0];
   const [, , colors, kind] = def;
   if (kind === 'mono') return <T style={[style, { fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }), letterSpacing: -0.3 }]} numberOfLines={numberOfLines} onPress={onPress}>{name}</T>;

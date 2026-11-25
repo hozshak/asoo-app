@@ -9,6 +9,7 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTim
 import * as WebBrowser from 'expo-web-browser';
 import { api, errText, saveToken, BASE } from '@/lib/api';
 import { prepPow, takePow } from '@/lib/pow';
+import { saveDevice } from '@/lib/api';
 import { bootstrap } from '@/lib/store';
 import { connect } from '@/lib/live';
 import { Btn, Glass, T } from '@/components/ui';
@@ -59,9 +60,12 @@ export default function Login() {
   const [codeSent, setCodeSent] = useState(false);
   const [sending, setSending] = useState(false);
   useEffect(() => { api<{ mail?: boolean }>('GET', '/api/me').then((d) => setMailOn(!!d.mail)).catch(() => {}); }, []);
-  const switchMode = (m: typeof mode) => { setMode(m); setErr(''); setInfo(''); setCode(''); setCodeSent(false); };
-  const signedIn = async (d: { token?: string }) => {
+  // Anmeldung von neuem Gerät/Ort: Server schickt einen Code per E-Mail (verify = Hinweis auf die Adresse)
+  const [verify, setVerify] = useState<string | null>(null);
+  const switchMode = (m: typeof mode) => { setMode(m); setErr(''); setInfo(''); setCode(''); setCodeSent(false); setVerify(null); };
+  const signedIn = async (d: { token?: string; device?: string }) => {
     if (!d.token) throw new Error('kein Schlüssel');
+    if (d.device) await saveDevice(d.device);
     await saveToken(d.token);
     await bootstrap();
     connect();
@@ -88,11 +92,17 @@ export default function Login() {
         return;
       }
       if (needMail && !code.trim()) throw new Error(codeSent ? 'Bitte gib den Code aus der Mail ein.' : 'Bitte lass dir zuerst einen Code an deine E-Mail schicken.');
-      const body = mode === 'login' ? { username: username.trim(), password } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
+      const body = mode === 'login' ? { username: username.trim(), password, ...(verify ? { code: code.trim() } : {}) } : { username: username.trim().toLowerCase(), password, display: display.trim() || username.trim(), age16: age, accept, lang: LANG, ...(needMail ? { email: email.trim(), code: code.trim() } : {}) };
       // Bot-Schutz: beim Registrieren die (meist schon fertig gerechnete) Aufgabe mitschicken
       const full = mode === 'register' ? { ...body, pow: await takePow() } : body;
       await signedIn(await api<{ token?: string }>('POST', mode === 'login' ? '/api/auth/login' : '/api/auth/register', full));
-    } catch (e) { setErr(e instanceof Error && !(e as any).code && /^Bitte /.test(e.message) ? e.message : errText(e)); } finally { setBusy(false); }
+    } catch (e: any) {
+      if (e?.code === 'login_verify') {
+        setVerify(e.data?.email || '');
+        if (e.data?.dev_code) setCode(e.data.dev_code);
+        setInfo(t("Du meldest dich von einem neuen Gerät oder Ort an. Wir haben dir einen Code an {e} geschickt.", { e: e.data?.email || '' }));
+        return;
+      } setErr(e instanceof Error && !(e as any).code && /^Bitte /.test(e.message) ? e.message : errText(e)); } finally { setBusy(false); }
   };
   const field = (key: string, props: any) => (
     <TextInput {...props} onFocus={() => setFocus(key)} onBlur={() => setFocus('')} placeholderTextColor={C.faint}
@@ -146,7 +156,7 @@ export default function Login() {
                 </> : null}
                 {mode === 'forgot' && !codeSent ? <Btn title={t("Code senden")} onPress={sendCode} busy={sending} disabled={!username.trim()} style={{ marginTop: 18 }} /> : null}
                 {info ? <T style={{ color: C.text2, marginTop: 12, lineHeight: 20 }}>{info}</T> : null}
-                {(needMail && codeSent) || (mode === 'forgot' && codeSent) ? <>
+                {(needMail && codeSent) || (mode === 'forgot' && codeSent) || (mode === 'login' && verify !== null) ? <>
                   <T style={s.label}>{t("Code aus der Mail")}</T>
                   {field('c', { value: code, onChangeText: (v: string) => setCode(v.replace(/\D/g, '').slice(0, 6)), keyboardType: 'number-pad', textContentType: 'oneTimeCode', autoComplete: 'one-time-code', placeholder: '123456', maxLength: 6 })}
                 </> : null}

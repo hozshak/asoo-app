@@ -16,6 +16,7 @@ const KIND: Record<string, [string, IconName, string]> = {
   friend_accept: [t("hat deine Anfrage angenommen"), 'check', C.ok], call: [t("hat dich angerufen"), 'phone', C.ok], follow: [t("folgt dir jetzt"), 'user', C.info], like: [t("gefällt dein Beitrag"), 'heart', C.accent2], comment: [t("hat deinen Beitrag kommentiert"), 'comment', C.info],
   // „Mitspieler finden“: Match (mit Namen) und anonymes Like (ohne Absender – dann steht „ToLobby“ davor)
   match: [t("und du passt zusammen – ihr könnt euch jetzt schreiben"), 'pad', C.accent], match_like: [t("– jemand mag dein Mitspieler-Profil"), 'pad', C.accent2],
+  security: [t("Neue Anmeldung von einem neuen Gerät oder Ort. Warst du das nicht? Ändere dein Passwort und trag eine E-Mail ein."), 'shield', C.warn],
 };
 
 export default function Notifications() {

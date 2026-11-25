@@ -13,11 +13,19 @@ export const WS_BASE = BASE ? BASE.replace(/^http/, 'ws') : (typeof location !==
 
 const KEY = 'asoo.token';
 let token: string | null = null;
+// „Dieses Gerät ist vertraut“ (vom Server nach einer bestätigten Anmeldung) – erspart den E-Mail-Code beim nächsten Login
+const DEV_KEY = 'asoo.device';
+let device: string | null = null;
+export async function saveDevice(d: string | null) {
+  device = d;
+  try { if (Platform.OS === 'web') { if (d) localStorage.setItem(DEV_KEY, d); } else if (d) await SecureStore.setItemAsync(DEV_KEY, d); } catch {}
+}
 
 export async function loadToken() {
   try {
     token = Platform.OS === 'web' ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY);
   } catch { token = null; }
+  try { device = Platform.OS === 'web' ? localStorage.getItem(DEV_KEY) : await SecureStore.getItemAsync(DEV_KEY); } catch { device = null; }
   return token;
 }
 export async function saveToken(t: string | null) {
@@ -38,7 +46,7 @@ export class ApiError extends Error {
 }
 
 export function headers(extra: Record<string, string> = {}) {
-  return { 'x-zuno': '1', 'x-client': 'asoo-app', ...(token ? { authorization: `Bearer ${token}` } : {}), ...extra };
+  return { 'x-zuno': '1', 'x-client': 'asoo-app', ...(token ? { authorization: `Bearer ${token}` } : {}), ...(device ? { 'x-device': device } : {}), ...extra };
 }
 
 export async function api<T = any>(method: string, path: string, body?: unknown): Promise<T> {
@@ -110,6 +118,7 @@ const MSG: Record<string, string> = {
   bad_password: t("Das Passwort ist falsch."),
   need_password: t("Bitte gib dein Passwort ein."),
   bot_check: t("Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuch es noch einmal."),
+  login_verify: t("Bitte bestätige die Anmeldung mit dem Code aus deiner E-Mail."),
   email_banned: t("Diese E-Mail-Adresse ist gesperrt."),
   user_not_found: t("Nutzer nicht gefunden."),
   forbidden: t("Dafür fehlen dir die Rechte."),

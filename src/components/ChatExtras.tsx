@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
-import { api, errText, mediaSource, mediaUrl } from '@/lib/api';
+import { api, BASE, errText, mediaSource, mediaUrl } from '@/lib/api';
 import { Glass, T } from './ui';
 import { Icon } from './Icon';
 import { C, R } from '@/lib/theme';
@@ -192,6 +192,8 @@ export function VoiceRecorder({ onCancel, onDone }: { onCancel: () => void; onDo
   );
 }
 
+/** GIF über ToLobby laden (/gifp/…) – klappt auch in Netzen, die die GIF-Seiten sperren; die Nachricht behält die Original-Adresse. */
+export const gifSrc = (u?: string | null) => (u && /^https:\/\/(media\d*\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com|static\d*\.klipy\.com)\//.test(u) ? (BASE || '') + '/gifp/' + u.slice(8) : u || '');
 /** Nachricht ist nur ein GIF-Link (Tenor/GIPHY)? Dann als Bild zeigen. */
 export function gifUrl(text?: string) {
   const s = String(text || '').trim();
@@ -225,7 +227,7 @@ export function GifPicker({ open, onClose, onPick }: { open: boolean; onClose: (
           <ScrollView contentContainerStyle={s.gifGrid} keyboardShouldPersistTaps="handled">
             {list.map((g) => (
               <Pressable key={g.id} accessibilityLabel="GIF senden" onPress={() => { Haptics.selectionAsync().catch(() => {}); onClose(); onPick(g.url); }} style={s.gifItem}>
-                <Image source={{ uri: g.preview }} style={{ width: '100%', height: '100%' }} contentFit="cover" autoplay />
+                <Image source={{ uri: gifSrc(g.preview) }} style={{ width: '100%', height: '100%' }} contentFit="cover" autoplay />
               </Pressable>
             ))}
           </ScrollView>

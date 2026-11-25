@@ -24,7 +24,7 @@ import { Icon } from '@/components/Icon';
 import { CallConfirm, type CallKind } from '@/components/CallConfirm';
 import { useHost } from '@/lib/webhost';
 import { joinCall, leaveForWeb, nativeCalls, useVoice } from '@/lib/calls';
-import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifUrl, type Poll } from '@/components/ChatExtras';
+import { FileCard, GifPicker, PollCard, PollComposer, VoiceMsg, VoiceRecorder, attKind, gifSrc, gifUrl, type Poll } from '@/components/ChatExtras';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, F, GRAD, GRAD_POS } from '@/lib/theme';
 
@@ -320,7 +320,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
             <T style={s.time}>{timeLabel(m.created)}</T>
           </View> : null}
           {m.kind === 'poll' && m.poll ? <PollCard id={m.id} poll={m.poll} pending={m.pending} onChange={(p) => onPoll(m.id, p)} />
-            : gifUrl(m.content) ? <Pressable onPress={() => onImage(gifUrl(m.content)!)}><Image source={{ uri: gifUrl(m.content)! }} style={{ width: 220, height: 180, borderRadius: 14, marginTop: 6 }} contentFit="cover" autoplay /></Pressable>
+            : gifUrl(m.content) ? <Pressable onPress={() => onImage(gifSrc(gifUrl(m.content)))}><Image source={{ uri: gifSrc(gifUrl(m.content)) }} style={{ width: 220, height: 180, borderRadius: 14, marginTop: 6 }} contentFit="cover" autoplay /></Pressable>
             : m.content ? <RichText text={m.content} sid={sid} meName={meName} onLink={onLink} style={[s.body, m.pending && { opacity: 0.55 }]} /> : null}
           {m.content && !m.pending ? inviteCodes(m.content).map((code) => <InviteCard key={code} code={code} />) : null}
           {m.edited ? <T style={s.edited}>(bearbeitet)</T> : null}

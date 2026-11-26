@@ -17,3 +17,6 @@ npm-debug.*
 i18n-keys.txt
 i18n-missing/
 i18n-out/
+
+# eigene native Module (Swift) gehören dazu
+!modules/*/ios/

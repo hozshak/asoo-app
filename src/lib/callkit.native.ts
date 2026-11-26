@@ -19,6 +19,7 @@ type Native = {
   reportIncoming(id: string, dm: string, from: string, name: string, video: boolean): void;
   endCall(id: string, reason: string): void;
   endCallsFor(dm: string, reason: string): void;
+  setRingtone?(file: string): void;
   addListener(name: 'onCall', fn: (e: CallEvent) => void): { remove(): void };
 };
 
@@ -43,6 +44,8 @@ export function endCallKit(dm: string, reason = 'remote') {
   try { N.endCallsFor(dm, reason); } catch {}
 }
 export const callKitState = (dm: string) => byDm.get(dm) || null;
+/** Klingelton von Apples Anruf-Bildschirm (Datei im App-Paket: ring-<name>.wav) */
+export function setCallKitRingtone(name: string) { try { N?.setRingtone?.('ring-' + name + '.wav'); } catch {} }
 
 export type CallKitHandlers = {
   token(token: string): void;

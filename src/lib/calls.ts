@@ -156,6 +156,7 @@ let ckStarted = false;
 export function initCallKit(expo: () => string | null) {
   if (!hasCallKit || ckStarted) return;
   ckStarted = true;
+  import('./ringtone').then((r) => r.applyRingtone()).catch(() => {});
   startCallKit({
     token(tok) { voipTok = tok; voipSent = ''; registerVoip(expo()); },
     incoming(dm) {
@@ -179,6 +180,17 @@ export function initCallKit(expo: () => string | null) {
     mute(muted) { const st = voice.get(); if (st.room && st.muted !== muted) voice.toggleMute(); },
   });
 }
+// Anruf (Direktnachricht/Gruppe) endet von selbst, wenn man eine Minute allein darin ist – niemand hat abgenommen
+// oder die anderen sind gegangen. Sprachräume auf Servern bleiben offen (wie im Web).
+let aloneSince = 0;
+setInterval(() => {
+  const st = voice.get(), s = getState();
+  if (!st.room || !s.dms.some((d) => d.id === st.room)) { aloneSince = 0; return; }
+  const others = (s.voice?.[st.room] || []).filter((m) => m.uid !== s.me?.id);
+  if (others.length) { aloneSince = 0; return; }
+  if (!aloneSince) { aloneSince = Date.now(); return; }
+  if (Date.now() - aloneSince > 60000) { aloneSince = 0; voice.leave(); }
+}, 5000);
 /** _layout.tsx: angenommenen Anruf ausführen, sobald Anmeldung, Daten und Navigation stehen. */
 export function takePendingAnswer() { const d = ex.pendingAnswer; if (d) { set({ pendingAnswer: null }); joinCall(d); } }
 /** Beim Abmelden: Dieses iPhone bekommt keine Anrufe mehr für das Konto. */

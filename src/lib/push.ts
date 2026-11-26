@@ -80,8 +80,9 @@ let lastBadge = -1;
 function badgeNow() {
   const s = getState();
   if (!s.me) return 0;
-  let n = 0;
-  for (const v of Object.values(s.mentions || {})) n += v || 0;
+  // wie der Server (badgeOf): ungelesene Direktnachrichten + ungelesene Einträge der Glocke (Erwähnungen, verpasste Anrufe …)
+  let n = s.notifUnread || 0;
+  for (const d of s.dms) n += Math.min(99, s.unread?.[d.id] || 0);
   return Math.min(n, 999);
 }
 export function startBadge() {

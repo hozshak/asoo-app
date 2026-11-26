@@ -4,6 +4,7 @@ export const voipToken = () => '';
 export const reportIncoming = (_id: string, _dm: string, _from: string, _name: string) => false;
 export const endCallKit = (_dm: string, _reason = 'remote') => {};
 export const callKitState = (_dm: string): { id: string; answered: boolean } | null => null;
+export const setCallKitRingtone = (_name: string) => {};
 export type CallKitHandlers = {
   token(token: string): void;
   incoming(dm: string, from: string, name: string): void;

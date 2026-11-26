@@ -61,7 +61,11 @@
         {
           "color": "#7c5cff",
           "sounds": [
-            "./assets/sounds/ring.wav"
+            "./assets/sounds/ring-marimba.wav",
+            "./assets/sounds/ring-glocken.wav",
+            "./assets/sounds/ring-harfe.wav",
+            "./assets/sounds/ring-klassik.wav",
+            "./assets/sounds/ring-puls.wav"
           ]
         }
       ],

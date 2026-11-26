@@ -138,6 +138,7 @@ function apply(m: any) {
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
+    case 'notif_count': setState(() => ({ notifUnread: m.n | 0 })); return;
     // Mitteilungs-Stufe eines Servers geändert (auch von einem anderen Gerät)
     case 'user_mutes': setState(() => ({ userMutes: m.list || [] })); return;
     case 'server_silence': setState((st) => ({ servers: st.servers.map((sv) => (sv.id === m.server ? { ...sv, silenced_until: m.silenced_until } : sv)) })); return;

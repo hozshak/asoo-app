@@ -1,7 +1,7 @@
 // Start wie die Web-App am Handy: links die Leiste (Direktnachrichten, Server im Farbverlauf, wenn ausgewählt),
 // rechts eine schwebende Glasfläche mit Direktnachrichten oder den Kanälen des Servers (Banner, Kategorien, Schloss).
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { pickImage as chooseImage } from '@/lib/pick';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -174,6 +174,27 @@ function ago(ts?: number) {
   return dt.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit' });
 }
 
+/**
+ * Gespräch lange drücken: als gelesen markieren, Chat schließen (blendet ihn aus, kommt bei neuer Nachricht wieder) oder
+ * Chat löschen (Verlauf verschwindet nur bei einem selbst). Gruppen: verlassen.
+ */
+function dmActions(d: any) {
+  const group = d.kind === 'group';
+  const read = () => { markRead(d.id); api('POST', `/api/channels/${d.id}/read`, {}).catch(() => {}); };
+  const close = () => api('POST', `/api/dms/${d.id}/leave`, {}).catch((e) => Alert.alert(errText(e)));
+  const clear = () => Alert.alert(t("Chat löschen?"), t("Alle Nachrichten in diesem Chat verschwinden bei dir. Die andere Person sieht den Verlauf weiter. Schreibt jemand neu, erscheint der Chat wieder – leer."), [
+    { text: t("Abbrechen"), style: 'cancel' },
+    { text: t("Löschen"), style: 'destructive', onPress: () => api('POST', `/api/dms/${d.id}/clear`, {}).catch((e) => Alert.alert(errText(e))) },
+  ]);
+  const leaveGroup = () => Alert.alert(t("Gruppe verlassen?"), '', [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Verlassen"), style: 'destructive', onPress: close }]);
+  const opts: [string, () => void, boolean?][] = group
+    ? [[t("Als gelesen markieren"), read], [t("Gruppe verlassen"), leaveGroup, true]]
+    : [[t("Als gelesen markieren"), read], [t("Chat schließen"), close], [t("Chat löschen"), clear, true]];
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t("Abbrechen")], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.findIndex((o) => o[2]), userInterfaceStyle: 'dark' }, (i) => { if (i < opts.length) opts[i][1](); });
+  } else Alert.alert(dmTitle(d, getState().me?.id), '', [...opts.map(([text, onPress, danger]) => ({ text, onPress, style: danger ? 'destructive' as const : 'default' as const })), { text: t("Abbrechen"), style: 'cancel' as const }]);
+}
+
 function DmPanel() {
   const dms = useStore((s) => s.dms);
   const me = useStore((s) => s.me);
@@ -242,7 +263,7 @@ function DmPanel() {
         const pv = preview(d);
         return (
           <Animated.View key={d.id} entering={FadeInRight.delay(Math.min(i, 12) * 25).duration(260)} layout={LinearTransition}>
-            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/chat/[id]', params: { id: d.id } })} style={({ pressed }) => [s.row, s.dmRow, pressed && s.rowPressed]}>
+            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/chat/[id]', params: { id: d.id } })} onLongPress={() => { Haptics.selectionAsync().catch(() => {}); dmActions(d); }} delayLongPress={320} style={({ pressed }) => [s.row, s.dmRow, pressed && s.rowPressed]}>
               {other ? <Avatar user={other} size={46} status /> : <LinearGradient colors={GRAD as any} style={[s.group, { width: 46, height: 46, borderRadius: 23 }]}><Icon name="users" size={20} color="#fff" /></LinearGradient>}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

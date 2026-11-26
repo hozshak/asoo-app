@@ -20,6 +20,7 @@ import { PrivacySection, PushSection } from '@/components/SettingsMore';
 import { signOut } from '@/lib/session';
 import { buyTip, loadTips, onTipError, onTipThanks, type Tip } from '@/lib/tips';
 import { setWebCalls, useCalls } from '@/lib/calls';
+import { RINGTONES, previewRingtone, stopRingtone, applyRingtone } from '@/lib/ringtone';
 import { C, F, HOME, R } from '@/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t, LANGS, LANG_NAMES, langChoice, deviceLang, setLang, type Lang } from '@/lib/i18n';
@@ -345,8 +346,26 @@ function LangPage() {
 
 function VoicePage() {
   const webCalls = useCalls((c) => c.webCalls);
+  const me = useStore((s) => s.me);
+  const cur = (me as any)?.ringtone || 'marimba';
+  const pick = async (k: string) => {
+    previewRingtone(k);
+    if (k === cur) return;
+    try { await api('PATCH', '/api/me', { ringtone: k }); setState((s) => ({ me: s.me ? { ...s.me, ringtone: k } as any : s.me })); applyRingtone(k); } catch {}
+  };
+  useEffect(() => () => stopRingtone(), []);
   return (
     <>
+      <T style={{ color: C.muted, fontSize: 12.5, fontWeight: '700', marginBottom: 6, paddingHorizontal: 4 }}>{t("Klingelton").toUpperCase()}</T>
+      <Card style={{ padding: 0, marginBottom: 16 }}>
+        {RINGTONES.map(([k, label], i) => (
+          <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: cur === k }} onPress={() => pick(k)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, borderTopColor: C.line }, pressed && { opacity: 0.7 }]}>
+            <Icon name={cur === k ? 'check' : 'bell'} size={18} color={cur === k ? C.accent : C.muted} />
+            <T style={{ flex: 1, fontWeight: cur === k ? '800' : '600' }}>{t(label)}</T>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Anhören")} hitSlop={8} onPress={() => previewRingtone(k)}><Icon name="play" size={18} color={C.text2} /></Pressable>
+          </Pressable>
+        ))}
+      </Card>
       <Card style={{ padding: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
           <Icon name="phone" size={20} color={C.accent} />

@@ -31,8 +31,8 @@ final class TolobbyCallCenter: NSObject, PKPushRegistryDelegate, CXProviderDeleg
     cfg.maximumCallsPerCallGroup = 1
     cfg.supportedHandleTypes = [.generic]
     cfg.includesCallsInRecents = false
-    if Bundle.main.url(forResource: "ring_marimba", withExtension: "wav") != nil {
-      cfg.ringtoneSound = "ring_marimba.wav"
+    if Bundle.main.url(forResource: "ring_puls", withExtension: "wav") != nil {
+      cfg.ringtoneSound = "ring_puls.wav"
     }
     provider = CXProvider(configuration: cfg)
     super.init()

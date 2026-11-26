@@ -15,7 +15,7 @@ const FILES: Record<string, number> = {
   klassik: require('../../assets/sounds/ring_klassik.wav'),
   puls: require('../../assets/sounds/ring_puls.wav'),
 };
-const current = () => { const r = (getState().me as any)?.ringtone; return FILES[r] ? r : 'marimba'; };
+const current = () => { const r = (getState().me as any)?.ringtone; return FILES[r] ? r : 'puls'; };
 
 let player: AudioPlayer | null = null;
 let want = false;
@@ -55,4 +55,4 @@ export function stopRingtone() {
   try { p.remove(); } catch {}
 }
 /** Gewählten Ton auch für Apples Anruf-Bildschirm setzen (beim Start und nach dem Ändern) */
-export function applyRingtone(name = current()) { setCallKitRingtone(FILES[name] ? name : 'marimba'); }
+export function applyRingtone(name = current()) { setCallKitRingtone(FILES[name] ? name : 'puls'); }

@@ -347,7 +347,7 @@ function LangPage() {
 function VoicePage() {
   const webCalls = useCalls((c) => c.webCalls);
   const me = useStore((s) => s.me);
-  const cur = (me as any)?.ringtone || 'marimba';
+  const cur = (me as any)?.ringtone || 'puls';
   const pick = async (k: string) => {
     previewRingtone(k);
     if (k === cur) return;

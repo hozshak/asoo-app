@@ -84,7 +84,7 @@ export default function Home() {
         <ScrollView style={s.rail} contentContainerStyle={{ alignItems: 'center', paddingVertical: 12, gap: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
           {/* gleiche Reihenfolge wie in der Web-App: Start, Feed, Mitspieler-Match, Mitteilungen – dann die Server */}
           <RailItem active={!sel} onPress={() => setSel(null)} label={t("Start")} badge={dmUnread}>
-            <View style={[s.dmBtn, { borderWidth: 0 }, !sel && s.dmOn]}><Logo size={48} /></View>
+            <View style={[s.dmBtn, !sel && s.dmOn, !sel && { backgroundColor: C.accent, borderColor: C.accent }]}><Icon name="home" size={23} color={!sel ? "#fff" : C.text2} /></View>
           </RailItem>
           <RailItem active={false} onPress={() => router.push('/feed')} label={t("Feed")}><View style={s.dmBtn}><Icon name="sparkle" size={22} color={C.text2} /></View></RailItem>
           <RailItem active={false} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push('/match'); }} label={t("Mitspieler-Match")} badge={railMatch}><View style={s.dmBtn}><Icon name="pad" size={23} color={C.text2} /></View></RailItem>

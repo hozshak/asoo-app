@@ -31,15 +31,15 @@ final class TolobbyCallCenter: NSObject, PKPushRegistryDelegate, CXProviderDeleg
     cfg.maximumCallsPerCallGroup = 1
     cfg.supportedHandleTypes = [.generic]
     cfg.includesCallsInRecents = false
-    if Bundle.main.url(forResource: "ring-marimba", withExtension: "wav") != nil {
-      cfg.ringtoneSound = "ring-marimba.wav"
+    if Bundle.main.url(forResource: "ring_marimba", withExtension: "wav") != nil {
+      cfg.ringtoneSound = "ring_marimba.wav"
     }
     provider = CXProvider(configuration: cfg)
     super.init()
     provider.setDelegate(self, queue: nil)
   }
 
-  /// Klingelton von Apples Anruf-Bildschirm umstellen (Datei im App-Paket, z. B. ring-glocken.wav)
+  /// Klingelton von Apples Anruf-Bildschirm umstellen (Datei im App-Paket, z. B. ring_glocken.wav)
   func setRingtone(_ file: String) {
     let parts = file.split(separator: ".")
     guard parts.count == 2, Bundle.main.url(forResource: String(parts[0]), withExtension: String(parts[1])) != nil else { return }

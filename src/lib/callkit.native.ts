@@ -44,8 +44,8 @@ export function endCallKit(dm: string, reason = 'remote') {
   try { N.endCallsFor(dm, reason); } catch {}
 }
 export const callKitState = (dm: string) => byDm.get(dm) || null;
-/** Klingelton von Apples Anruf-Bildschirm (Datei im App-Paket: ring-<name>.wav) */
-export function setCallKitRingtone(name: string) { try { N?.setRingtone?.('ring-' + name + '.wav'); } catch {} }
+/** Klingelton von Apples Anruf-Bildschirm (Datei im App-Paket: ring_<name>.wav) */
+export function setCallKitRingtone(name: string) { try { N?.setRingtone?.('ring_' + name + '.wav'); } catch {} }
 
 export type CallKitHandlers = {
   token(token: string): void;

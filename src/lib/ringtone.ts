@@ -1,4 +1,4 @@
-// Klingeltöne (eigene Töne aus zuno-app/tools/make-ringtone.mjs, assets/sounds/ring-<name>.wav, je ca. 28 s).
+// Klingeltöne (eigene Töne aus zuno-app/tools/make-ringtone.mjs, assets/sounds/ring_<name>.wav, je ca. 28 s).
 // Welcher klingelt, steht beim Konto (Einstellungen → Sprache & Anrufe, gilt auch für Web/Windows). Apples
 // Anruf-Bildschirm bekommt ihn über applyRingtone; die Mitteilung bei geschlossener App nennt der Server (sound).
 // Der Stumm-Schalter des iPhones gilt: ist er an, nur Vibration (wie bei WhatsApp).
@@ -9,11 +9,11 @@ import { getState } from './store';
 
 export const RINGTONES: [string, string][] = [['marimba', 'Marimba'], ['glocken', 'Glocken'], ['harfe', 'Harfe'], ['klassik', 'Klassisch'], ['puls', 'Puls']];
 const FILES: Record<string, number> = {
-  marimba: require('../../assets/sounds/ring-marimba.wav'),
-  glocken: require('../../assets/sounds/ring-glocken.wav'),
-  harfe: require('../../assets/sounds/ring-harfe.wav'),
-  klassik: require('../../assets/sounds/ring-klassik.wav'),
-  puls: require('../../assets/sounds/ring-puls.wav'),
+  marimba: require('../../assets/sounds/ring_marimba.wav'),
+  glocken: require('../../assets/sounds/ring_glocken.wav'),
+  harfe: require('../../assets/sounds/ring_harfe.wav'),
+  klassik: require('../../assets/sounds/ring_klassik.wav'),
+  puls: require('../../assets/sounds/ring_puls.wav'),
 };
 const current = () => { const r = (getState().me as any)?.ringtone; return FILES[r] ? r : 'marimba'; };
 

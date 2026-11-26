@@ -61,11 +61,11 @@
         {
           "color": "#7c5cff",
           "sounds": [
-            "./assets/sounds/ring-marimba.wav",
-            "./assets/sounds/ring-glocken.wav",
-            "./assets/sounds/ring-harfe.wav",
-            "./assets/sounds/ring-klassik.wav",
-            "./assets/sounds/ring-puls.wav"
+            "./assets/sounds/ring_marimba.wav",
+            "./assets/sounds/ring_glocken.wav",
+            "./assets/sounds/ring_harfe.wav",
+            "./assets/sounds/ring_klassik.wav",
+            "./assets/sounds/ring_puls.wav"
           ]
         }
       ],
@@ -110,7 +110,6 @@
         "monochromeImage": "./assets/images/android-monochrome.png",
         "backgroundColor": "#171f40"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",

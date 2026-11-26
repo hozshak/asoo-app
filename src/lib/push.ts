@@ -9,6 +9,8 @@ import { getState, subscribeStore } from './store';
 import { t } from './i18n';
 
 let current: string | null = null;
+/** Mitteilungs-Schlüssel dieses Geräts (für die Anmeldung des Anruf-Schlüssels) */
+export const expoToken = () => current;
 
 // In der App vorne: keine Banner (man sieht die Nachricht ja), aber Zähler am Symbol aktuell halten
 Notifications.setNotificationHandler({

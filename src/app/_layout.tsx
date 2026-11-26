@@ -10,11 +10,12 @@ import { useFonts, Cairo_400Regular, Cairo_500Medium, Cairo_600SemiBold, Cairo_7
 import { loadToken, saveToken } from '@/lib/api';
 import { bootstrap, useStore } from '@/lib/store';
 import { connect } from '@/lib/live';
-import { registerPush, onPushTap, chatFromUrl, startBadge } from '@/lib/push';
+import { registerPush, onPushTap, chatFromUrl, startBadge, expoToken } from '@/lib/push';
+import { openTarget } from '@/lib/target';
 import { C, F } from '@/lib/theme';
 import { LANG, onLangChange } from '@/lib/i18n';
 import { prewarmWeb } from '@/lib/webhost';
-import { loadCallMode, ringFromPush } from '@/lib/calls';
+import { loadCallMode, ringFromPush, initCallKit, registerVoip, takePendingAnswer, useCalls } from '@/lib/calls';
 import { WebHost } from '@/components/WebHost';
 import { GlobalScreenPicker } from '@/components/ScreenPicker';
 import { CropHost } from '@/components/CropHost';
@@ -59,7 +60,11 @@ export default function Root() {
     else if (me && onAuth) router.replace('/');
   }, [booted, me, segs]);
   // Push: nach dem Anmelden das Gerät melden; Tippen auf eine Mitteilung öffnet den Chat
-  useEffect(() => { if (me) registerPush(); }, [me?.id]);
+  useEffect(() => {
+    if (!me) return;
+    initCallKit(expoToken); // iPhone: Anrufe mit Apples Anruf-Bildschirm
+    registerPush().then((tok) => registerVoip(tok)).catch(() => {});
+  }, [me?.id]);
   // Zahl am App-Symbol aktuell halten (ungelesene Direktnachrichten + Erwähnungen)
   useEffect(() => startBadge(), []);
   // Web-Fenster nach dem Anmelden im Hintergrund vorladen: erste 3D-/Web-Seite ist dann sofort da, Anrufe kommen an
@@ -81,13 +86,14 @@ export default function Root() {
         if (ch && pushUrl.kind === 'call') {
           if (pushUrl.action === 'answer') ringFromPush(ch, true);
           else { router.push({ pathname: '/chat/[id]', params: { id: ch } }); ringFromPush(ch); }
-        } else if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
-        else if (/^\/match\b/.test(url || '')) router.push(/tab=/.test(url || '') ? '/match-likes' : '/match'); // „Jemand mag dein Mitspieler-Profil“
-        else if (/^\/(notifications|activity)\b/.test(url || '')) router.push('/notifications');
+        } else openTarget(router, url); // genau an die Stelle: Nachricht, Beitrag, Profil …
       } catch { /* Ziel nicht erreichbar – die App bleibt auf der Startseite */ }
     }, 250);
     return () => clearTimeout(t);
   }, [pushUrl, booted, fonts, me?.id, navReady]);
+  // Auf Apples Anruf-Bildschirm angenommen: beitreten, sobald alles bereit ist (auch nach kaltem Start)
+  const pendingAnswer = useCalls((c) => c.pendingAnswer);
+  useEffect(() => { if (pendingAnswer && booted && fonts && me && navReady) takePendingAnswer(); }, [pendingAnswer, booted, fonts, me?.id, navReady]);
   if (!booted || !fonts) return <View style={{ flex: 1, backgroundColor: C.bg0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.accent} /></View>;
   return (
     <GestureHandlerRootView key={lang} style={{ flex: 1, backgroundColor: C.bg0 }}>

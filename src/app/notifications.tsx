@@ -10,6 +10,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { timeLabel } from '@/lib/text';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
+import { openTarget } from '@/lib/target';
 
 const KIND: Record<string, [string, IconName, string]> = {
   mention: [t("hat dich erwähnt"), 'at', C.warn], reply: [t("hat dir geantwortet"), 'reply', C.accent], friend_request: [t("möchte mit dir befreundet sein"), 'userPlus', C.accent2],
@@ -35,14 +36,7 @@ export default function Notifications() {
     } catch {} finally { setLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  const open = (n: Notif) => {
-    const ch = /\/channels\/([^/?]+)\/([^/?]+)/.exec(n.url || '')?.[2];
-    if (ch) router.push({ pathname: '/chat/[id]', params: { id: ch } });
-    else if (/^\/post\/[\w-]+/.test(n.url || '')) router.push({ pathname: '/post/[id]', params: { id: n.url!.split('/')[2].split('?')[0] } });
-    else if (/^\/feed/.test(n.url || '')) router.push('/feed');
-    else if (/^\/match\b/.test(n.url || '')) router.push(/tab=/.test(n.url || '') ? '/match-likes' : '/match');
-    else if (n.actor) router.push({ pathname: '/user/[id]', params: { id: n.actor.id } });
-  };
+  const open = (n: Notif) => { openTarget(router, n.url, n.actor?.id); };
   return (
     <View style={{ flex: 1 }}>
       <Glow />

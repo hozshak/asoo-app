@@ -18,7 +18,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "remote-notification",
-          "audio"
+          "audio",
+          "voip"
         ],
         "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst.",
         "NSCameraUsageDescription": "Damit du Fotos für dein Profil aufnehmen und in Anrufen deine Kamera teilen kannst.",

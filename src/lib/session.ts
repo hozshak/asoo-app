@@ -5,9 +5,11 @@ import { disconnect } from '@/lib/live';
 import { unregisterPush } from '@/lib/push';
 import { leaveCall, resetWeb } from '@/lib/webhost';
 import { voice } from '@/lib/voice';
+import { unregisterVoip } from '@/lib/calls';
 
 export async function signOut(tellServer = true) {
   await unregisterPush().catch(() => {});
+  await unregisterVoip().catch(() => {});
   if (tellServer) { try { await api('POST', '/api/auth/logout', {}); } catch {} }
   leaveCall();
   voice.leave(true);

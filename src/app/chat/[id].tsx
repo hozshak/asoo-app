@@ -36,7 +36,7 @@ const QUICK = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 const REASONS: [string, string][] = [['spam', t("Spam")], ['harassment', t("Belästigung oder Mobbing")], ['hate', t("Hass oder Hetze")], ['violence', t("Gewalt oder Drohung")], ['sexual', t("Sexuelle Inhalte")], ['minor_safety', t("Gefahr für Minderjährige")], ['self_harm', t("Selbstverletzung")], ['illegal', t("Illegale Inhalte")], ['impersonation', t("Gibt sich als jemand anderes aus")], ['other', t("Etwas anderes")]];
 
 export default function Chat() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, m: jumpTo } = useLocalSearchParams<{ id: string; m?: string }>();
   const router = useRouter();
   const ins = useSafeAreaInsets();
   const me = useStore((s) => s.me);
@@ -85,6 +85,25 @@ export default function Chat() {
   useEffect(() => { if (count) markRead(id); }, [count]);
 
   const data = useMemo(() => [...(box?.list || [])].reverse(), [box]);
+  // Aus einer Mitteilung geöffnet (?m=…): zur Nachricht springen und sie kurz hervorheben. Ältere Nachricht → bis zu
+  // dreimal weiter zurück laden.
+  const listRef = useRef<FlatList<Msg>>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const jumped = useRef<string | null>(null), jumpLoads = useRef(0);
+  useEffect(() => {
+    if (!jumpTo || jumped.current === jumpTo || !box?.loaded) return;
+    const i = data.findIndex((x) => x.id === jumpTo);
+    if (i < 0) {
+      if (box.hasMore && jumpLoads.current < 3) { jumpLoads.current++; loadMessages(id, true).catch(() => {}); }
+      else jumped.current = jumpTo;
+      return;
+    }
+    jumped.current = jumpTo;
+    setFlash(jumpTo);
+    const t1 = setTimeout(() => { try { listRef.current?.scrollToIndex({ index: i, viewPosition: 0.5, animated: true }); } catch {} }, 250);
+    const t2 = setTimeout(() => setFlash(null), 2600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [jumpTo, box, data, id]);
   const isMod = sid ? can(sid, 'mod') : false;
   // „Wer darf schreiben?“ (post_role) – wer darunter liegt, sieht statt des Eingabefelds einen Hinweis
   const need = info?.channel.post_role || 'member';
@@ -231,8 +250,10 @@ export default function Chat() {
         ) : null}
         {!box?.loaded ? <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} /> :
           <FlatList
+            ref={listRef}
             inverted
             data={data}
+            onScrollToIndexFailed={(e) => { setTimeout(() => { try { listRef.current?.scrollToIndex({ index: e.index, viewPosition: 0.5, animated: true }); } catch {} }, 300); }}
             keyExtractor={(m) => m.id}
             onEndReached={() => loadMessages(id, true).catch(() => {})}
             onEndReachedThreshold={0.4}
@@ -243,7 +264,7 @@ export default function Chat() {
               const day = !prev || new Date(prev.created).toDateString() !== new Date(item.created).toDateString();
               return <View>
                 {day ? <View style={s.day}><View style={s.dayLine} /><T style={s.dayText}>{new Date(item.created).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T><View style={s.dayLine} /></View> : null}
-                <MessageRow onPoll={setPoll} m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
+                <MessageRow flash={flash === item.id} onPoll={setPoll} m={item} head={head || day} sid={sid} meName={me?.username} onLong={() => { Haptics.selectionAsync().catch(() => {}); setMenu(item); }} onReact={(e) => react(item, e)} onImage={setBig} onUser={(uid) => router.push({ pathname: '/user/[id]', params: { id: uid } })} onLink={(url) => openLink(router, url)} />
               </View>;
             }}
             ListFooterComponent={box.hasMore ? <ActivityIndicator color={C.faint} style={{ margin: 12 }} /> : (
@@ -302,7 +323,7 @@ export default function Chat() {
 }
 
 
-function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink, onPoll }: { onPoll: (id: string, p: Poll) => void; m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
+function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, onLink, onPoll, flash }: { flash?: boolean; onPoll: (id: string, p: Poll) => void; m: Msg; head: boolean; sid: string | null; meName?: string; onLong: () => void; onReact: (e: string) => void; onImage: (k: string) => void; onUser: (uid: string) => void; onLink: (url: string) => void }) {
   const u = userOf(m.author_id);
   if (m.kind === 'automod') {
     // Meldung des AutoMod im Team-Kanal: wer, warum, wo, und der blockierte Text
@@ -330,7 +351,7 @@ function MessageRow({ m, head, sid, meName, onLong, onReact, onImage, onUser, on
   const mentioned = mentionsMe(m.content, sid) || (m.reply && m.reply.author_id === me?.id && m.author_id !== me?.id);
   const color = roleColor(sid, m.author_id);
   return (
-    <Pressable onLongPress={m.deleted ? undefined : onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+    <Pressable onLongPress={m.deleted ? undefined : onLong} delayLongPress={280} style={({ pressed }) => [s.msg, head && { marginTop: 12 }, mentioned && s.mentioned, flash && s.flash, pressed && { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
       {m.reply ? <View style={s.replyRow}><View style={s.replyHook} /><Avatar user={userOf(m.reply.author_id)} size={16} frame={false} /><T style={s.replyLine} numberOfLines={1}><T style={{ color: C.text2, fontWeight: '700' }}>{userOf(m.reply.author_id).display}</T> {plainText(m.reply.content || '', sid) || t("Bild")}</T></View> : null}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ width: 42 }}>{head ? <Pressable onPress={() => onUser(m.author_id)}><Avatar user={u} size={42} /></Pressable> : null}</View>
@@ -369,6 +390,7 @@ const s = StyleSheet.create({
   callOn: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 10, marginTop: 8, height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: C.ok },
   callDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#062b1b' },
   msg: { paddingHorizontal: 14, paddingVertical: 2 },
+  flash: { backgroundColor: 'rgba(124,92,255,0.22)', borderLeftWidth: 3, borderLeftColor: C.accent, paddingLeft: 11 },
   mentioned: { backgroundColor: C.mention, borderLeftWidth: 3, borderLeftColor: C.mentionLine, paddingLeft: 11 },
   name: { fontWeight: '700', fontSize: 15.5, flexShrink: 1 },
   time: { color: C.faint, fontSize: 12 },

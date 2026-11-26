@@ -101,6 +101,8 @@ export default function Home() {
           {/* wie in der Web-App: Server hinzufügen (erstellen/beitreten) und Server entdecken, beide grün */}
           <RailItem active={false} onPress={() => router.push('/server-new')} label={t("Server hinzufügen")}><View style={[s.dmBtn, s.green]}><Icon name="plus" size={24} color={C.ok} /></View></RailItem>
           <RailItem active={false} onPress={() => router.push({ pathname: '/server-new', params: { tab: 'discover' } })} label={t("Server entdecken")}><View style={[s.dmBtn, s.green]}><Icon name="compass" size={24} color={C.ok} /></View></RailItem>
+          {/* Herz: ToLobby unterstützen (Trinkgeld über Apple) – schnell zu finden */}
+          {Platform.OS === 'ios' ? <RailItem active={false} onPress={() => { Haptics.selectionAsync().catch(() => {}); router.push({ pathname: '/settings', params: { page: 'support' } }); }} label={t("ToLobby unterstützen")}><View style={[s.dmBtn, s.heart]}><Icon name="heart" size={23} color="#ff5c9a" /></View></RailItem> : null}
         </ScrollView>
         <View style={s.panel}>
           {server ? <ServerPanel key={server.id} server={server} onMenu={() => serverMenu(server)} /> : <DmPanel />}
@@ -361,6 +363,7 @@ const s = StyleSheet.create({
   chipPlain: { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: C.line },
   chipText: { fontSize: 13, fontWeight: '800' },
   green: { backgroundColor: HOME.raised, borderColor: HOME.edge },
+  heart: { backgroundColor: 'rgba(255,92,154,0.1)', borderColor: 'rgba(255,92,154,0.35)' },
   headSub: { color: C.muted, fontSize: 12, marginTop: 1 },
   banner: { height: 120, overflow: 'hidden', marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 8, borderRadius: 14 },

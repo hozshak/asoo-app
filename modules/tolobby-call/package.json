@@ -1,0 +1,7 @@
+{
+  "name": "tolobby-call",
+  "version": "1.0.0",
+  "description": "ToLobby: eingehende Anrufe wie am Telefon (CallKit + PushKit)",
+  "main": "index.ts",
+  "private": true
+}

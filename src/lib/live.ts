@@ -78,8 +78,11 @@ function reportAct(force = false) {
   send({ t: 'act', on });
 }
 // App kommt zurück in den Vordergrund: Verbindung prüfen
+let bgSince = 0;
 AppState.addEventListener('change', (st) => {
   reportAct();
+  if (st !== 'active') { if (!bgSince) bgSince = Date.now(); }
+  else { if (bgSince && Date.now() - bgSince > 2000 && want) bootstrap().catch(() => {}); bgSince = 0; }
   if (st === 'active' && want) { if (!ws || ws.readyState > 1) { backoff = 500; connect(); } }
 });
 
@@ -137,6 +140,7 @@ function apply(m: any) {
     }
     case 'dm': putUsers(m.dm.members); setState((st) => ({ dms: [m.dm, ...st.dms.filter((d) => d.id !== m.dm.id)].sort((a, b) => b.last_at - a.last_at) })); return;
     case 'dm_remove': setState((st) => ({ dms: st.dms.filter((d) => d.id !== m.id) })); return;
+    case 'dm_mute': setState((st) => ({ dms: st.dms.map((d) => (d.id === m.id ? { ...d, muted: !!m.on } as any : d)) })); return;
     case 'notif': setState((st) => ({ notifUnread: st.notifUnread + 1 })); return;
     case 'notif_count': setState(() => ({ notifUnread: m.n | 0 })); return;
     // Mitteilungs-Stufe eines Servers geändert (auch von einem anderen Gerät)

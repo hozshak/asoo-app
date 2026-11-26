@@ -82,7 +82,7 @@ function badgeNow() {
   if (!s.me) return 0;
   // wie der Server (badgeOf): ungelesene Direktnachrichten + ungelesene Einträge der Glocke (Erwähnungen, verpasste Anrufe …)
   let n = s.notifUnread || 0;
-  for (const d of s.dms) n += Math.min(99, s.unread?.[d.id] || 0);
+  for (const d of s.dms) if (!(d as any).muted) n += Math.min(99, s.unread?.[d.id] || 0);
   return Math.min(n, 999);
 }
 export function startBadge() {

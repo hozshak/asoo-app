@@ -187,9 +187,12 @@ function dmActions(d: any) {
     { text: t("Löschen"), style: 'destructive', onPress: () => api('POST', `/api/dms/${d.id}/clear`, {}).catch((e) => Alert.alert(errText(e))) },
   ]);
   const leaveGroup = () => Alert.alert(t("Gruppe verlassen?"), '', [{ text: t("Abbrechen"), style: 'cancel' }, { text: t("Verlassen"), style: 'destructive', onPress: close }]);
+  const muted = !!d.muted;
+  const mute = () => api('PUT', `/api/dms/${d.id}/mute`, { on: !muted }).then(() => setState((st) => ({ dms: st.dms.map((x) => (x.id === d.id ? { ...x, muted: !muted } as any : x)) }))).catch((e) => Alert.alert(errText(e)));
+  const muteLabel = muted ? t("Stummschaltung aufheben") : t("Chat stummschalten");
   const opts: [string, () => void, boolean?][] = group
-    ? [[t("Als gelesen markieren"), read], [t("Gruppe verlassen"), leaveGroup, true]]
-    : [[t("Als gelesen markieren"), read], [t("Chat schließen"), close], [t("Chat löschen"), clear, true]];
+    ? [[t("Als gelesen markieren"), read], [muteLabel, mute], [t("Gruppe verlassen"), leaveGroup, true]]
+    : [[t("Als gelesen markieren"), read], [muteLabel, mute], [t("Chat schließen"), close], [t("Chat löschen"), clear, true]];
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t("Abbrechen")], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.findIndex((o) => o[2]), userInterfaceStyle: 'dark' }, (i) => { if (i < opts.length) opts[i][1](); });
   } else Alert.alert(dmTitle(d, getState().me?.id), '', [...opts.map(([text, onPress, danger]) => ({ text, onPress, style: danger ? 'destructive' as const : 'default' as const })), { text: t("Abbrechen"), style: 'cancel' as const }]);
@@ -272,7 +275,8 @@ function DmPanel() {
                 </View>
                 {pv ? <T style={[s.rowSub, n ? { color: C.text2, fontWeight: '700' } : null]} numberOfLines={1}>{pv}</T> : other?.custom_status ? <T style={s.rowSub} numberOfLines={1}>{other.custom_status}</T> : null}
               </View>
-              {n ? <Badge n={n} /> : null}
+              {(d as any).muted ? <Icon name="bellOff" size={16} color={C.faint} /> : null}
+              {n ? <Badge n={n} style={(d as any).muted ? { backgroundColor: C.bg5 } : undefined} /> : null}
             </Pressable>
           </Animated.View>
         );

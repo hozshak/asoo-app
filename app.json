@@ -78,7 +78,15 @@
         }
       ],
       "expo-sharing",
-      "expo-iap"
+      "expo-iap",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "# WebRTC (Anrufe): Klassen werden über JNI angesprochen – nicht entfernen\n-keep class org.webrtc.** { *; }\n-dontwarn org.webrtc.**\n"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

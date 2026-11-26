@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "Zodat anderen je horen in spraakkamers, 3D-kamers en gesprekken, en je spraakberichten kunt opnemen.",
-  "NSCameraUsageDescription": "Zodat je foto’s voor je profiel kunt maken en je camera in gesprekken kunt delen.",
-  "NSPhotoLibraryUsageDescription": "Zodat je afbeeldingen in chats kunt sturen en een profielfoto kunt kiezen."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "Zodat anderen je horen in spraakkamers, 3D-kamers en gesprekken, en je spraakberichten kunt opnemen.",
+    "NSCameraUsageDescription": "Zodat je foto’s voor je profiel kunt maken en je camera in gesprekken kunt delen.",
+    "NSPhotoLibraryUsageDescription": "Zodat je afbeeldingen in chats kunt sturen en een profielfoto kunt kiezen."
+  }
 }

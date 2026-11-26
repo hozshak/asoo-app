@@ -86,7 +86,8 @@
             "extraProguardRules": "# WebRTC (Anrufe): Klassen werden über JNI angesprochen – nicht entfernen\n-keep class org.webrtc.** { *; }\n-dontwarn org.webrtc.**\n"
           }
         }
-      ]
+      ],
+      "./plugins/withAndroidAppName"
     ],
     "experiments": {
       "typedRoutes": false

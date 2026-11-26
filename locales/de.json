@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst.",
-  "NSCameraUsageDescription": "Damit du Fotos für dein Profil aufnehmen und in Anrufen deine Kamera teilen kannst.",
-  "NSPhotoLibraryUsageDescription": "Damit du Bilder in Chats schicken und ein Profilbild wählen kannst."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "Damit dich andere in Sprach- und 3D-Räumen und bei Anrufen hören und du Sprachnachrichten aufnehmen kannst.",
+    "NSCameraUsageDescription": "Damit du Fotos für dein Profil aufnehmen und in Anrufen deine Kamera teilen kannst.",
+    "NSPhotoLibraryUsageDescription": "Damit du Bilder in Chats schicken und ein Profilbild wählen kannst."
+  }
 }

@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "Da ku yên din te di odeyên dengî, odeyên 3D û banan de bibihîzin û tu peyamên dengî tomar bikî.",
-  "NSCameraUsageDescription": "Da ku tu ji bo profîla xwe wêneyan bikişînî û di banan de kameraya xwe parve bikî.",
-  "NSPhotoLibraryUsageDescription": "Da ku tu di sohbetan de wêneyan bişînî û wêneyekî profîlê hilbijêrî."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "Da ku yên din te di odeyên dengî, odeyên 3D û banan de bibihîzin û tu peyamên dengî tomar bikî.",
+    "NSCameraUsageDescription": "Da ku tu ji bo profîla xwe wêneyan bikişînî û di banan de kameraya xwe parve bikî.",
+    "NSPhotoLibraryUsageDescription": "Da ku tu di sohbetan de wêneyan bişînî û wêneyekî profîlê hilbijêrî."
+  }
 }

@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "So others can hear you in voice rooms, 3D rooms and calls, and so you can record voice messages.",
-  "NSCameraUsageDescription": "So you can take photos for your profile and share your camera in calls.",
-  "NSPhotoLibraryUsageDescription": "So you can send pictures in chats and choose a profile picture."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "So others can hear you in voice rooms, 3D rooms and calls, and so you can record voice messages.",
+    "NSCameraUsageDescription": "So you can take photos for your profile and share your camera in calls.",
+    "NSPhotoLibraryUsageDescription": "So you can send pictures in chats and choose a profile picture."
+  }
 }

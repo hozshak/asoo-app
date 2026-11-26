@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "ليسمعك الآخرون في الغرف الصوتية وغرف ثلاثية الأبعاد والمكالمات، ولتسجّل رسائل صوتية.",
-  "NSCameraUsageDescription": "لتلتقط صورًا لملفك الشخصي وتشارك كاميرتك في المكالمات.",
-  "NSPhotoLibraryUsageDescription": "لترسل صورًا في المحادثات وتختار صورة الملف الشخصي."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "ليسمعك الآخرون في الغرف الصوتية وغرف ثلاثية الأبعاد والمكالمات، ولتسجّل رسائل صوتية.",
+    "NSCameraUsageDescription": "لتلتقط صورًا لملفك الشخصي وتشارك كاميرتك في المكالمات.",
+    "NSPhotoLibraryUsageDescription": "لترسل صورًا في المحادثات وتختار صورة الملف الشخصي."
+  }
 }

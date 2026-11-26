@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "Diğerleri seni sesli odalarda, 3D odalarda ve aramalarda duyabilsin ve sesli mesaj kaydedebilesin diye.",
-  "NSCameraUsageDescription": "Profilin için fotoğraf çekebilmen ve aramalarda kameranı paylaşabilmen için.",
-  "NSPhotoLibraryUsageDescription": "Sohbetlerde resim gönderebilmen ve profil resmi seçebilmen için."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "Diğerleri seni sesli odalarda, 3D odalarda ve aramalarda duyabilsin ve sesli mesaj kaydedebilesin diye.",
+    "NSCameraUsageDescription": "Profilin için fotoğraf çekebilmen ve aramalarda kameranı paylaşabilmen için.",
+    "NSPhotoLibraryUsageDescription": "Sohbetlerde resim gönderebilmen ve profil resmi seçebilmen için."
+  }
 }

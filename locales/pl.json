@@ -1,6 +1,8 @@
 {
-  "CFBundleDisplayName": "ToLobby",
-  "NSMicrophoneUsageDescription": "Aby inni słyszeli cię w pokojach głosowych, pokojach 3D i rozmowach oraz abyś mógł nagrywać wiadomości głosowe.",
-  "NSCameraUsageDescription": "Abyś mógł robić zdjęcia do profilu i udostępniać kamerę w rozmowach.",
-  "NSPhotoLibraryUsageDescription": "Abyś mógł wysyłać obrazy na czatach i wybrać zdjęcie profilowe."
+  "ios": {
+    "CFBundleDisplayName": "ToLobby",
+    "NSMicrophoneUsageDescription": "Aby inni słyszeli cię w pokojach głosowych, pokojach 3D i rozmowach oraz abyś mógł nagrywać wiadomości głosowe.",
+    "NSCameraUsageDescription": "Abyś mógł robić zdjęcia do profilu i udostępniać kamerę w rozmowach.",
+    "NSPhotoLibraryUsageDescription": "Abyś mógł wysyłać obrazy na czatach i wybrać zdjęcie profilowe."
+  }
 }

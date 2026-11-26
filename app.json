@@ -101,6 +101,34 @@
       "pt": "./locales/pt.json",
       "ru": "./locales/ru.json",
       "tr": "./locales/tr.json"
+    },
+    "android": {
+      "package": "de.feierabendcode.asoo",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-foreground.png",
+        "backgroundImage": "./assets/images/android-background.png",
+        "monochromeImage": "./assets/images/android-monochrome.png",
+        "backgroundColor": "#171f40"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     }
   }
 }

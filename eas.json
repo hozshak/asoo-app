@@ -9,6 +9,15 @@
       "autoIncrement": true,
       "ios": {
         "image": "latest"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
       }
     }
   },

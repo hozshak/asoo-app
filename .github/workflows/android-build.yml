@@ -1,0 +1,69 @@
+# Baut die Android-App auf einem Linux-Rechner von GitHub (eas build --local) statt auf den Servern von Expo.
+# Start per Hand: Actions → „Android-Build“ → „Run workflow“.
+#   production → .aab (App Bundle) für den Google Play Store
+#   apk        → .apk zum direkten Installieren auf einem Android-Handy (Testen)
+#
+# Braucht das Repository-Secret EXPO_TOKEN (wie der iOS-Build). Der Signierschlüssel (Keystore) liegt im Expo-Konto
+# en0o0n: Beim allerersten Bau erzeugt EAS ihn selbst und bewahrt ihn dort auf – danach wird immer derselbe benutzt
+# (wichtig: Google erkennt Updates nur am selben Upload-Schlüssel). Die Versionsnummer (versionCode) zählt Expo hoch.
+#
+# Die fertige Datei hängt 14 Tage am Lauf (Artifacts).
+name: Android-Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'production = .aab für den Play Store, apk = .apk zum Testen'
+        type: choice
+        options: [production, apk]
+        default: production
+
+concurrency:
+  group: android-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g" -Dorg.gradle.daemon=false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Mehr Platz auf der Festplatte (Android-Bau braucht viel)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules/@angular || true
+          df -h /
+
+      - name: Pakete installieren
+        run: npm ci
+
+      - name: EAS CLI
+        run: npm install -g eas-cli@27.11.0
+
+      - name: Bauen
+        env:
+          EAS_LOCAL_BUILD_WORKINGDIR: ${{ runner.temp }}/eas-build
+        run: |
+          EXT=aab; [ "${{ inputs.profile }}" = "apk" ] && EXT=apk
+          eas build --platform android --profile ${{ inputs.profile }} --local --non-interactive --output "$RUNNER_TEMP/tolobby.$EXT"
+          ls -la "$RUNNER_TEMP"/tolobby.*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tolobby-android-${{ inputs.profile }}
+          path: ${{ runner.temp }}/tolobby.*
+          retention-days: 14

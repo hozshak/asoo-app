@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Cairo_400Regular, Cairo_500Medium, Cairo_600SemiBold, Cairo_700Bold, Cairo_800ExtraBold } from '@expo-google-fonts/cairo';
-import { loadToken, saveToken } from '@/lib/api';
+import { loadToken, tokenLocked, saveToken } from '@/lib/api';
 import { bootstrap, useStore } from '@/lib/store';
 import { connect } from '@/lib/live';
 import { registerPush, onPushTap, chatFromUrl, startBadge, expoToken } from '@/lib/push';
@@ -40,7 +40,8 @@ export default function Root() {
   useEffect(() => {
     (async () => {
       loadCallMode();
-      const tok = await loadToken();
+      let tok = await loadToken();
+      while (!tok && tokenLocked()) { await new Promise((r) => setTimeout(r, 2000)); tok = await loadToken(); }
       if (tok) {
         try { const u = await bootstrap(); if (u) connect(); else await saveToken(null); }
         catch { /* offline: mit dem gespeicherten Schlüssel später erneut */ }

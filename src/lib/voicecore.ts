@@ -187,7 +187,7 @@ export function createVoice(deps: Deps) {
     if (!st.room) return;
     const now = Date.now();
     // Live-Verbindung war weg und ist mit neuer Kennung zurück: neu beitreten (die anderen kennen nur die alte Kennung)
-    if (live.myCid && joinedCid && live.myCid !== joinedCid) {
+    if (live.myCid && live.myCid !== joinedCid) {
       for (const p of peers.values()) closePeer(p);
       peers.clear(); roster = new Map(); memberSet = null;
       sendJoin(); emit({ joined: false });
@@ -344,6 +344,7 @@ export function createVoice(deps: Deps) {
       if (st.joining) return;
       if (st.room) api_.leave(true);
       emit({ joining: true, error: null, meta, room, since: Date.now(), joined: false, members: [], speaking: {}, met: false });
+      live.ensureFresh();
       await loadIce();
       try { mic = await deps.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }); st = { ...st, noMic: false }; }
       catch { mic = null; st = { ...st, noMic: true }; }

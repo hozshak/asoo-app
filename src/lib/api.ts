@@ -13,26 +13,38 @@ export const WS_BASE = BASE ? BASE.replace(/^http/, 'ws') : (typeof location !==
 
 const KEY = 'asoo.token';
 let token: string | null = null;
+// Auch bei gesperrtem iPhone lesbar (nach dem ersten Entsperren seit dem Einschalten): Ein Anruf weckt die App oft im
+// Sperrbildschirm – ohne Anmeldung könnte sie dem Anruf nicht beitreten. Ältere Fassungen speicherten „nur entsperrt“.
+const KC = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+let locked = false;
+/** Konnte die Anmeldung gerade nicht gelesen werden, weil das iPhone gesperrt ist (alte Speicherart)? */
+export const tokenLocked = () => locked;
 // „Dieses Gerät ist vertraut“ (vom Server nach einer bestätigten Anmeldung) – erspart den E-Mail-Code beim nächsten Login
 const DEV_KEY = 'asoo.device';
 let device: string | null = null;
 export async function saveDevice(d: string | null) {
   device = d;
-  try { if (Platform.OS === 'web') { if (d) localStorage.setItem(DEV_KEY, d); } else if (d) await SecureStore.setItemAsync(DEV_KEY, d); } catch {}
+  try { if (Platform.OS === 'web') { if (d) localStorage.setItem(DEV_KEY, d); } else if (d) await SecureStore.setItemAsync(DEV_KEY, d, KC); } catch {}
 }
 
 export async function loadToken() {
+  locked = false;
   try {
     token = Platform.OS === 'web' ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY);
-  } catch { token = null; }
+  } catch { token = null; locked = Platform.OS !== 'web'; }
   try { device = Platform.OS === 'web' ? localStorage.getItem(DEV_KEY) : await SecureStore.getItemAsync(DEV_KEY); } catch { device = null; }
+  // einmalig auf die neue Speicherart umstellen (geht nur, solange lesbar – also jetzt)
+  if (Platform.OS !== 'web' && token && !locked) {
+    try { if ((await SecureStore.getItemAsync(KC_DONE)) !== '2') { await SecureStore.setItemAsync(KEY, token, KC); if (device) await SecureStore.setItemAsync(DEV_KEY, device, KC); await SecureStore.setItemAsync(KC_DONE, '2', KC); } } catch {}
+  }
   return token;
 }
+const KC_DONE = 'asoo.kc';
 export async function saveToken(t: string | null) {
   token = t;
   try {
     if (Platform.OS === 'web') { if (t) localStorage.setItem(KEY, t); else localStorage.removeItem(KEY); }
-    else if (t) await SecureStore.setItemAsync(KEY, t);
+    else if (t) await SecureStore.setItemAsync(KEY, t, KC);
     else await SecureStore.deleteItemAsync(KEY);
   } catch {}
   // Im Browser beim Entwickeln: private Bilder (<img> kann keine Kopfzeilen schicken) – der Entwicklungs-Proxy ergänzt sie

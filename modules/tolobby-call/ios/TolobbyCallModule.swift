@@ -166,7 +166,15 @@ final class TolobbyCallCenter: NSObject, PKPushRegistryDelegate, CXProviderDeleg
     emit(["type": "reset"])
   }
 
+  /// Audio-Sitzung auf „Gespräch“ (Mikrofon + Lautsprecher) stellen, BEVOR iOS sie für den Anruf einschaltet – wie in
+  /// Apples Beispiel. Sonst schaltet iOS sie im Sperrbildschirm ohne Mikrofon ein und man hört sich nicht.
+  private func configureAudio() {
+    let s = AVAudioSession.sharedInstance()
+    do { try s.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP]) } catch {}
+  }
+
   func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
+    configureAudio()
     let id = action.callUUID
     timeouts.removeValue(forKey: id)?.cancel()
     var info = calls[id] ?? [:]

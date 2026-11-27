@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { voice } from './voice';
 import type { CallMeta, VoiceState } from './voicecore';
-import { onLive, send as liveSend } from './live';
+import { onLive, send as liveSend, ensureFresh } from './live';
 import { hasCallKit, reportIncoming, endCallKit, callKitState, startCallKit } from './callkit';
 import { api } from './api';
 import { bootstrap, channelInfo, dmTitle, getState, userOf } from './store';
@@ -45,7 +45,7 @@ export async function setWebCalls(on: boolean) {
   setIgnoreWebRing(!on);
   try {
     if (Platform.OS === 'web') { if (on) globalThis.localStorage?.setItem(KEY, '1'); else globalThis.localStorage?.removeItem(KEY); }
-    else if (on) await SecureStore.setItemAsync(KEY, '1'); else await SecureStore.deleteItemAsync(KEY);
+    else if (on) await SecureStore.setItemAsync(KEY, '1', { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }); else await SecureStore.deleteItemAsync(KEY);
   } catch {}
 }
 setIgnoreWebRing(true);
@@ -160,6 +160,7 @@ export function initCallKit(expo: () => string | null) {
   startCallKit({
     token(tok) { voipTok = tok; voipSent = ''; registerVoip(expo()); },
     incoming(dm) {
+      ensureFresh(); // geweckt: Verbindung gleich prüfen, damit Annehmen sofort klappt
       // Von einem Anruf-Push geweckt: sobald die Verbindung steht prüfen, ob der Anruf noch läuft
       const check = async () => {
         const ck = callKitState(dm);
@@ -172,7 +173,7 @@ export function initCallKit(expo: () => string | null) {
       setTimeout(check, 7000);
       setTimeout(check, 16000);
     },
-    answer(dm) { set({ pendingAnswer: dm }); },
+    answer(dm) { ensureFresh(); set({ pendingAnswer: dm }); },
     end(dm, answered) {
       if (answered) { if (voice.get().room === dm) voice.leave(); }
       else declineRing(dm);

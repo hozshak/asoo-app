@@ -21,9 +21,16 @@ export function connect() {
   const token = getToken();
   if (!token) return;
   // Im Browser beim Entwickeln kann WebSocket keine Kopfzeilen schicken – dort ergänzt der Entwicklungs-Proxy die Anmeldung
-  const sock: WebSocket = Platform.OS === 'web'
-    ? new WebSocket(`${WS_BASE}/api/ws`)
-    : new (WebSocket as any)(`${WS_BASE}/api/ws`, null, { headers: { authorization: `Bearer ${token}`, 'x-client': 'asoo-app' } });
+  let sock: WebSocket;
+  try {
+    sock = Platform.OS === 'web'
+      ? new WebSocket(`${WS_BASE}/api/ws`)
+      : new (WebSocket as any)(`${WS_BASE}/api/ws`, null, { headers: { authorization: `Bearer ${token}`, 'x-client': 'asoo-app' } });
+  } catch {
+    // Aufbau selbst schlug fehl (kein Netz o. Ä.): später erneut versuchen statt aufzugeben
+    clearTimeout(retry); retry = setTimeout(connect, backoff + Math.random() * 400); backoff = Math.min(backoff * 2, 15000);
+    return;
+  }
   ws = sock;
   sock.onopen = () => {
     if (sock !== ws) return;
@@ -61,6 +68,20 @@ export function connect() {
   };
   sock.onerror = () => {};
 }
+/**
+ * Nach dem Aufwecken (Anruf aus dem Sperrbildschirm, zurück in die App): Kam lange nichts mehr an, ist die Verbindung
+ * fast sicher tot, obwohl sie noch „offen“ heißt (iOS legt die App schlafen). Dann sofort neu verbinden, statt bis zu
+ * 20 Sekunden auf den nächsten Ping zu warten – sonst geht z. B. das Beitreten zum Anruf ins Leere.
+ */
+export function ensureFresh() {
+  if (!want) return;
+  if (ws && ws.readyState === 1 && Date.now() - lastMsg > 30000) {
+    const old = ws; ws = null; myCid = null; clearInterval(ping);
+    setState(() => ({ online: false }));
+    try { old.close(); } catch {}
+  }
+  if (!ws || ws.readyState > 1) { clearTimeout(retry); backoff = 500; connect(); }
+}
 export function disconnect() {
   want = false; clearTimeout(retry); clearInterval(ping);
   const s = ws; ws = null; myCid = null;
@@ -83,7 +104,7 @@ AppState.addEventListener('change', (st) => {
   reportAct();
   if (st !== 'active') { if (!bgSince) bgSince = Date.now(); }
   else { if (bgSince && Date.now() - bgSince > 2000 && want) bootstrap().catch(() => {}); bgSince = 0; }
-  if (st === 'active' && want) { if (!ws || ws.readyState > 1) { backoff = 500; connect(); } }
+  if (st === 'active' && want) ensureFresh();
 });
 
 // ---------- Ereignisse in den Zustand übernehmen ----------

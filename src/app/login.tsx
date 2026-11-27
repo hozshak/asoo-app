@@ -152,7 +152,7 @@ export default function Login() {
                   </View>
                 )}
                 <T style={s.label}>{mode === 'forgot' ? t("Benutzername oder E-Mail") : t("Benutzername")}</T>
-                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: mode === 'forgot' ? t("dein.name oder name@mail.de") : 'dein.name', editable: !(mode === 'forgot' && codeSent) })}
+                {field('u', { value: username, onChangeText: setUsername, autoCapitalize: 'none', autoCorrect: false, textContentType: 'username', autoComplete: 'username', placeholder: mode === 'forgot' ? t("dein.name oder name@mail.de") : t("dein.name"), editable: !(mode === 'forgot' && codeSent) })}
                 {mode === 'register' ? <>
                   <T style={s.label}>{t("Anzeigename")}</T>
                   {field('d', { value: display, onChangeText: setDisplay, placeholder: t("So sehen dich andere"), maxLength: 32 })}
